@@ -395,3 +395,4 @@ project.assets.json
 *.bak
 *.tmp
 *.swp
+appsettings.json 
