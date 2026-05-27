@@ -17,6 +17,7 @@ public interface IApplicationDbContext
     DbSet<FixedExpense> FixedExpense { get; set; }
     DbSet<FixedExpenseHistory> FixedExpenseHistory { get; set; }
     DbSet<TodoTask> TodoTask { get; set; }
+    DbSet<Budget> Budget { get; set; }
 
     // Métodos esenciales
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
