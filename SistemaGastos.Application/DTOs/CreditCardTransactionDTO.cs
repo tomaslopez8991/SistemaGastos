@@ -20,6 +20,21 @@ public record CreditCardTransactionDto
     public string Currency { get; init; } = string.Empty;
 }
 
+public record CreditCardAccountLookupDto(int ID, string Name, string Currency);
+
+public record CreditCardFormCategoryDto(int ID, string Name);
+
+public record CreditCardFormDto(
+    List<CreditCardAccountLookupDto> CreditCards,
+    List<CreditCardAccountLookupDto> Accounts,
+    List<CreditCardFormCategoryDto> Categories,
+    SistemaGastos.Domain.Models.CreditCardTransaction? Transaction);
+
+public record CreditCardTotalsDto(
+    decimal TotalArs, decimal TotalUsd,
+    decimal FixedArs, decimal FixedUsd,
+    decimal VariableArs, decimal VariableUsd);
+
 public record UpdateCreditCardTransactionDto(
     int ID, // El JS envía "ID" en mayúsculas a veces, el binding de .NET es case-insensitive
     string Description,

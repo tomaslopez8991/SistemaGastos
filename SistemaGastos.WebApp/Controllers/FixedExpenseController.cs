@@ -12,7 +12,7 @@ namespace SistemaGastos.Controllers;
 
 [Authorize]
 [Route("FixedExpense")]
-public class FixedExpenseController(ApplicationDbContext context, IMediator mediator, ICurrentUserService currentUser) : Controller
+public class FixedExpenseController(IMediator mediator, ICurrentUserService currentUser) : Controller
 {
     [HttpGet]
     public IActionResult Index() => View();
