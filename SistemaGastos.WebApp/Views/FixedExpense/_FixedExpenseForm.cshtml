@@ -1,0 +1,211 @@
+﻿@model SistemaGastos.Application.DTOs.FixedExpenseFormDto
+
+<form id="expenseForm" class="needs-validation" novalidate>
+    @Html.AntiForgeryToken()
+    <input type="hidden" id="ID" name="ID" value="@Model.Expense.ID" />
+
+    <!-- Nombre del Servicio -->
+    <div class="mb-4">
+        <label for="Name" class="form-label fw-bold">
+            <i class="fas fa-tag text-primary me-2"></i>Nombre del Servicio
+            <span class="text-danger">*</span>
+        </label>
+        <input type="text"
+               class="form-control form-control-lg"
+               id="Name"
+               name="Name"
+               value="@Model.Expense.Name"
+               placeholder="Ej: Netflix, Spotify, Gimnasio"
+               required
+               autocomplete="off" />
+        <div class="invalid-feedback">
+            Por favor ingresa el nombre del servicio
+        </div>
+    </div>
+
+    <!-- Monto y Día de Vencimiento (Fila) -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <label for="Amount" class="form-label fw-bold">
+                <i class="fas fa-dollar-sign text-success me-2"></i>Monto Mensual
+                <span class="text-danger">*</span>
+            </label>
+            <div class="input-group input-group-lg">
+                <span class="input-group-text bg-success bg-opacity-10 border-success text-success">
+                    <i class="fas fa-money-bill-wave"></i>
+                </span>
+                <input type="number"
+                       step="0.01"
+                       class="form-control"
+                       id="Amount"
+                       name="Amount"
+                       value="@Model.Expense.Amount"
+                       placeholder="0.00"
+                       min="0.01"
+                       required />
+            </div>
+            <div class="invalid-feedback">
+                Ingresa un monto válido
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <label for="PaymentDay" class="form-label fw-bold">
+                <i class="fas fa-calendar-day text-warning me-2"></i>Día de Vencimiento
+                <span class="text-danger">*</span>
+            </label>
+            <div class="input-group input-group-lg">
+                <span class="input-group-text bg-warning bg-opacity-10 border-warning text-warning">
+                    <i class="fas fa-calendar"></i>
+                </span>
+                <input type="number"
+                       class="form-control"
+                       id="PaymentDay"
+                       name="PaymentDay"
+                       value="@Model.Expense.PaymentDay"
+                       min="1"
+                       max="31"
+                       placeholder="15"
+                       required />
+            </div>
+            <small class="text-muted d-block mt-1">
+                <i class="fas fa-info-circle me-1"></i>Del 1 al 31
+            </small>
+            <div class="invalid-feedback">
+                Ingresa un día válido (1-31)
+            </div>
+        </div>
+    </div>
+
+    <!-- Cuenta y Categoría (Fila) -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <label for="AccountID" class="form-label fw-bold">
+                <i class="fas fa-wallet text-info me-2"></i>Cuenta de Pago
+                <span class="text-danger">*</span>
+            </label>
+            <select class="form-select form-select-lg" id="AccountID" name="AccountID" required>
+                <option value="">Seleccionar cuenta...</option>
+                @foreach (var account in Model.Accounts)
+                {
+                    <option value="@account.ID"
+                            selected="@(account.ID == Model.Expense.AccountID)">
+                        @account.Name (@account.Type)
+                    </option>
+                }
+            </select>
+            <div class="invalid-feedback">
+                Selecciona una cuenta
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <label for="CategoryID" class="form-label fw-bold">
+                <i class="fas fa-folder text-primary me-2"></i>Categoría
+                <span class="text-danger">*</span>
+            </label>
+            <select class="form-select form-select-lg" id="CategoryID" name="CategoryID" required>
+                <option value="">Seleccionar categoría...</option>
+                @foreach (var category in Model.Categories)
+                {
+                    <option value="@category.ID"
+                            selected="@(category.ID == Model.Expense.CategoryID)">
+                        @category.Name
+                    </option>
+                }
+            </select>
+            <div class="invalid-feedback">
+                Selecciona una categoría
+            </div>
+        </div>
+    </div>
+
+    <!-- Logo URL -->
+    <div class="mb-4">
+        <label for="LogoUrl" class="form-label fw-bold">
+            <i class="fas fa-image text-secondary me-2"></i>URL del Logo
+            <span class="badge bg-secondary ms-2">Opcional</span>
+        </label>
+        <div class="input-group">
+            <span class="input-group-text">
+                <i class="fas fa-link"></i>
+            </span>
+            <input type="url"
+                   class="form-control"
+                   id="LogoUrl"
+                   name="LogoUrl"
+                   value="@Model.Expense.LogoUrl"
+                   placeholder="https://ejemplo.com/logo.png" />
+        </div>
+        <small class="text-muted d-block mt-1">
+            <i class="fas fa-lightbulb me-1"></i>URL de una imagen para identificar el servicio visualmente
+        </small>
+    </div>
+
+    <!-- Preview del Logo (si existe) -->
+    @if (!string.IsNullOrEmpty(Model.Expense.LogoUrl))
+    {
+        <div class="mb-3">
+            <div class="alert alert-info d-flex align-items-center gap-3">
+                <img src="@Model.Expense.LogoUrl"
+                     alt="Logo actual"
+                     class="rounded"
+                     style="width: 50px; height: 50px; object-fit: cover;"
+                     onerror="this.style.display='none'" />
+                <span class="small">Vista previa del logo actual</span>
+            </div>
+        </div>
+    }
+</form>
+
+<script>
+    // ✅ SIN data-bs-dismiss ni referencias a Bootstrap Modal
+    // Validación en tiempo real
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('expenseForm');
+        if (!form) return;
+
+        const inputs = form.querySelectorAll('input, select');
+
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (form.classList.contains('was-validated')) {
+                    this.checkValidity();
+                }
+            });
+        });
+
+        // Validar día de vencimiento
+        const paymentDayInput = document.getElementById('PaymentDay');
+        if (paymentDayInput) {
+            paymentDayInput.addEventListener('input', function() {
+                const value = parseInt(this.value);
+                if (value < 1) this.value = 1;
+                if (value > 31) this.value = 31;
+            });
+        }
+    });
+</script>
+
+<style>
+    #expenseForm .form-control:focus,
+    #expenseForm .form-select:focus {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+
+    #expenseForm .input-group-text {
+        min-width: 45px;
+        justify-content: center;
+    }
+
+    #expenseForm .was-validated .form-control:invalid,
+    #expenseForm .was-validated .form-select:invalid {
+        border-color: var(--bs-danger);
+    }
+
+    #expenseForm .was-validated .form-control:valid,
+    #expenseForm .was-validated .form-select:valid {
+        border-color: var(--bs-success);
+    }
+</style>

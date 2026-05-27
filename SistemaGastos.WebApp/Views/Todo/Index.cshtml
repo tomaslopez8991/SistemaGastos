@@ -1,0 +1,144 @@
+﻿@{
+    ViewData["Title"] = "Mis Tareas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div id="todo-container"
+     data-url-list="@Url.Action("GetTasksJson", "Todo")"
+     data-url-form="@Url.Action("GetTaskForm", "Todo")"
+     data-url-save="@Url.Action("Save", "Todo")"
+     data-url-toggle="@Url.Action("ToggleStatus", "Todo")"
+     data-url-delete="@Url.Action("Delete", "Todo")"
+     data-intro="Bienvenido al Organizador de Tareas. Este módulo te ayuda a no olvidar pagos pendientes, trámites bancarios, renovaciones de servicios y cualquier compromiso financiero importante."
+     data-step="1">
+
+    <div class="d-flex justify-content-between align-items-center mb-4"
+         data-intro="Desde aquí puedes gestionar todas tus tareas financieras pendientes y ver las que ya completaste."
+         data-step="2">
+        <div>
+            <h2 class="fw-bold mb-0">Organizador</h2>
+            <p class="small">No olvides tus compromisos financieros</p>
+        </div>
+        <button class="btn btn-success btn-lg shadow-lg"
+                onclick="abrirModalTarea()"
+                data-intro="Haz clic aquí para crear una nueva tarea. Puedes agregar título, descripción, fecha límite y prioridad para mantener todo organizado."
+                data-step="3">
+            <i class="fa-solid fa-plus me-2"></i> Nueva Tarea
+        </button>
+    </div>
+
+    <div class="row g-4"
+         data-intro="Las tareas se organizan en dos columnas: Pendientes (por hacer) y Completadas (ya finalizadas). Puedes mover tareas entre columnas marcándolas como completadas."
+         data-step="4">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center mb-3"
+                 data-intro="Tareas Pendientes: aquí aparecen todas las tareas que aún no has completado. Si una tarea está vencida, se destacará en rojo para que no la olvides."
+                 data-step="5">
+                <div class="badge bg-warning text-dark me-2 p-2 rounded-circle"><i class="fa-solid fa-clock"></i></div>
+                <h5 class="mb-0 fw-bold">Pendientes</h5>
+                <span class="badge bg-secondary ms-2" id="count-pending">0</span>
+            </div>
+
+            <div id="pending-list"
+                 class="task-column"
+                 data-intro="Cada tarjeta muestra el título, descripción y fecha límite de la tarea. Haz clic en el círculo para marcarla como completada, o usa el menú para editarla o eliminarla."
+                 data-step="6">
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="d-flex align-items-center mb-3"
+                 data-intro="Tareas Completadas: aquí se mueven automáticamente las tareas que marcaste como finalizadas. Se muestran tachadas y con menor opacidad para diferenciarlas."
+                 data-step="7">
+                <div class="badge bg-success me-2 p-2 rounded-circle"><i class="fa-solid fa-check"></i></div>
+                <h5 class="mb-0 fw-bold">Completadas</h5>
+                <span class="badge bg-secondary ms-2" id="count-completed">0</span>
+            </div>
+
+            <div id="completed-list"
+                 class="task-column opacity-75"
+                 data-intro="Las tareas completadas se conservan aquí para tu historial. Puedes volver a marcarlas como pendientes si es necesario, editarlas o eliminarlas definitivamente."
+                 data-step="8">
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/Todo.js" asp-append-version="true"></script>
+}
+
+<style>
+    .task-column {
+        min-height: 200px;
+        padding-bottom: 50px;
+    }
+    /* Tarjeta de Tarea */
+    .task-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    [data-bs-theme="light"] .task-card {
+        background: #fff;
+        border: 1px solid #eee;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .task-card:hover {
+        transform: translateY(-3px);
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Estado Vencido */
+    .task-card.overdue {
+        border-left: 4px solid #dc3545;
+        background: linear-gradient(90deg, rgba(220, 53, 69, 0.1), rgba(255,255,255,0.05));
+    }
+
+    /* Botón Check */
+    .btn-check-task {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid #6c757d;
+        background: transparent;
+        color: transparent;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+        .btn-check-task:hover {
+            border-color: #198754;
+            color: #198754;
+        }
+
+    /* Estado completado del botón */
+    .task-card.completed .btn-check-task {
+        background: #198754;
+        border-color: #198754;
+        color: white;
+    }
+
+    .task-card.completed .task-title {
+        text-decoration: line-through;
+        opacity: 0.7;
+    }
+</style>

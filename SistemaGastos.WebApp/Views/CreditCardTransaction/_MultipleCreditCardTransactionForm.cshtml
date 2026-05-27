@@ -1,0 +1,146 @@
+﻿@{
+    var allAccounts = (ViewBag.Accounts as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)
+                      ?? Enumerable.Empty<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+
+    // Construye el HTML de opciones agrupadas — se embebe en data-* para que JS lo lea sin depender de script execution
+    var sb = new System.Text.StringBuilder();
+    sb.Append("<option value=''>— Tarjeta —</option>");
+
+    var groups = allAccounts
+        .Where(a => a.Group != null)
+        .GroupBy(a => a.Group!.Name)
+        .OrderBy(g => g.Key)
+        .ToList();
+
+    foreach (var grp in groups)
+    {
+        sb.Append($"<optgroup label='{System.Net.WebUtility.HtmlEncode(grp.Key)}'>");
+        foreach (var item in grp)
+        {
+            sb.Append($"<option value='{System.Net.WebUtility.HtmlEncode(item.Value)}'>{System.Net.WebUtility.HtmlEncode(item.Text)}</option>");
+        }
+        sb.Append("</optgroup>");
+    }
+
+    // Fallback: cuentas sin grupo
+    foreach (var item in allAccounts.Where(a => a.Group == null))
+    {
+        sb.Append($"<option value='{System.Net.WebUtility.HtmlEncode(item.Value)}'>{System.Net.WebUtility.HtmlEncode(item.Text)}</option>");
+    }
+
+    var accountOptionsHtml = sb.ToString();
+}
+
+@Html.AntiForgeryToken()
+
+@*
+    data-account-options: el HTML de opciones embebido como atributo.
+    _addRow() en CreditCardTransactions.js lo lee con dataset.accountOptions
+    y lo inyecta en cada select clonado. Esto evita depender de <script> execution
+    dentro del HTML inyectado por SweetAlert2 (que no ejecuta scripts por seguridad).
+*@
+<div class="cc-bulk-container"
+     id="cc-multiple-container"
+     data-account-options="@accountOptionsHtml">
+
+    @* ── Tabla ──────────────────────────────────────────────── *@
+    <div class="cc-bulk-scroll">
+        <table class="table table-sm align-middle mb-0 cc-bulk-table">
+            <thead>
+                <tr>
+                    <th style="width:200px;">Tarjeta</th>
+                    <th style="width:130px;">Fecha</th>
+                    <th style="width:160px;">Categoría</th>
+                    <th>Descripción</th>
+                    <th style="width:120px;">Monto</th>
+                    <th style="width:110px;" class="text-center">
+                        <i class="fas fa-calendar-alt me-1"></i>Cuotas
+                        <div class="cc-bulk-th-sub">actual / total</div>
+                    </th>
+                    <th style="width:44px;" class="text-center" title="¿Gasto fijo?">
+                        <i class="fas fa-thumbtack"></i>
+                    </th>
+                    <th style="width:36px;"></th>
+                </tr>
+            </thead>
+            <tbody id="cc-rows-container"></tbody>
+        </table>
+    </div>
+
+    @* ── Botón agregar ───────────────────────────────────────── *@
+    <div class="cc-bulk-add-row">
+        <button id="btn-add-cc-row"
+                class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2"
+                type="button">
+            <i class="fas fa-plus"></i> Agregar compra
+        </button>
+    </div>
+
+    @* ── Footer totales ──────────────────────────────────────── *@
+    <div class="cc-bulk-footer">
+        <div class="cc-bulk-footer-left">
+            <span class="cc-bulk-footer-label">Items cargados</span>
+            <span class="cc-bulk-footer-val" id="lbl-total-count">0</span>
+        </div>
+        <div class="cc-bulk-footer-right">
+            <span class="cc-bulk-footer-label">Total del lote</span>
+            <span class="cc-bulk-footer-total" id="lbl-total-amount">$ 0,00</span>
+        </div>
+    </div>
+</div>
+
+@* ── Template de fila ────────────────────────────────────────── *@
+<template id="row-template-cc">
+    <tr class="cc-row align-middle">
+        <td>
+            @* Select vacío — _addRow() inyecta las opciones desde data-account-options *@
+            <select name="AccountID"
+                    class="form-select form-select-sm cc-bulk-select input-account">
+            </select>
+        </td>
+        <td>
+            <input type="date"
+                   class="form-control form-control-sm input-date"
+                   value="@ViewBag.DefaultDate" />
+        </td>
+        <td>
+            @Html.DropDownList("CategoryID",
+                (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Categories,
+                "Categoría...",
+                new { @class = "form-select form-select-sm cc-bulk-select input-category" })
+        </td>
+        <td>
+            <input type="text"
+                   class="form-control form-control-sm input-desc"
+                   placeholder="Ej: Nafta, Cena..." />
+        </td>
+        <td>
+            <input type="number" step="0.01"
+                   class="form-control form-control-sm text-end fw-semibold input-amount"
+                   placeholder="0.00" />
+        </td>
+        <td>
+            <div class="d-flex align-items-center justify-content-center gap-1 installments-group">
+                <input type="number" min="1"
+                       class="form-control form-control-sm text-center input-cuota input-actual"
+                       style="width:46px;" title="Cuota actual" />
+                <span class="text-muted">/</span>
+                <input type="number" min="1"
+                       class="form-control form-control-sm text-center input-cuota input-total"
+                       style="width:46px;" title="Total cuotas" />
+            </div>
+        </td>
+        <td class="text-center">
+            <input class="form-check-input input-fixed"
+                   type="checkbox"
+                   title="¿Es un gasto fijo mensual?" />
+        </td>
+        <td class="text-center">
+            <button type="button"
+                    class="btn-remove-row cc-remove-btn"
+                    title="Quitar fila">
+                <i class="fas fa-times"></i>
+            </button>
+        </td>
+    </tr>
+</template>

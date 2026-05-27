@@ -1,0 +1,182 @@
+﻿@model SistemaGastos.Application.ViewModels.UserVM
+@{
+    ViewData["Title"] = "Mi Perfil";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-4"
+     id="profile-container"
+     data-url-update-pass="@Url.Action("UpdatePassword", "Login")"
+     data-url-update-info="@Url.Action("UpdateInfo", "Login")"
+     data-intro="Bienvenido a tu Perfil. Aquí puedes ver tu información personal, actualizar tu correo electrónico y cambiar tu contraseña de acceso al sistema."
+     data-step="1">
+
+    <div class="row g-4 justify-content-center">
+
+        <div class="col-lg-4">
+            <div class="card bg-body-tertiary border-0 shadow-lg text-center p-4 h-100 position-relative overflow-hidden"
+                 data-intro="Esta tarjeta muestra tu avatar (inicial de tu nombre de usuario), tu rol en el sistema y tu estado de conexión."
+                 data-step="2">
+                <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(180deg, rgba(13, 110, 253, 0.1) 0%, transparent 40%); z-index: 0;"></div>
+
+                <div class="position-relative" style="z-index: 1;">
+                    <div class="d-inline-block position-relative mb-3">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow"
+                             style="width: 120px; height: 120px; font-size: 3rem; border: 4px solid var(--glass-bg);">
+                            @Model.Username.Substring(0, 1).ToUpper()
+                        </div>
+                        <div class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-dark p-2"
+                             title="Online"
+                             data-intro="Este indicador verde muestra que estás conectado activamente al sistema."
+                             data-step="3"></div>
+                    </div>
+
+                    <h3 class="fw-bold mb-1">@Model.Username</h3>
+                    <p class="text-muted mb-4">@Model.Email</p>
+
+                    <div class="d-flex justify-content-center gap-2">
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill"
+                              data-intro="Tu rol determina los permisos que tienes en el sistema. Los roles comunes son: Admin (todos los permisos) y User (permisos básicos)."
+                              data-step="4">
+                            <i class="fa-solid fa-user-shield me-1"></i> @Model.Role
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card bg-body-tertiary border-0 shadow-lg h-100"
+                 data-intro="Este panel tiene dos pestañas: 'Datos' para actualizar tu email, y 'Seguridad' para cambiar tu contraseña."
+                 data-step="5">
+                <div class="card-header bg-transparent border-bottom border-secondary border-opacity-10 p-0">
+                    <ul class="nav nav-tabs nav-justified border-0"
+                        id="profileTabs"
+                        role="tablist"
+                        data-intro="Usa estas pestañas para navegar entre la gestión de tus datos personales y la configuración de seguridad."
+                        data-step="6">
+                        <li class="nav-item">
+                            <button class="nav-link active py-3 rounded-0 border-0"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#info"
+                                    type="button"
+                                    data-intro="Pestaña Datos: permite actualizar tu dirección de correo electrónico de contacto."
+                                    data-step="7">
+                                <i class="fa-regular fa-id-card me-2"></i> Datos
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link py-3 rounded-0 border-0"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#security"
+                                    type="button"
+                                    data-intro="Pestaña Seguridad: te permite cambiar tu contraseña por razones de seguridad o si la olvidaste."
+                                    data-step="8">
+                                <i class="fa-solid fa-lock me-2"></i> Seguridad
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="tab-content">
+
+                        <div class="tab-pane fade show active"
+                             id="info"
+                             data-intro="En esta sección puedes ver y modificar tu información de contacto. El nombre de usuario y el rol no se pueden cambiar por seguridad."
+                             data-step="9">
+                            <h5 class="mb-4 text-muted">Información Personal</h5>
+                            <form id="form-info">
+                                <input type="hidden" id="userId" value="@Model.ID" />
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-uppercase">Usuario</label>
+                                        <input type="text"
+                                               class="form-control"
+                                               value="@Model.Username"
+                                               disabled
+                                               readonly
+                                               data-intro="Tu nombre de usuario es único y no puede modificarse. Se usa para iniciar sesión en el sistema."
+                                               data-step="10">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-uppercase">Rol</label>
+                                        <input type="text"
+                                               class="form-control"
+                                               value="@Model.Role"
+                                               disabled
+                                               readonly
+                                               data-intro="Tu rol es asignado por un administrador y no puede cambiarse desde aquí."
+                                               data-step="11">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold text-uppercase">Email</label>
+                                        <div class="input-group"
+                                             data-intro="Actualiza aquí tu dirección de correo electrónico. Es importante mantenerla actualizada para recibir notificaciones del sistema."
+                                             data-step="12">
+                                            <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+                                            <input type="email" class="form-control" id="inputEmail" value="@Model.Email">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-end">
+                                    <button type="button"
+                                            class="btn btn-primary px-4"
+                                            onclick="updateInfo()"
+                                            data-intro="Haz clic aquí para guardar los cambios en tu email. Se validará que el formato sea correcto antes de guardar."
+                                            data-step="13">
+                                        <i class="fa-solid fa-floppy-disk me-2"></i> Guardar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade"
+                             id="security"
+                             data-intro="En esta sección puedes cambiar tu contraseña. Es recomendable usar una contraseña segura con al menos 6 caracteres, combinando letras, números y símbolos."
+                             data-step="14">
+                            <h5 class="mb-4 text-muted">Cambiar Contraseña</h5>
+                            <form id="form-password">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-uppercase">Nueva Contraseña</label>
+                                    <div class="input-group"
+                                         data-intro="Ingresa tu nueva contraseña. Debe tener mínimo 6 caracteres. Usa el botón del ojo para ver/ocultar la contraseña mientras la escribes."
+                                         data-step="15">
+                                        <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                                        <input type="password" class="form-control" id="newPass" placeholder="Mínimo 6 caracteres">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePass('newPass', this)">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label small fw-bold text-uppercase">Confirmar</label>
+                                    <div class="input-group"
+                                         data-intro="Confirma tu nueva contraseña escribiéndola nuevamente. Debe coincidir exactamente con la anterior para evitar errores de tipeo."
+                                         data-step="16">
+                                        <span class="input-group-text"><i class="fa-solid fa-check-double"></i></span>
+                                        <input type="password" class="form-control" id="confirmPass" placeholder="Repite la contraseña">
+                                    </div>
+                                </div>
+                                <div class="mt-4 text-end">
+                                    <button type="button"
+                                            class="btn btn-danger px-4"
+                                            onclick="updatePassword()"
+                                            data-intro="Haz clic para guardar tu nueva contraseña. Una vez guardada, deberás usarla en tu próximo inicio de sesión."
+                                            data-step="17">
+                                        <i class="fa-solid fa-lock-open me-2"></i> Actualizar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Profile.js" asp-append-version="true"></script>
+}

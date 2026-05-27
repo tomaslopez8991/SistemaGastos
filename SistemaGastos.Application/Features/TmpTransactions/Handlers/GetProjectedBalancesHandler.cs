@@ -1,0 +1,234 @@
+﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
+using SistemaGastos.Application.DTOs;
+using SistemaGastos.Application.Features.TmpTransactions.Queries;
+using SistemaGastos.Application.Interfaces;
+using SistemaGastos.Domain.Enums;
+using System.Globalization;
+
+namespace SistemaGastos.Application.Features.TmpTransactions.Handlers;
+
+public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarService dolarService)
+    : IRequestHandler<GetProjectedBalancesQuery, List<MonthlyBalanceDto>>
+{
+    public async Task<List<MonthlyBalanceDto>> Handle(GetProjectedBalancesQuery request, CancellationToken cancellationToken)
+    {
+        var fechaActual = DateTime.Now;
+        decimal cotizacionDolar = await dolarService.GetDolarBolsaAsync();
+
+        // ====================================================================
+        // 1. CALCULAR SALDO INICIAL
+        // ====================================================================
+        var accounts = await context.Account
+            .Where(a => a.UserID == request.UserID)
+            .ToListAsync(cancellationToken);
+
+        var saldoLiquidezARS = accounts
+            .Where(a => a.Type != AccountType.TarjetaCredito && a.Currency == "ARS")
+            .Sum(a => a.Balance);
+
+        var saldoLiquidezUSD = accounts
+            .Where(a => a.Type != AccountType.TarjetaCredito && (a.Currency == "USD" || a.Currency == "USDT"))
+            .Sum(a => a.Balance);
+
+        decimal saldoInicialTotal = saldoLiquidezARS + (saldoLiquidezUSD * cotizacionDolar);
+
+        // ====================================================================
+        // 2. DEUDA DE TARJETAS (resumen próximo a pagar)
+        // ====================================================================
+        var deudaTarjetasArs = accounts
+            .Where(a => a.Type == AccountType.TarjetaCredito && a.Currency == "ARS")
+            .Sum(a => a.Balance);
+
+        var deudaTarjetasUsd = accounts
+            .Where(a => a.Type == AccountType.TarjetaCredito && a.Currency == "USD")
+            .Sum(a => a.Balance);
+
+        decimal deudaResumenProximo = Math.Abs(deudaTarjetasArs) + (Math.Abs(deudaTarjetasUsd) * cotizacionDolar);
+
+        // ====================================================================
+        // 3. OBTENER PROYECCIONES MANUALES
+        // ====================================================================
+        var manualProjections = await context.TmpTransaction
+            .Include(t => t.Category)
+            .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
+            .ToListAsync(cancellationToken);
+
+        // ====================================================================
+        // 4. OBTENER TRANSACCIONES DE TARJETA
+        // ====================================================================
+        var cardTransactions = await context.CreditCardTransaction
+            .Include(t => t.Account)
+            .Include(t => t.Category)
+            .Where(t => t.Account.UserID == request.UserID)
+            .ToListAsync(cancellationToken);
+
+        // ====================================================================
+        // 5. OBTENER GASTOS FIJOS ACTIVOS
+        // ====================================================================
+        var allFixedExpenses = await context.FixedExpense
+            .AsNoTracking()
+            .Include(f => f.Category)
+            .Where(f => f.UserID == request.UserID && f.Active)
+            .ToListAsync(cancellationToken);
+
+        var paidFixedExpenses = await context.Transaction
+            .AsNoTracking()
+            .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
+            .Select(t => new {
+                ExpenseID = t.FixedExpenseID,
+                // Cambiá t.Date por t.TransactionDate si en tu entidad se llama así
+                Year = t.Date.Year,
+                Month = t.Date.Month
+            })
+            .ToListAsync(cancellationToken);
+
+        // ====================================================================
+        // 6. CALCULAR BALANCES MENSUALES (12 MESES)
+        // ====================================================================
+        var startDate = new DateTime(fechaActual.Year, fechaActual.Month, 1);
+        var mesProximo = startDate.AddMonths(1);
+        var mesDespuesDelPago = startDate.AddMonths(2);
+
+        var balances = new List<MonthlyBalanceDto>();
+        decimal acumulado = saldoInicialTotal;
+
+        for (int i = 0; i < 12; i++)
+        {
+            var m = startDate.AddMonths(i);
+            var key = $"{m.Year}-{m.Month:D2}";
+
+            // ────────────────────────────────────────────────────────────
+            // A. PROYECCIONES MANUALES DEL MES
+            // ────────────────────────────────────────────────────────────
+            var monthTrans = manualProjections
+                .Where(t => t.DateTransaction.Value.Year == m.Year && t.DateTransaction.Value.Month == m.Month)
+                .ToList();
+
+            decimal ingresos = monthTrans.Where(t => t.Category.Type == "Ingreso").Sum(t => t.Amount);
+            decimal gastos = monthTrans.Where(t => t.Category.Type == "Gasto").Sum(t => t.Amount);
+
+            // ────────────────────────────────────────────────────────────
+            // B. GASTOS FIJOS DEL MES
+            // ────────────────────────────────────────────────────────────
+            var daysInMonth = DateTime.DaysInMonth(m.Year, m.Month);
+            var paidThisMonthIds = paidFixedExpenses
+                .Where(p => p.Year == m.Year && p.Month == m.Month)
+                .Select(p => p.ExpenseID)
+                .ToList();
+
+            var fixedExpensesOfMonth = allFixedExpenses
+                .Where(f => f.PaymentDay > 0 && f.PaymentDay <= daysInMonth && !paidThisMonthIds.Contains(f.ID))
+                .ToList();
+
+            decimal gastosFixosDelMes = fixedExpensesOfMonth.Sum(f => f.Amount);
+            gastos += gastosFixosDelMes;
+
+            // ────────────────────────────────────────────────────────────
+            // C/D. TARJETAS: calcular resumen próximo + proyección futura
+            //     - Si existe un movimiento manual "Total TC" en el mes, respetarlo y NO sumar
+            //     - Si no, sumar el resumen próximo (mesProximo) y distribuir cuotas futuras
+            // ────────────────────────────────────────────────────────────
+            decimal pendingInstallments = 0m;
+            bool hasCreditCardPayment = monthTrans
+                .Any(t => t.Category.Type == "Gasto"
+                          && !string.IsNullOrEmpty(t.Description)
+                          && t.Description.Contains("Total TC", StringComparison.OrdinalIgnoreCase));
+
+            if (!hasCreditCardPayment)
+            {
+                // Para el mes próximo incluimos el resumen global de tarjetas
+                if (SameMonth(m, mesProximo) && deudaResumenProximo > 0)
+                {
+                    pendingInstallments += deudaResumenProximo;
+                }
+
+                // Para los meses futuros analizamos cada movimiento de tarjeta
+                if (m >= mesDespuesDelPago)
+                {
+                    foreach (var cardTx in cardTransactions)
+                    {
+                        if (cardTx.TransactionDate == null) continue;
+
+                        var compraMes = new DateTime(cardTx.TransactionDate.Year, cardTx.TransactionDate.Month, 1);
+                        var vencimiento = compraMes.AddMonths(1);
+
+                        decimal montoArs = (decimal)cardTx.Amount;
+                        if (cardTx.Account.Currency == "USD")
+                            montoArs *= cotizacionDolar;
+
+                        bool esFijo = cardTx.Fixed;
+                        bool esCuotas = cardTx.Installments > 1;
+                        bool esVariable = !esFijo && !esCuotas;
+
+                        // Variable: se paga en el vencimiento (1 mes después de la compra)
+                        if (esVariable)
+                        {
+                            if (SameMonth(m, vencimiento))
+                                gastos += montoArs;
+                            continue;
+                        }
+
+                        // Fijo sin cuotas: se paga todos los meses
+                        if (esFijo && !esCuotas)
+                        {
+                            gastos += montoArs;
+                            continue;
+                        }
+
+                        // Cuotas: calcular si hay cuota en este mes y acumularla en pendingInstallments
+                        if (esCuotas)
+                        {
+                            int totalCuotas = (int)cardTx.Installments;
+                            int cuotaBase = (int)cardTx.ActualInstallment;
+                            int offset = MonthDiff(vencimiento, m);
+
+                            if (offset < 0) continue;
+
+                            int cuotaEnMes = cuotaBase + offset;
+                            if (cuotaEnMes > totalCuotas) continue;
+
+                            decimal montoCuota = montoArs / totalCuotas;
+                            pendingInstallments += montoCuota;
+                        }
+                    }
+                }
+            }
+
+            // Añadir las cuotas calculadas a los gastos para obtener el cálculo exacto del saldo
+            gastos += pendingInstallments;
+
+            // ────────────────────────────────────────────────────────────
+            // E. CALCULAR BALANCE ACUMULADO
+            // ────────────────────────────────────────────────────────────
+            decimal neto = ingresos - gastos;
+            acumulado += neto;
+
+            // ────────────────────────────────────────────────────────────
+            // F. CONSTRUIR DTO CON FORMATO
+            // ────────────────────────────────────────────────────────────
+            var culture = new CultureInfo("es-AR");
+            balances.Add(new MonthlyBalanceDto
+            {
+                Key = key,
+                Label = m.ToString("MMM yy", culture).ToUpper(),
+                Income = ingresos,
+                Expense = gastos,
+                Balance = acumulado,
+                BalanceFmt = acumulado.ToString("C", culture),
+                IncomeFmt = ingresos.ToString("C", culture),
+                ExpenseFmt = gastos.ToString("C", culture),
+                FixedExpenses = gastosFixosDelMes,
+                FixedExpensesFmt = gastosFixosDelMes.ToString("C", culture),
+                PendingInstallments = pendingInstallments,
+                InstallmentsFmt = pendingInstallments.ToString("C", culture),
+                HasCreditCardPayment = hasCreditCardPayment
+            });
+        }
+
+        return balances;
+    }
+
+    private bool SameMonth(DateTime a, DateTime b) => a.Year == b.Year && a.Month == b.Month;
+    private int MonthDiff(DateTime from, DateTime to) => (to.Year - from.Year) * 12 + (to.Month - from.Month);
+}

@@ -1,0 +1,22 @@
+﻿@if (TempData["ToastMessage"] != null || ViewBag.ToastMessage != null)
+{
+    var message = TempData["ToastMessage"] ?? ViewBag.ToastMessage;
+    var type = TempData["ToastType"] ?? ViewBag.ToastType ?? "info";
+
+    <script>
+        (function() {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true
+            });
+
+            Toast.fire({
+                icon: '@type',
+                title: '@message'
+            });
+        })();
+    </script>
+}

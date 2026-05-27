@@ -1,0 +1,155 @@
+﻿@{
+    ViewData["Title"] = "Gastos Fijos y Suscripciones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div id="fixed-expense-container"
+     data-url-list="@Url.Action("GetList", "FixedExpense")"
+     data-url-form="@Url.Action("GetForm", "FixedExpense")"
+     data-url-save="@Url.Action("Save", "FixedExpense")"
+     data-url-delete="@Url.Action("Delete", "FixedExpense")"
+     data-url-pay="@Url.Action("PayNow", "FixedExpense")"
+     data-url-toggle="@Url.Action("ToggleActive", "FixedExpense")"
+     data-intro="Bienvenido al módulo de Gastos Fijos. Aquí puedes controlar todos tus gastos recurrentes mensuales como Netflix, Spotify, servicios, cuotas fijas y más."
+     data-step="1">
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3"
+         data-intro="Este módulo te ayuda a no olvidar ningún pago recurrente. Registra tus suscripciones y gastos fijos para tener control total de tus compromisos mensuales."
+         data-step="2">
+        <div>
+            <h2 class="fw-bold mb-0">
+                <i class="fas fa-calendar-check text-primary me-2"></i>Gastos Fijos
+            </h2>
+            <p class="text-muted small mb-0">Administra tus suscripciones y gastos recurrentes</p>
+        </div>
+        <button class="btn btn-primary shadow-sm"
+                id="btnNewExpense"
+                data-intro="Haz clic aquí para agregar un nuevo gasto fijo o suscripción. Por ejemplo: Netflix, luz, gas, internet, cuota del gimnasio, etc."
+                data-step="3">
+            <i class="fas fa-plus me-2"></i>Nuevo Gasto Fijo
+        </button>
+    </div>
+
+    <!-- Resumen Cards -->
+    <div class="row g-3 mb-4"
+         data-intro="Estas tarjetas te muestran un resumen rápido de tus gastos fijos: cuánto pagas mensualmente, qué ya pagaste este mes, qué está pendiente y cuál es tu próximo vencimiento."
+         data-step="4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100"
+                 data-intro="Total Mensual: suma de todos tus gastos fijos activos. Este es el monto que comprometes cada mes en pagos recurrentes."
+                 data-step="5">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <small class="text-muted text-uppercase fw-bold">Total Mensual</small>
+                        <i class="fas fa-money-bill-wave text-primary fs-4 opacity-25"></i>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-primary" id="totalMonthly">$ 0,00</h3>
+                    <small class="text-muted" id="activeCount">0 gastos activos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100"
+                 data-intro="Pagado este mes: muestra cuánto ya abonaste de tus gastos fijos en el mes actual. Te ayuda a ver cuánto del presupuesto ya utilizaste."
+                 data-step="6">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <small class="text-muted text-uppercase fw-bold">Pagado este mes</small>
+                        <i class="fas fa-check-circle text-success fs-4 opacity-25"></i>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-success" id="paidThisMonth">$ 0,00</h3>
+                    <small class="text-muted" id="paidCount">0 pagados</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100"
+                 data-intro="Pendientes: suma de los gastos que aún no pagaste este mes. Mantén este número bajo para evitar sorpresas."
+                 data-step="7">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <small class="text-muted text-uppercase fw-bold">Pendientes</small>
+                        <i class="fas fa-clock text-warning fs-4 opacity-25"></i>
+                    </div>
+                    <h3 class="fw-bold mb-0 text-warning" id="pendingAmount">$ 0,00</h3>
+                    <small class="text-muted" id="pendingCount">0 pendientes</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100"
+                 data-intro="Próximo Vencimiento: te alerta sobre el próximo gasto fijo que vence. Así nunca te olvidas de pagar y evitas recargos o cortes de servicio."
+                 data-step="8">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <small class="text-muted text-uppercase fw-bold">Próximo Vencimiento</small>
+                        <i class="fas fa-bell text-danger fs-4 opacity-25"></i>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="nextDueDate">-</h3>
+                    <small class="text-muted" id="nextDueName">-</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-4"
+         data-intro="Usa estos filtros para ver solo los gastos que te interesan: activos, pagados, pendientes o inactivos. También puedes filtrar por categoría."
+         data-step="9">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted">Estado</label>
+                    <select class="form-select"
+                            id="filterStatus"
+                            data-intro="Filtra por estado: Activos (están vigentes), Pagados (ya abonados este mes), Pendientes (faltan pagar) o Inactivos (suspendidos temporalmente)."
+                            data-step="10">
+                        <option value="all">Todos</option>
+                        <option value="active" selected>Activos</option>
+                        <option value="paid">Pagados este mes</option>
+                        <option value="pending">Pendientes</option>
+                        <option value="inactive">Inactivos</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted">Categoría</label>
+                    <select class="form-select"
+                            id="filterCategory"
+                            data-intro="Filtra por categoría para ver solo gastos de un tipo específico: Servicios, Entretenimiento, Salud, etc."
+                            data-step="11">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-outline-primary w-100"
+                            id="btnApplyFilters"
+                            data-intro="Aplica los filtros seleccionados para actualizar la lista de gastos fijos mostrados."
+                            data-step="12">
+                        <i class="fas fa-filter me-2"></i>Aplicar Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Gastos Fijos -->
+    <div id="expenses-grid"
+         class="row g-3"
+         data-intro="Aquí aparecerá la lista de todos tus gastos fijos en formato de tarjetas. Cada una mostrará el nombre, monto, fecha de vencimiento y opciones para pagar, editar o desactivar."
+         data-step="13">
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="text-muted mt-2">Cargando gastos fijos...</p>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/FixedExpense.js" asp-append-version="true"></script>
+}

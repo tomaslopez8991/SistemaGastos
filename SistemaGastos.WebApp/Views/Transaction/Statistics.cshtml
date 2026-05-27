@@ -1,0 +1,227 @@
+﻿@{
+    ViewData["Title"] = "Dashboard Financiero";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div id="statistics-container"
+     data-url-stats="@Url.Action("GetStatistics", "Transaction")"
+     data-intro="Bienvenido al Dashboard Financiero. Aquí verás un análisis completo de tus finanzas: patrimonio neto, evolución de ingresos y gastos, top de categorías, proyecciones futuras y más. Es tu centro de control para tomar decisiones informadas."
+     data-step="1">
+
+    <div class="d-flex justify-content-between align-items-center mb-4"
+         data-intro="Este panel te brinda una visión panorámica de tu situación financiera actual y tendencias históricas."
+         data-step="2">
+        <div>
+            <h2 class="fw-bold mb-0">
+                <i class="fas fa-chart-line text-primary me-2"></i>Dashboard Financiero
+            </h2>
+            <p class="text-muted small mb-0">Vista general de tus finanzas</p>
+        </div>
+        <button class="btn btn-outline-primary btn-sm"
+                onclick="location.reload()"
+                data-intro="Actualiza todos los datos para ver la información más reciente en tiempo real."
+                data-step="3">
+            <i class="fas fa-sync-alt me-2"></i>Actualizar
+        </button>
+    </div>
+
+    <!-- Patrimonio y Saldos Principales -->
+    <div class="row g-3 mb-4"
+         data-intro="Estas tres métricas clave resumen tu situación patrimonial: cuánto tienes (saldo), cuánto debes (deuda) y tu riqueza neta (patrimonio)."
+         data-step="4">
+        <div class="col-md-4">
+            <div class="card h-100 border-primary shadow-sm"
+                 data-intro="Patrimonio Neto: es tu saldo total menos tus deudas. Si es positivo, tienes más activos que pasivos. Es el indicador más importante de tu salud financiera."
+                 data-step="5">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <small class="text-muted">Patrimonio Neto</small>
+                        <i class="fas fa-coins fs-3 text-primary opacity-25"></i>
+                    </div>
+                    <h2 class="fw-bold mb-0 text-primary" id="netWorth">$ -</h2>
+                    <small class="text-muted">Saldo - Deudas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-success shadow-sm"
+                 data-intro="Saldo Total: suma de todo el dinero disponible en tus cuentas (banco, efectivo, etc.). Es tu liquidez inmediata."
+                 data-step="6">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <small class="text-muted">Saldo Total</small>
+                        <i class="fas fa-wallet fs-3 text-success opacity-25"></i>
+                    </div>
+                    <h2 class="fw-bold mb-0 text-success" id="totalBalance">$ -</h2>
+                    <small class="text-muted" id="accountCount">- cuentas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-danger shadow-sm"
+                 data-intro="Deuda en Tarjetas: total de consumos pendientes de pago en cuotas. Mantén este número controlado para evitar comprometer tu flujo futuro."
+                 data-step="7">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <small class="text-muted">Deuda Tarjetas</small>
+                        <i class="fas fa-credit-card fs-3 text-danger opacity-25"></i>
+                    </div>
+                    <h2 class="fw-bold mb-0 text-danger" id="totalDebt">$ -</h2>
+                    <small class="text-muted" id="installmentCount">- cuotas activas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mes Actual vs Anterior -->
+    <div class="row g-3 mb-4"
+         data-intro="Estas tarjetas comparan tu mes actual con el anterior: ingresos, gastos, ahorro generado y ritmo de consumo diario. Te ayudan a detectar cambios en tus hábitos."
+         data-step="8">
+        <div class="col-md-3">
+            <div class="card h-100 border-success shadow-sm"
+                 data-intro="Ingresos del mes: total de dinero que recibiste este mes. El badge muestra si aumentaron o disminuyeron respecto al mes pasado."
+                 data-step="9">
+                <div class="card-body">
+                    <small class="text-success fw-bold text-uppercase">Ingresos (mes actual)</small>
+                    <h3 class="fw-bold mb-1 text-success" id="currentIncome">$ -</h3>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge" id="incomeVariation">-</span>
+                        <small class="text-muted">vs mes anterior</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-danger shadow-sm"
+                 data-intro="Gastos del mes: total de egresos registrados. Compara con el mes anterior para ver si estás gastando más o menos."
+                 data-step="10">
+                <div class="card-body">
+                    <small class="text-danger fw-bold text-uppercase">Gastos (mes actual)</small>
+                    <h3 class="fw-bold mb-1 text-danger" id="currentExpense">$ -</h3>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge" id="expenseVariation">-</span>
+                        <small class="text-muted">vs mes anterior</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-info shadow-sm"
+                 data-intro="Ahorro del mes: diferencia entre ingresos y gastos. La tasa de ahorro te dice qué porcentaje de tus ingresos estás guardando."
+                 data-step="11">
+                <div class="card-body">
+                    <small class="text-info fw-bold text-uppercase">Ahorro (mes actual)</small>
+                    <h3 class="fw-bold mb-1 text-info" id="currentSavings">$ -</h3>
+                    <small class="text-muted">Tasa: <span id="savingsRate">-</span>%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-warning shadow-sm"
+                 data-intro="Gasto Diario Promedio: cuánto gastas en promedio por día. Te ayuda a proyectar si terminarás el mes dentro de tu presupuesto."
+                 data-step="12">
+                <div class="card-body">
+                    <small class="text-warning fw-bold text-uppercase">Gasto Diario Promedio</small>
+                    <h3 class="fw-bold mb-1 text-warning" id="avgDailyExpense">$ -</h3>
+                    <small class="text-muted">Faltan <span id="daysLeft">-</span> días</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Categorías y Cuentas -->
+    <div class="row g-3 mb-4"
+         data-intro="Estos gráficos muestran dónde estás gastando más (por categoría) y cómo se distribuye tu dinero entre tus diferentes cuentas."
+         data-step="13">
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm"
+                 data-intro="Top Gastos: ranking de las categorías donde más dinero gastaste este mes. Ideal para identificar dónde puedes recortar si necesitas ahorrar."
+                 data-step="14">
+                <div class="card-header border-bottom">
+                    <h5 class="mb-0"><i class="fas fa-fire text-danger me-2"></i>Top Gastos del Mes</h5>
+                </div>
+                <div class="card-body" id="topExpenses">
+                    <div class="d-flex justify-content-center align-items-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm"
+                 data-intro="Distribución de Cuentas: muestra cómo está repartido tu dinero entre tus diferentes cuentas bancarias, efectivo, etc."
+                 data-step="15">
+                <div class="card-header border-bottom">
+                    <h5 class="mb-0"><i class="fas fa-wallet text-success me-2"></i>Distribución de Cuentas</h5>
+                </div>
+                <div class="card-body" id="accountsDistribution">
+                    <div class="d-flex justify-content-center align-items-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Proyecciones y Últimas Transacciones -->
+    <div class="row g-3 mb-4"
+         data-intro="Esta sección final combina proyecciones futuras (qué saldo tendrás al final del mes) y un historial de tus movimientos más recientes."
+         data-step="16">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm"
+                 data-intro="Proyecciones: estimaciones inteligentes de tu saldo futuro basadas en tu ritmo actual de gastos y cuotas pendientes. Te alerta si necesitas ajustar tu consumo."
+                 data-step="17">
+                <div class="card-header border-bottom">
+                    <h6 class="mb-0"><i class="fas fa-crystal-ball text-primary me-2"></i>Proyecciones</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3 pb-3 border-bottom">
+                        <small class="text-muted d-block mb-1">Saldo estimado fin de mes</small>
+                        <h5 class="fw-bold mb-0" id="estimatedBalance">$ -</h5>
+                    </div>
+                    <div class="mb-3 pb-3 border-bottom">
+                        <small class="text-muted d-block mb-1">Cuotas próximo mes</small>
+                        <h5 class="fw-bold mb-0 text-warning" id="nextMonthInstallments">$ -</h5>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block mb-1">Saldo proyectado próximo mes</small>
+                        <h5 class="fw-bold mb-0 text-primary" id="projectedBalance">$ -</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card h-100 shadow-sm"
+                 data-intro="Últimas Transacciones: historial rápido de tus movimientos más recientes. Te permite verificar que todo esté registrado correctamente."
+                 data-step="18">
+                <div class="card-header border-bottom">
+                    <h6 class="mb-0"><i class="fas fa-history text-secondary me-2"></i>Últimas Transacciones</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="recentTransactions">
+                            <tbody>
+                                <tr>
+                                    <td colspan="2" class="text-center py-5">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="~/js/Statistics.js" asp-append-version="true"></script>
+}

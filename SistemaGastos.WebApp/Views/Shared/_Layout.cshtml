@@ -1,0 +1,292 @@
+﻿@using SistemaGastos.Application.Interfaces
+@inject ICurrentUserService CurrentUser
+
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sistema Gastos</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link href="https://unpkg.com/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/popper.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://unpkg.com/gridjs/dist/gridjs.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://unpkg.com/@@hotwired/turbo@@8.0.2/dist/turbo.es2017-umd.js" defer></script>
+    <meta name="turbo-cache-control" content="no-cache">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/introjs.min.css">
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <div id="spinner" class="overlay" style="display:none;">
+        <div class="spinner-container"><i class="fa-solid fa-circle-notch fa-spin spinner-icon"></i></div>
+    </div>
+
+    <div id="overlay-mobile"></div>
+
+    <div class="d-flex" id="wrapper">
+
+        <!-- ============================================
+             SIDEBAR MEJORADO
+             ============================================ -->
+        <aside id="sidebar-wrapper">
+            <!-- Header con logo -->
+            <div class="sidebar-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="logo-wrapper">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div class="brand-text">
+                        <h5 class="mb-0 fw-bold">SistemaGastos</h5>
+                        <small class="text-muted">v1.0</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu de navegación -->
+            <nav class="sidebar-nav">
+
+                <!-- Principal -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Principal</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a asp-controller="Home" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-house"></i>
+                                </div>
+                                <span class="nav-text">Dashboard</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Gestión Diaria -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Gestión Diaria</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a asp-controller="Transaction" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-money-bill-transfer"></i>
+                                </div>
+                                <span class="nav-text">Transacciones</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Account" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-building-columns"></i>
+                                </div>
+                                <span class="nav-text">Mis Cuentas</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Todo" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-list-check"></i>
+                                </div>
+                                <span class="nav-text">Tareas</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Análisis -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Análisis</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a asp-controller="CreditCardTransaction" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-regular fa-credit-card"></i>
+                                </div>
+                                <span class="nav-text">Tarjetas de crédito</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="TmpTransaction" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-timeline"></i>
+                                </div>
+                                <span class="nav-text">Proyección</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Transaction" asp-action="Statistics" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <span class="nav-text">Estadísticas</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Admin -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Administración</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a asp-controller="Category" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-tags"></i>
+                                </div>
+                                <span class="nav-text">Categorías</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Users" asp-action="Profile" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-user-gear"></i>
+                                </div>
+                                <span class="nav-text">Mi Perfil</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Footer del sidebar -->
+            <div class="sidebar-footer">
+                <div class="footer-content">
+                    <small class="text-muted">&copy; @DateTime.Now.Year SistemaGastos</small>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ============================================
+             CONTENT WRAPPER
+             ============================================ -->
+        <div id="page-content-wrapper">
+
+            <nav class="topbar">
+                <button class="btn btn-icon" id="menu-toggle" aria-label="Toggle menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+
+                <div class="flex-grow-1"></div>
+
+                <!-- Theme Switcher -->
+                <div class="dropdown">
+                    <button class="btn btn-icon" id="bd-theme" type="button" data-bs-toggle="dropdown" aria-label="Toggle theme">
+                        <i class="fa-solid fa-circle-half-stroke"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li>
+                            <button class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="light">
+                                <i class="fa-solid fa-sun text-warning"></i>
+                                <span>Claro</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="dark">
+                                <i class="fa-solid fa-moon text-primary"></i>
+                                <span>Oscuro</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="auto">
+                                <i class="fa-solid fa-circle-half-stroke text-secondary"></i>
+                                <span>Automático</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                @if (Context.Session.GetString("role") == "Admin")
+                {
+                    <li class="nav-item dropdown me-3">
+                        <a class="nav-link position-relative" href="#" id="notifDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell fs-5"></i> <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle notification-pulse">
+                                <span class="visually-hidden">Nuevas alertas</span>
+                            </span>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" aria-labelledby="notifDropdown" style="width: 320px; border-radius: 12px;">
+
+                            <li>
+                                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                    <span class="fw-bold text-muted small">NOTIFICACIONES</span>
+                                    <a href="#" class="text-decoration-none small text-primary">Marcar leídas</a>
+                                </div>
+                            </li>
+
+                            <li>
+                                <a class="dropdown-item py-2 px-3 d-flex align-items-start gap-2" href="#">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person-plus-fill text-primary"></i>
+                                    </div>
+
+                                    <div>
+                                        <p class="mb-0 small fw-semibold text-dark">Nuevo usuario registrado</p>
+                                        <p class="mb-0 small text-muted text-truncate" style="max-width: 200px;">Juan Perez (juan@email.com) se ha unido.</p>
+                                        <span class="text-secondary" style="font-size: 0.75rem;">Hace 5 min</span>
+                                    </div>
+
+                                    <span class="d-inline-block p-1 bg-primary rounded-circle mt-2"></span>
+                                </a>
+                            </li>
+
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li><a class="dropdown-item text-center small text-primary fw-bold py-2" href="/Admin/Usuarios">Ver todos los usuarios</a></li>
+                        </ul>
+                    </li>
+                }
+
+                <!-- Divider -->
+                <div class="topbar-divider"></div>
+
+                <!-- User Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-user" id="userDropdown" data-bs-toggle="dropdown" aria-label="User menu">
+                        <div class="user-avatar">
+                            <span>@Context.Session.GetString("username")?.Substring(0, 1).ToUpper()</span>
+                        </div>
+                        <span class="user-name">@Context.Session.GetString("username")</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                        <li>
+                            <a class="dropdown-item text-danger" asp-controller="Auth" asp-action="Logout">
+                                <i class="fa-solid fa-right-from-bracket me-2"></i>
+                                Cerrar sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/js/color-modes.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/intro.js@7.2.0/intro.min.js"></script>
+    <partial name="_NotificationPartial" />
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <button class="btn btn-primary btn-floating shadow-lg" 
+            id="btnAyudaGlobal" 
+            title="Ver tutorial del módulo actual"
+            style="display:none;">
+        <i class="fa-solid fa-question fs-5"></i>
+    </button>
+</body>
+</html>

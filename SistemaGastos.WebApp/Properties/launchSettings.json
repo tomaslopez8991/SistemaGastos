@@ -1,0 +1,41 @@
+﻿{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:28232",
+      "sslPort": 44330
+    }
+  },
+  "profiles": {
+    "SistemaGastos (Local)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "Auth/Login",
+      "applicationUrl": "https://localhost:7037;http://localhost:5125",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "Auth/Login",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "SistemaGastos (MonsterASP)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "Auth/Login",
+      "applicationUrl": "https://localhost:7037;http://localhost:5037",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Production"
+        // "Production" IGNORA el archivo Development.json y usa appsettings.json (Base Somee)
+      }
+    }
+  }
+}

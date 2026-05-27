@@ -1,0 +1,119 @@
+﻿@model SistemaGastos.Domain.Models.Login
+
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+    Layout = null; // El login no usa el layout principal
+}
+
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sistema Gastos</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.css" />
+    <link rel="stylesheet" href="~/css/Login.css" asp-append-version="true" />
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+    <div class="position-absolute top-0 end-0 p-4" style="z-index: 1050;">
+        <div class="dropdown">
+            <button class="btn btn-glass-nav dropdown-toggle d-flex align-items-center gap-2" type="button" id="bd-theme" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-solid fa-circle-half-stroke"></i>
+                <span class="visually-hidden">Toggle theme</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-2" aria-labelledby="bd-theme">
+                <li>
+                    <button type="button" class="dropdown-item d-flex align-items-center rounded-2 gap-2" data-bs-theme-value="light">
+                        <i class="fa-solid fa-sun opacity-50"></i> Light
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item d-flex align-items-center rounded-2 gap-2" data-bs-theme-value="dark">
+                        <i class="fa-solid fa-moon opacity-50"></i> Dark
+                    </button>
+                </li>
+                <li>
+                    <button type="button" class="dropdown-item d-flex align-items-center rounded-2 gap-2" data-bs-theme-value="auto">
+                        <i class="fa-solid fa-circle-half-stroke opacity-50"></i> Auto
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container d-flex justify-content-center">
+        <div class="card-glass">
+
+            <div class="text-center mb-4">
+                <div class="mb-3">
+                    <i class="fa-solid fa-wallet fa-3x text-primary"></i>
+                </div>
+                <h3 class="fw-bold text-white">Bienvenido</h3>
+                <p class="text-white-50 small">Ingresa tus credenciales para continuar</p>
+            </div>
+
+            <form asp-action="Login" asp-controller="Auth" method="post" data-turbo="false">
+
+                <div class="mb-3">
+                    <label asp-for="Username" class="form-label text-white-50 small fw-bold">USUARIO</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                        <input asp-for="Username" class="form-control form-control-icon" placeholder="usuario" autofocus required />
+                    </div>
+                    <span asp-validation-for="Username" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between">
+                        <label asp-for="Password" class="form-label text-white-50 small fw-bold">CONTRASEÑA</label>
+                        <a asp-controller="Auth" asp-action="ForgotPassword" class="link-secondary small">¿Olvidaste tu clave?</a>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                        <input asp-for="Password" type="password" class="form-control" id="passwordInput" placeholder="••••••••" required />
+                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword" style="border-color: rgba(255,255,255,0.1);">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4 form-check">
+                    <input class="form-check-input" type="checkbox" id="rememberMe">
+                    <label class="form-check-label text-white-50 small" for="rememberMe">
+                        Mantener sesión iniciada
+                    </label>
+                </div>
+
+                <div class="d-grid gap-2 mb-4">
+                    <button type="submit" class="btn btn-primary-glow shadow-sm">
+                        INGRESAR <i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+
+                <div class="text-center">
+                    <p class="text-white-50 mb-0 small">¿No tienes cuenta?</p>
+                    <a asp-controller="Auth" asp-action="Register" class="text-primary fw-bold text-decoration-none">Crear una cuenta nueva</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/Login.js" asp-append-version="true"></script>
+    <script src="~/js/color-modes.js"></script>
+
+    @await Html.PartialAsync("_NotificationPartial")
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+</body>
+</html>

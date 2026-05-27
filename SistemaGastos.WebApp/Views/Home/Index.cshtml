@@ -1,0 +1,173 @@
+﻿@model SistemaGastos.Application.DTOs.DashboardVM
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="text-center mb-5"
+     data-intro="¡Bienvenido a SistemaGastos! Este es tu panel de control central donde verás un resumen rápido de tu situación financiera actual."
+     data-step="1">
+    <h1 class="display-4 fw-bold" style="text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+        SistemaGastos <span class="text-primary">2.0</span>
+    </h1>
+    <p class="lead">Resumen financiero al @DateTime.Now.ToString("dd/MM/yyyy")</p>
+</div>
+
+<div class="row g-4 mb-5"
+     data-intro="Estas tres tarjetas te muestran tus métricas financieras clave: tu saldo total disponible, cuánto gastaste este mes y cuánto debes en tarjetas de crédito."
+     data-step="2">
+
+    <!-- Saldo Total -->
+    <div class="col-md-4">
+        <div class="card card-glass-modern border-0 h-100"
+             data-intro="Saldo Total: es la suma de todo tu dinero disponible en cuentas bancarias, efectivo y otros activos. Este número te dice cuánta liquidez tienes en este momento."
+             data-step="3">
+            <div class="gradient-overlay gradient-success"></div>
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="metric-badge bg-success bg-opacity-10">
+                        <i class="fa-solid fa-wallet text-success fa-lg"></i>
+                    </div>
+                    <span class="badge text-success bg-success bg-opacity-10 border border-success">
+                        <i class="fa-solid fa-trending-up me-1"></i>Activo
+                    </span>
+                </div>
+                <div>
+                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Saldo Total</p>
+                    <h2 class="fw-bold mb-0 @(Model.SaldoTotal >= 0 ? "text-success" : "text-danger")" style="font-size: 2rem; letter-spacing: -1px;">
+                        @Model.SaldoTotal.ToString("C")
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gastos Registrados -->
+    <div class="col-md-4">
+        <div class="card card-glass-modern border-0 h-100"
+             data-intro="Gastos del Mes: muestra cuánto has gastado en el mes actual. Te ayuda a controlar si estás dentro de tu presupuesto o si necesitas ajustar tus hábitos."
+             data-step="4">
+            <div class="gradient-overlay gradient-danger"></div>
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="metric-badge bg-danger bg-opacity-10">
+                        <i class="fa-solid fa-money-bill-wave text-danger fa-lg"></i>
+                    </div>
+                    <span class="badge text-danger bg-danger bg-opacity-10 border border-danger">
+                        <i class="fa-solid fa-calendar me-1"></i>Mes
+                    </span>
+                </div>
+                <div>
+                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Gastos Registrados</p>
+                    <h2 class="fw-bold mb-0 text-danger" style="font-size: 2rem; letter-spacing: -1px;">
+                        @Model.GastosMes.ToString("C")
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consumos Tarjeta -->
+    <div class="col-md-4">
+        <div class="card card-glass-modern border-0 h-100"
+             data-intro="Deuda en Tarjetas: es el total de consumos pendientes de pago en tus tarjetas de crédito. Mantén este número bajo control para evitar intereses y recargos."
+             data-step="5">
+            <div class="gradient-overlay gradient-warning"></div>
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="metric-badge bg-warning bg-opacity-10">
+                        <i class="fa-regular fa-credit-card text-warning fa-lg"></i>
+                    </div>
+                    <span class="badge text-warning bg-warning bg-opacity-10 border border-warning">
+                        <i class="fa-solid fa-exclamation me-1"></i>Deuda
+                    </span>
+                </div>
+                <div>
+                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Consumos Tarjeta</p>
+                    <h2 class="fw-bold mb-0 text-warning" style="font-size: 2rem; letter-spacing: -1px;">
+                        @Model.DeudaTarjetas.ToString("C")
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<h4 class="mb-3"
+    data-intro="Accesos Rápidos: estos botones te llevan directamente a los módulos más usados del sistema. Haz clic en cualquiera para comenzar a trabajar."
+    data-step="6">
+    <i class="fa-solid fa-rocket me-2"></i>Accesos Rápidos
+</h4>
+
+<div class="row g-3"
+     data-intro="Desde aquí puedes acceder rápidamente a las funciones principales: proyectar tu cashflow, calcular consumos de tarjeta, ver tus tareas pendientes y gestionar categorías."
+     data-step="7">
+
+    <div class="col-6 col-md-3">
+        <a asp-controller="TmpTransaction"
+           asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm"
+           data-intro="Proyección / Cashflow: planifica tus ingresos y gastos futuros para saber cuánta liquidez tendrás en los próximos meses."
+           data-step="8">
+            <div class="card-body text-center">
+                <div class="icon-wrapper mb-3">
+                    <i class="fa-solid fa-calculator fa-3x text-info"></i>
+                </div>
+                <h6 class="mb-0 fw-bold">Proyección</h6>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a asp-controller="CreditCardTransaction"
+           asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm"
+           data-intro="Calculadora de Tarjetas: registra consumos, gestiona cuotas y controla los resúmenes de tus tarjetas de crédito."
+           data-step="9">
+            <div class="card-body text-center">
+                <div class="icon-wrapper mb-3">
+                    <i class="fa-solid fa-credit-card fa-3x text-primary"></i>
+                </div>
+                <h6 class="mb-0 fw-bold">Calculadora TC</h6>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a asp-controller="Todo"
+           asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm"
+           data-intro="Tareas: organiza tus pendientes financieros (pagos, trámites, recordatorios). Si hay tareas pendientes, verás un contador en rojo."
+           data-step="10">
+            <div class="card-body text-center">
+                <div class="icon-wrapper mb-3 position-relative d-inline-block">
+                    <i class="fa-solid fa-list-check fa-3x text-warning"></i>
+                    @if (Model.TareasPendientes > 0)
+                    {
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                            @Model.TareasPendientes
+                            <span class="visually-hidden">tareas pendientes</span>
+                        </span>
+                    }
+                </div>
+                <h6 class="mb-0 fw-bold">Tareas</h6>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-3">
+        <a asp-controller="Category"
+           asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm"
+           data-intro="Categorías: crea y gestiona las etiquetas que usarás para clasificar tus ingresos y gastos (Comida, Transporte, Salario, etc.)."
+           data-step="11">
+            <div class="card-body text-center">
+                <div class="icon-wrapper mb-3">
+                    <i class="fa-solid fa-tags fa-3x text-secondary"></i>
+                </div>
+                <h6 class="mb-0 fw-bold">Categorías</h6>
+            </div>
+        </a>
+    </div>
+
+</div>

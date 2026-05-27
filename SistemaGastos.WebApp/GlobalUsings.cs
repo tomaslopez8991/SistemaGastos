@@ -1,0 +1,16 @@
+﻿global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.AspNetCore.Mvc.Rendering;
+global using Microsoft.EntityFrameworkCore;
+global using System.ComponentModel.DataAnnotations;
+global using SistemaGastos.Domain.Models;
+global using SistemaGastos.Domain.Models.DTOs;
+global using SistemaGastos.Infraestructure;
+global using SistemaGastos.Application.ViewModels;
+global using SistemaGastos.Data;
+global using SistemaGastos.Infraestructure.Services;
+global using Newtonsoft.Json.Linq;
+global using SistemaGastos.Application.Interfaces;
+global using System.Diagnostics;
+global using System.Security.Cryptography;
+global using System.Text;
+global using System;

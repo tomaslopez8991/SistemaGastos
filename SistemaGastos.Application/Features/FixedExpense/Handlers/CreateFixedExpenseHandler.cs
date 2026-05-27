@@ -1,0 +1,29 @@
+﻿using MediatR;
+using SistemaGastos.Application.Features.FixedExpense.Commands;
+using SistemaGastos.Application.Interfaces;
+
+namespace SistemaGastos.Application.Features.FixedExpense.Handlers;
+
+public class CreateFixedExpenseHandler(IApplicationDbContext context)
+    : IRequestHandler<CreateFixedExpenseCommand, int>
+{
+    public async Task<int> Handle(CreateFixedExpenseCommand request, CancellationToken cancellationToken)
+    {
+        var expense = new SistemaGastos.Domain.Models.FixedExpense
+        {
+            UserID = request.UserID,
+            Name = request.Name,
+            Amount = request.Amount,
+            AccountID = request.AccountID,
+            CategoryID = request.CategoryID,
+            PaymentDay = request.PaymentDay,
+            LogoUrl = request.LogoUrl,
+            Active = true
+        };
+
+        await context.FixedExpense.AddAsync(expense, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+
+        return expense.ID;
+    }
+}

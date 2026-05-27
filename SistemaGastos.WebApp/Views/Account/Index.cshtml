@@ -1,0 +1,52 @@
+﻿@model IEnumerable<SistemaGastos.Domain.Models.Account>
+@Html.AntiForgeryToken()
+@{
+    ViewData["Title"] = "Cuentas";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    // Inicializar diccionario para almacenar totales por moneda
+    var currencyTotals = new Dictionary<string, decimal>();
+}
+
+<div id="accounts-container"
+     data-url-list="@Url.Action("GetAll", "Account")"
+     data-url-totals="@Url.Action("GetAccountTotals", "Account")"
+     data-url-create="@Url.Action("Create", "Account")"
+     data-url-edit="@Url.Action("Edit", "Account")"
+     data-url-delete="@Url.Action("Delete", "Account")"
+     data-url-transfer="@Url.Action("ProcessTransfer", "Account")"
+     data-intro="Bienvenido a Mi Billetera. Este módulo te permite gestionar todas tus cuentas bancarias, efectivo, tarjetas de crédito y ver tus saldos consolidados en tiempo real."
+     data-step="1">
+
+    <div class="d-flex justify-content-between align-items-center mb-4"
+         data-intro="Desde aquí puedes ver el resumen general de tu patrimonio líquido y agregar nuevas cuentas para controlar tu dinero."
+         data-step="2">
+        <div>
+            <h2 class="fw-bold mb-0">Mi Billetera</h2>
+            <p class="small">Gestiona tus saldos y liquidez</p>
+        </div>
+        <button class="btn btn-success btn-lg shadow-lg"
+                onclick="abrirModalCuenta()"
+                data-intro="Haz clic aquí para agregar una nueva cuenta. Puedes registrar cuentas bancarias, cajas de ahorro, efectivo, tarjetas de crédito y más."
+                data-step="3">
+            <i class="fa-solid fa-plus me-2"></i> Nueva Cuenta
+        </button>
+    </div>
+
+    <div class="row g-3 mb-5"
+         id="totals-wrapper"
+         data-intro="Estas tarjetas muestran tus saldos totales agrupados por moneda (ARS, USD, EUR, etc.). Te dan una visión rápida de tu patrimonio líquido en cada divisa."
+         data-step="4">
+    </div>
+
+    <div class="row g-4"
+         id="accounts-grid"
+         data-intro="Aquí se muestran todas tus cuentas en detalle. Cada tarjeta incluye el nombre, tipo, saldo actual y acciones rápidas como editar, eliminar o hacer transferencias."
+         data-step="5">
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/Account.js" asp-append-version="true"></script>
+}

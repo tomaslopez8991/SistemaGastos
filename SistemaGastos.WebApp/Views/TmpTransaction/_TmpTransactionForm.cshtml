@@ -1,0 +1,142 @@
+﻿@model SistemaGastos.Application.DTOs.TmpTransactionFormDto
+
+@{
+    Layout = null;
+}
+
+<form id="form-planning" class="tmp-form">
+    <input type="hidden" id="Transaction_ID" asp-for="Transaction.ID" />
+
+    @* ── Descripción ──────────────────────────────────────── *@
+    <div class="tmp-field mb-3">
+        <label asp-for="Transaction.Description" class="tmp-label">Descripción</label>
+        <input asp-for="Transaction.Description"
+               id="Transaction_Description"
+               class="form-control"
+               required
+               placeholder="Ej: Sueldo, Alquiler..." />
+        <span asp-validation-for="Transaction.Description" class="text-danger small"></span>
+    </div>
+
+    @* ── Categoría + Cuenta ───────────────────────────────── *@
+    <div class="row g-3 mb-3">
+        <div class="col-6">
+            <label asp-for="Transaction.CategoryID" class="tmp-label">Categoría</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                <select asp-for="Transaction.CategoryID"
+                        id="Transaction_CategoryID"
+                        class="form-select"
+                        asp-items="Model.Categories"
+                        required>
+                    <option value="">Selecciona una...</option>
+                </select>
+            </div>
+            <span asp-validation-for="Transaction.CategoryID" class="text-danger small"></span>
+        </div>
+        <div class="col-6">
+            <label asp-for="Transaction.AccountID" class="tmp-label">Cuenta</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-wallet"></i></span>
+                <select asp-for="Transaction.AccountID"
+                        id="Transaction_AccountID"
+                        class="form-select"
+                        asp-items="Model.Accounts">
+                    <option value="">— Sin asignar —</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    @* ── Monto + Fecha ────────────────────────────────────── *@
+    <div class="row g-3 mb-3">
+        <div class="col-6">
+            <label asp-for="Transaction.Amount" class="tmp-label">Monto</label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input asp-for="Transaction.Amount"
+                       id="Transaction_Amount"
+                       type="number"
+                       step="0.01"
+                       class="form-control fw-semibold text-end"
+                       placeholder="0,00"
+                       required />
+            </div>
+            <span asp-validation-for="Transaction.Amount" class="text-danger small"></span>
+        </div>
+
+        <div id="bloque-fecha" class="col-6">
+            <label asp-for="Transaction.DateTransaction" class="tmp-label">Mes de impacto</label>
+            <input asp-for="Transaction.DateTransaction"
+                   id="Transaction_DateTransaction"
+                   type="date"
+                   class="form-control"
+                   value="@(Model.Transaction.DateTransaction?.ToString("yyyy-MM-dd"))"
+                   required />
+            <span asp-validation-for="Transaction.DateTransaction" class="text-danger small"></span>
+        </div>
+    </div>
+
+    @* ── Panel de recurrencia (solo en creación) ───────────── *@
+    @if (Model.Transaction.ID == 0)
+    {
+        <div class="tmp-recurrence-box">
+            @* Toggle recurrencia *@
+            <div class="tmp-recurrence-toggle">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input"
+                           type="checkbox"
+                           id="checkRecurrente"
+                    @(Model.Transaction.EsRecurrente ? "checked" : "") />
+                    <label class="form-check-label" for="checkRecurrente">
+                        <span class="tmp-recurrence-title">
+                            <i class="fas fa-rotate me-1"></i>Repetir en meses futuros
+                        </span>
+                        <span class="tmp-recurrence-sub">Crea la misma transacción en los meses que elijas</span>
+                    </label>
+                </div>
+            </div>
+
+            @* Panel de meses — se muestra al activar el toggle *@
+            <div id="panel-meses" style="display:none;">
+                <div class="tmp-months-header">
+                    <i class="fas fa-calendar-alt me-1"></i>Seleccioná los meses
+                    <span class="tmp-months-hint">Ctrl+clic para seleccionar varios · Shift+clic para un rango</span>
+                </div>
+
+                @if (Model.NextMonths != null && Model.NextMonths.Any())
+                {
+                    @* Select multiple — reemplaza los checkboxes individuales.
+                       El JS lee: Array.from(select.selectedOptions).map(o => o.value)
+                       en lugar de .mes-recurrente:checked, manteniendo MesesSeleccionados compatible. *@
+                    <select id="selectMeses"
+                            class="form-select tmp-months-select"
+                            multiple
+                            size="@Math.Min(Model.NextMonths.Count(), 6)">
+                        @foreach (var mes in Model.NextMonths)
+                        {
+                            <option class="mes-recurrente" value="@mes.Value">@mes.Text</option>
+                        }
+                    </select>
+
+                    @* Acciones rápidas *@
+                    <div class="tmp-months-actions">
+                        <button type="button" class="tmp-month-action-btn" id="btnSelectAllMonths">
+                            <i class="fas fa-check-double me-1"></i>Todos
+                        </button>
+                        <button type="button" class="tmp-month-action-btn" id="btnClearMonths">
+                            <i class="fas fa-times me-1"></i>Ninguno
+                        </button>
+                        <span class="tmp-months-count" id="monthsSelectedCount">0 meses seleccionados</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="tmp-months-empty">
+                        <i class="fas fa-calendar-times me-1"></i>No hay meses futuros disponibles.
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</form>

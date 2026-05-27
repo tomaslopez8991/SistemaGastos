@@ -1,0 +1,208 @@
+﻿@{
+    ViewData["Title"] = "Proyección de gastos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div id="planning-container"
+     data-url-list="@Url.Action("GetTransactionsByMonth", "TmpTransaction")"
+     data-url-form="@Url.Action("GetTmpTransactionForm", "TmpTransaction")"
+     data-url-create="@Url.Action("Create", "TmpTransaction")"
+     data-url-delete="@Url.Action("Delete", "TmpTransaction")"
+     data-url-balances="@Url.Action("GetBalances", "TmpTransaction")"
+     data-url-confirm="@Url.Action("Confirm", "TmpTransaction")"
+     data-url-fixed-list="@Url.Action("GetList", "FixedExpense")"
+     data-url-fixed-form="@Url.Action("GetForm", "FixedExpense")"
+     data-url-fixed-save="@Url.Action("Save", "FixedExpense")"
+     data-url-fixed-pay="@Url.Action("PayNow", "FixedExpense")"
+     data-url-fixed-delete="@Url.Action("Delete", "FixedExpense")"
+     data-url-fixed-toggle="@Url.Action("ToggleActive", "FixedExpense")"
+     data-url-budget-list="@Url.Action("GetBudgetTab", "Budget")"
+     data-url-budget-form="@Url.Action("GetBudgetForm", "Budget")"
+     data-url-budget-save="@Url.Action("Save", "Budget")"
+     data-url-budget-delete="@Url.Action("Delete", "Budget")"
+     data-url-budget-copy="@Url.Action("CloneFromPreviousMonth", "Budget")"
+     data-intro="Bienvenido al módulo de Cashflow Pro. Aquí proyectas tu liquidez futura y administras tus gastos recurrentes en un solo lugar."
+     data-step="1">
+
+    @* ── Header ───────────────────────────────────────────── *@
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-semibold mb-0" style="font-size:22px;">
+                <i class="fa-solid fa-timeline text-primary me-2"></i>Proyección de gastos
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13px;">Línea de tiempo de liquidez y compromisos mensuales</p>
+        </div>
+        <div class="dropdown">
+            <button class="btn btn-primary dropdown-toggle d-flex align-items-center gap-2"
+                    type="button"
+                    id="btnCrearDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                <i class="fas fa-plus"></i>Nuevo
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="btnCrearDropdown">
+                <li>
+                    <a class="dropdown-item py-2" href="#" id="btnCrearPlanificado">
+                        <i class="fa-solid fa-calendar-day text-primary me-2"></i>Transacción planificada
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" href="#" id="btnNewExpense">
+                        <i class="fa-solid fa-repeat text-warning me-2"></i>Gasto fijo
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" href="#" id="btnNewBudget">
+                        <i class="fa-solid fa-chart-pie text-info me-2"></i>Presupuesto
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    @* ── Carrusel de meses ────────────────────────────────── *@
+    <div class="month-carousel-wrapper position-relative mb-4">
+        <button class="carousel-nav-btn carousel-nav-prev text-body" id="carouselPrev" style="display:none;">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="month-carousel" id="monthCarousel">
+            <div class="text-center w-100 text-body-secondary py-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                <span class="ms-2">Cargando proyección...</span>
+            </div>
+        </div>
+        <button class="carousel-nav-btn carousel-nav-next text-body" id="carouselNext" style="display:none;">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+    @* ── Dashboard de mes ─────────────────────────────────── *@
+    <div class="row g-3 mb-4" id="month-dashboard" style="display:none;">
+        <div class="col-md-3">
+            <div class="tmp-dash-card income">
+                <div>
+                    <div class="tmp-dash-label">Ingresos proyectados</div>
+                    <div class="tmp-dash-value" id="dash-income">$ —</div>
+                </div>
+                <i class="fa-solid fa-arrow-trend-up tmp-dash-icon"></i>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="tmp-dash-card expense">
+                <div>
+                    <div class="tmp-dash-label">Gastos únicos + fijos</div>
+                    <div class="tmp-dash-value" id="dash-expense">$ —</div>
+                    <div class="tmp-dash-sub">Fijos: <span id="dash-fixed-subtotal">$ —</span></div>
+                </div>
+                <i class="fa-solid fa-arrow-trend-down tmp-dash-icon"></i>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="tmp-dash-card installments">
+                <div>
+                    <div class="tmp-dash-label">Cuotas TC</div>
+                    <div class="tmp-dash-value" id="dash-installments">$ —</div>
+                    <div class="tmp-dash-sub" id="tc-payment-note" style="display:none;">
+                        <i class="fa-solid fa-check-circle me-1"></i>Pago total
+                    </div>
+                </div>
+                <i class="fa-solid fa-credit-card tmp-dash-icon"></i>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="tmp-dash-card balance">
+                <div>
+                    <div class="tmp-dash-label">Saldo proyectado</div>
+                    <div class="tmp-dash-value balance-val" id="dash-balance">$ —</div>
+                </div>
+                <i class="fa-solid fa-wallet tmp-dash-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    @* ── Card con tabs ────────────────────────────────────── *@
+    <div class="tx-table-card mb-4">
+        <div class="tmp-tabs-header">
+            <ul class="nav nav-tabs border-bottom-0" id="cashflowTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active tmp-tab-btn"
+                            id="planificados-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#planificados"
+                            type="button" role="tab">
+                        <i class="fa-solid fa-calendar-day me-2 text-primary"></i>Movimientos
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link tmp-tab-btn"
+                            id="fijos-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#fijos"
+                            type="button" role="tab">
+                        <i class="fa-solid fa-repeat me-2 text-warning"></i>Gastos fijos
+                        <span class="badge rounded-pill ms-1 tmp-badge-warning" id="badge-pending-fixed">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link tmp-tab-btn"
+                            id="presupuestos-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#presupuestos"
+                            type="button" role="tab">
+                        <i class="fa-solid fa-chart-pie me-2 text-info"></i>Presupuestos
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content" id="cashflowTabsContent">
+
+            @* Tab: Movimientos planificados *@
+            <div class="tab-pane fade show active p-4" id="planificados" role="tabpanel">
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-outline-danger btn-sm btn-borrar-masivo d-flex align-items-center gap-2" disabled>
+                        <i class="fas fa-trash"></i>Borrar seleccionados
+                    </button>
+                </div>
+                <div id="grid-wrapper"></div>
+            </div>
+
+            @* Tab: Gastos fijos *@
+            <div class="tab-pane fade p-4" id="fijos" role="tabpanel">
+                <div id="expenses-grid" class="row g-3">
+                    <div class="col-12 text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <span class="ms-2 small">Cargando compromisos...</span>
+                    </div>
+                </div>
+            </div>
+
+            @* Tab: Presupuestos *@
+            <div class="tab-pane fade p-4" id="presupuestos" role="tabpanel">
+                <div id="budgets-grid" class="row g-4">
+                    <div class="col-12 text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                        <span class="ms-2 small">Cargando presupuestos...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Collapse del breakdown (referenciado desde JS) *@
+    <div class="collapse" id="balanceBreakdownCollapse">
+        <div class="tx-table-card mb-4 p-4" id="breakdownBody">
+            <div class="row g-3"></div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/TmpTransaction.js" asp-append-version="true"></script>
+    <script src="~/js/FixedExpense.js" asp-append-version="true"></script>
+    <script src="~/js/Budget.js" asp-append-version="true"></script>
+}

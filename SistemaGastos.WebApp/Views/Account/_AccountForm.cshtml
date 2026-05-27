@@ -1,0 +1,84 @@
+﻿@model SistemaGastos.Application.DTOs.AccountDto
+@{
+    Layout = null;
+}
+
+<form id="form-account">
+    <input type="hidden" asp-for="ID" />
+
+    <div class="row mb-3 text-start">
+        <div class="col-md-6">
+            <label asp-for="Name" class="form-label fw-bold small text-uppercase">Nombre</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-tag"></i></span>
+                <input asp-for="Name" class="form-control" placeholder="Ej: Visa Galicia, Efectivo..." required />
+            </div>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Type" class="form-label fw-bold small text-uppercase">Tipo de Cuenta</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-list"></i></span>
+                <select asp-for="Type" class="form-select" required>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Banco">Banco / CBU</option>
+                    <option value="BilleteraVirtual">Billetera Virtual</option>
+                    <option value="TarjetaCredito">Tarjeta de Crédito</option>
+                    <option value="Crypto">Cripto / Inversión</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3 text-start">
+        <div class="col-md-6">
+            <label asp-for="Currency" class="form-label fw-bold small text-uppercase">Moneda</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-coins"></i></span>
+                <select asp-for="Currency" class="form-select">
+                    <option value="ARS">ARS (Pesos)</option>
+                    <option value="USD">USD (Dólares)</option>
+                    <option value="USDT">USDT (Cripto)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <label asp-for="Balance" class="form-label fw-bold small text-uppercase">Saldo Actual</label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input asp-for="Balance" type="number" step="0.01" class="form-control" placeholder="0.00" required />
+            </div>
+        </div>
+    </div>
+
+    <div id="credit-card-fields" class="bg-light p-3 rounded border mb-3" style="display:none;">
+        <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-credit-card me-2"></i>Configuración de Tarjeta</h6>
+        <div class="row">
+            <div class="col-6">
+                <label asp-for="ClosingDay" class="form-label fw-bold small">Día de Cierre</label>
+                <input asp-for="ClosingDay" type="number" min="1" max="31" class="form-control" placeholder="Ej: 24" />
+                <small class="text-muted" style="font-size: 0.7em;">Día que cierra el resumen.</small>
+            </div>
+            <div class="col-6">
+                <label asp-for="DueDay" class="form-label fw-bold small">Día de Vencimiento</label>
+                <input asp-for="DueDay" type="number" min="1" max="31" class="form-control" placeholder="Ej: 5" />
+                <small class="text-muted" style="font-size: 0.7em;">Día límite de pago.</small>
+            </div>
+        </div>
+    </div>
+
+</form>
+
+<script>
+    function toggleCreditFields() {
+        var type = $('#Type').val();
+        if (type === 'TarjetaCredito') {
+            $('#credit-card-fields').slideDown();
+        } else {
+            $('#credit-card-fields').slideUp();
+        }
+    }
+
+    toggleCreditFields();
+    $(document).off('change', '#Type').on('change', '#Type', toggleCreditFields);
+</script>

@@ -1,0 +1,223 @@
+﻿/* =========================================
+   ESTILOS BASE (MODO OSCURO POR DEFECTO)
+   ========================================= */
+
+body {
+    /* Gradiente Oscuro */
+    background: linear-gradient(135deg, #1a1d20 0%, #0d1117 100%);
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    transition: background 0.5s ease;
+}
+
+/* Tarjeta Glassmorphism OSCURA */
+.card-glass {
+    background: rgba(33, 37, 41, 0.7);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+    animation: fadeIn 0.8s ease-out;
+    transition: all 0.3s ease;
+}
+
+/* Inputs OSCUROS */
+.form-control, .input-group-text {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff !important;
+    transition: all 0.3s ease;
+}
+
+.input-group-text {
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    color: #adb5bd;
+}
+
+.form-control {
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+    padding: 12px 15px;
+}
+
+    .form-control:focus {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.25);
+    }
+
+/* Botón del ojo */
+#togglePassword {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #adb5bd;
+}
+
+    #togglePassword:hover {
+        color: #fff;
+        background: rgba(255,255,255,0.1);
+    }
+
+
+/* =========================================
+   OVERRIDES PARA MODO CLARO (LIGHT MODE)
+   ========================================= */
+
+[data-bs-theme="light"] body {
+    /* Gradiente Claro y Fresco */
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+[data-bs-theme="light"] .card-glass {
+    /* Vidrio Blanco */
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    color: #212529; /* Texto oscuro */
+}
+
+/* Inputs CLAROS */
+[data-bs-theme="light"] .form-control,
+[data-bs-theme="light"] .input-group-text {
+    background-color: rgba(255, 255, 255, 0.9); /* Blanco sólido casi total */
+    border: 1px solid #ced4da;
+    color: #212529 !important;
+}
+
+    [data-bs-theme="light"] .form-control:focus {
+        background-color: #fff;
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.25);
+    }
+
+[data-bs-theme="light"] #togglePassword {
+    border-color: #ced4da;
+    color: #6c757d;
+}
+
+    [data-bs-theme="light"] #togglePassword:hover {
+        background: #e9ecef;
+        color: #000;
+    }
+
+/* FORZAR COLORES DE TEXTO EN MODO CLARO
+   Como en el HTML usamos clases como 'text-white', necesitamos invertirlas 
+   cuando estemos en modo claro */
+
+[data-bs-theme="light"] .text-white {
+    color: #212529 !important; /* Negro suave */
+}
+
+[data-bs-theme="light"] .text-white-50 {
+    color: #6c757d !important; /* Gris medio */
+}
+
+
+/* =========================================
+   BOTÓN DEL SELECTOR DE TEMA (FLOTANTE)
+   ========================================= */
+.btn-glass-nav {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: 50px;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+}
+
+    .btn-glass-nav:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+/* Ajuste del botón flotante para MODO CLARO */
+[data-bs-theme="light"] .btn-glass-nav {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #212529;
+}
+
+    [data-bs-theme="light"] .btn-glass-nav:hover {
+        background: rgba(0, 0, 0, 0.1);
+        color: #000;
+    }
+
+/* Ajuste del menú desplegable del tema */
+.dropdown-menu {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Menú en modo oscuro */
+[data-bs-theme="dark"] .dropdown-menu {
+    background-color: rgba(33, 37, 41, 0.9);
+}
+/* Menú en modo claro */
+[data-bs-theme="light"] .dropdown-menu {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0,0,0,0.1);
+}
+
+
+/* =========================================
+   ELEMENTOS COMUNES
+   ========================================= */
+.btn-primary-glow {
+    background: linear-gradient(45deg, #0d6efd, #0dcaf0);
+    border: none;
+    color: white;
+    padding: 12px;
+    border-radius: 50px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+    .btn-primary-glow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(13, 110, 253, 0.6);
+        color: white;
+    }
+
+.link-secondary {
+    color: #adb5bd;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+    .link-secondary:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+
+[data-bs-theme="light"] .link-secondary {
+    color: #6c757d;
+}
+
+    [data-bs-theme="light"] .link-secondary:hover {
+        color: #000;
+    }
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

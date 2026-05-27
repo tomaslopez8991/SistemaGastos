@@ -1,0 +1,200 @@
+﻿@model IEnumerable<SistemaGastos.Domain.Models.Login>
+@Html.AntiForgeryToken()
+
+@{
+    ViewData["Title"] = "Usuarios registrados";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<br />
+
+<table class="dTable table">
+    <thead>
+        <tr>
+            <th>
+                Usuario
+            </th>
+            <th>
+                Contraseña
+            </th>
+            <th>
+                Correo electrónico
+            </th>
+            <th>
+                Estado
+            </th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Username)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Password)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Email)
+            </td>
+            <td>
+                @if (!item.Active)
+                {
+                    <span class="text-danger fw-bold">Deshabilitado</span>
+                }
+                else
+                {
+                    <span class="text-success fw-bold">Habilitado</span>
+                }
+            </td>
+            <td>
+                @if (!item.Active)
+                {
+                    <button onclick="return habilitarUsuario(@item.ID)" class="btn btn-success"><i class="fa-regular fa-circle-check"></i></button>
+                }
+                else
+                {
+                    <button onclick="return deshabilitarUsuario(@item.ID)" class="btn btn-danger"><i class="fa-solid fa-user-slash"></i></button>
+                }
+                <button onclick="return eliminarUsuario(@item.ID)" class="btn btn-danger"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+<div class="text-center">
+    <span class="text-danger fw-bold">@ViewBag.errorMessage</span>
+</div>
+
+@section Scripts {
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+
+    <script>
+
+        function habilitarUsuario(id) {
+
+            Swal.fire({
+                title: "Desea habilitar el usuario?",
+                icon: "warning",
+                confirmButtonText: "Confirmar",
+                cancelButtonText: "Cancelar",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Llamada AJAX para eliminar el registro
+                    $.ajax({
+                        url: '@Url.Action("SetActive", "Login")',
+                        type: 'POST',
+                        data: { idUser: id },
+                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                        success: function (data) {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: 'Usuario habilitado con éxito!',
+                                    icon: 'success',
+                                    didClose: () => {
+                                        // Recargar la página actual después de cerrar la alerta
+                                        location.reload();
+                                    }
+                                });
+                            } else {
+                                Swal.fire('Error', 'Hubo un problema al intentar habilitar el usuario', 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.fire('Error', 'Hubo un problema al intentar habilitar el usuario', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function deshabilitarUsuario(id) {
+
+            Swal.fire({
+                title: "Desea deshabilitar el usuario?",
+                icon: "warning",
+                confirmButtonText: "Confirmar",
+                cancelButtonText: "Cancelar",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Llamada AJAX para eliminar el registro
+                    $.ajax({
+                        url: '@Url.Action("SetInactive", "Login")',
+                        type: 'POST',
+                        data: { idUser: id },
+                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                        success: function (data) {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: 'Usuario deshabilitado con éxito!',
+                                    icon: 'success',
+                                    didClose: () => {
+                                        // Recargar la página actual después de cerrar la alerta
+                                        location.reload();
+                                    }
+                                });
+                            } else {
+                                Swal.fire('Error', 'Hubo un problema al intentar deshabilitar el usuario', 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.fire('Error', 'Hubo un problema al intentar deshabilitar el usuario', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function eliminarUsuario(id) {
+            Swal.fire({
+                title: "Desea eliminar el registro?",
+                text: "Una vez eliminado, no podrá recuperarlo.",
+                icon: "warning",
+                confirmButtonText: "Confirmar",
+                cancelButtonText: "Cancelar",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Llamada AJAX para eliminar el registro
+                    $.ajax({
+                        url: '@Url.Action("Delete", "Login")',
+                        type: 'POST',
+                        data: { ID: id },
+                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                        success: function (data) {
+                            if (data.success) {
+                                Swal.fire({
+                                    title: 'Eliminado',
+                                    text: 'El registro ha sido eliminado correctamente',
+                                    icon: 'success',
+                                    didClose: () => {
+                                        // Recargar la página actual después de cerrar la alerta
+                                        location.reload();
+                                    }
+                                });
+                            } else {
+                                Swal.fire('Error', 'Hubo un problema al intentar eliminar el registro', 'error');
+                            }
+                        },
+                        error: function () {
+                            Swal.fire('Error', 'Hubo un problema al intentar eliminar el registro', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+    </script>
+
+}

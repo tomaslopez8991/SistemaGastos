@@ -1,0 +1,160 @@
+﻿@model SistemaGastos.Domain.Models.Login
+@Html.AntiForgeryToken()
+@{
+    ViewData["Title"] = "Crear Cuenta";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sistema Gastos</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.css" />
+    <link rel="stylesheet" href="~/css/Login.css" asp-append-version="true" />
+</head>
+<body>
+
+    <div class="position-absolute top-0 end-0 p-4" style="z-index: 1050;">
+        <div class="dropdown">
+            <button class="btn btn-glass-nav dropdown-toggle d-flex align-items-center gap-2" type="button" id="bd-theme" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fa-solid fa-circle-half-stroke"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-2">
+                <li><button class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="light"><i class="fa-solid fa-sun opacity-50"></i> Light</button></li>
+                <li><button class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="dark"><i class="fa-solid fa-moon opacity-50"></i> Dark</button></li>
+                <li><button class="dropdown-item d-flex align-items-center gap-2" data-bs-theme-value="auto"><i class="fa-solid fa-circle-half-stroke opacity-50"></i> Auto</button></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container d-flex justify-content-center">
+        <div class="card-glass" style="max-width: 480px;">
+            <div class="text-center mb-4">
+                <h3 class="fw-bold text-white">Crear Cuenta</h3>
+                <p class="text-white-50 small">Únete a SistemaGastos gratis</p>
+            </div>
+
+            <form id="registerForm">
+                <div class="mb-3">
+                    <label class="form-label text-white-50 small fw-bold">USUARIO</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                        <input asp-for="Username" class="form-control" placeholder="Elige tu usuario" required />
+                    </div>
+                    <span asp-validation-for="Username" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white-50 small fw-bold">EMAIL</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+                        <input asp-for="Email" type="email" class="form-control" placeholder="tu@email.com" required />
+                    </div>
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label text-white-50 small fw-bold">CONTRASEÑA</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                        <input asp-for="Password" type="password" class="form-control" id="updatePass" placeholder="Mínimo 6 caracteres" required />
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-white-50 small fw-bold">CONFIRMAR</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-check-double"></i></span>
+                        <input type="password" class="form-control" id="updatePassConfirm" placeholder="Repite la contraseña" required />
+                    </div>
+                    <span id="updatePassConfirmError" class="text-danger small d-block mt-1"></span>
+                </div>
+
+                <div class="d-grid gap-2 mb-4">
+                    <button type="button" onclick="submitRegisterForm()" class="btn btn-primary-glow shadow-sm">
+                        REGISTRARME <i class="fa-solid fa-user-plus ms-2"></i>
+                    </button>
+                </div>
+
+                <div class="text-center">
+                    <p class="text-white-50 mb-0 small">¿Ya tienes cuenta?</p>
+                    <a href="/Auth" class="text-primary fw-bold text-decoration-none">Iniciar Sesión</a>
+                </div>
+
+            </form>
+
+            <div id="alertContainer" class="mt-3"></div>
+
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/color-modes.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        function submitRegisterForm() {
+            let password = document.getElementById("updatePass").value;
+            let confirm = document.getElementById("updatePassConfirm").value;
+            let errorSpan = document.getElementById("updatePassConfirmError");
+
+            if (password !== confirm) {
+                errorSpan.textContent = "Las contraseñas no coinciden ❌";
+                return;
+            }
+            errorSpan.textContent = "";
+
+            // Recopilar datos
+            let username = $('input[name="Username"]').val();
+            let email = $('input[name="Email"]').val();
+
+            if(!username || !email || !password) {
+                Swal.fire('Atención', 'Completa todos los campos', 'warning');
+                return;
+            }
+
+            // Enviar AJAX
+            var formData = { Username: username, Email: email, Password: password };
+
+            $.ajax({
+                url: '@Url.Action("Register", "Login")',
+                type: 'POST',
+                data: formData,
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                beforeSend: function() {
+                    // Opcional: Mostrar spinner o deshabilitar botón
+                },
+                success: function (data) {
+                    if (data.success) {
+                        Swal.fire({
+                            title: '¡Cuenta Creada!',
+                            text: 'Tu registro fue exitoso. Por favor inicia sesión.',
+                            icon: 'success',
+                            confirmButtonColor: '#0d6efd'
+                        }).then(() => {
+                            window.location = "/Login";
+                        });
+                    } else {
+                        Swal.fire('Error', data.message, 'error');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Error', 'Error de conexión con el servidor', 'error');
+                }
+            });
+        }
+    </script>
+
+    @section Scripts {
+        @{
+            await Html.RenderPartialAsync("_ValidationScriptsPartial");
+        }
+
+    }
+</body>
+</html>

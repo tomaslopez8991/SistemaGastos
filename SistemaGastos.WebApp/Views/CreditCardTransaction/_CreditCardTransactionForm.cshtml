@@ -1,0 +1,126 @@
+﻿@model SistemaGastos.Domain.Models.CreditCardTransaction
+
+@*
+    ViewBag.Accounts ya viene con SelectListGroup seteados desde GetTransactionForm()
+    — el Controller agrupa por Currency con SelectListGroup { Name = currency }.
+    Usamos asp-items directamente para que Razor renderice los <optgroup> nativamente.
+*@
+
+<form id="form-transaction" class="cc-single-form">
+    <input type="hidden" asp-for="ID" />
+    @Html.AntiForgeryToken()
+
+    @* ── Descripción ───────────────────────────────────────── *@
+    <div class="cc-field-group mb-3">
+        <label asp-for="Description" class="cc-label">Descripción</label>
+        <input asp-for="Description"
+               class="form-control"
+               placeholder="Ej: Netflix, Supermercado..." />
+        <span asp-validation-for="Description" class="text-danger small"></span>
+    </div>
+
+    @* ── Tarjeta + Monto ───────────────────────────────────── *@
+    <div class="row g-3 mb-3">
+        <div class="col-6">
+            <label asp-for="AccountID" class="cc-label">Tarjeta</label>
+            <select asp-for="AccountID"
+                    asp-items="ViewBag.Accounts"
+                    class="form-select cc-account-select"
+                    id="selectAccountSingle">
+                <option value="">— Seleccionar tarjeta —</option>
+            </select>
+        </div>
+        <div class="col-6">
+            <label asp-for="Amount" class="cc-label">Monto cuota</label>
+            <div class="input-group">
+                <span class="input-group-text cc-input-prefix" id="currencySymbolSingle">$</span>
+                <input asp-for="Amount"
+                       type="number" step="0.01"
+                       class="form-control text-end fw-semibold"
+                       placeholder="0,00" />
+            </div>
+            <small id="info-calculo" class="text-muted d-block mt-1 text-end"></small>
+        </div>
+    </div>
+
+    @* ── Fecha + Categoría ─────────────────────────────────── *@
+    <div class="row g-3 mb-3">
+        <div class="col-6">
+            <label asp-for="TransactionDate" class="cc-label">Fecha de compra</label>
+            <input asp-for="TransactionDate"
+                   type="date"
+                   class="form-control" />
+        </div>
+        <div class="col-6">
+            <label asp-for="CategoryID" class="cc-label">Categoría</label>
+            <select asp-for="CategoryID"
+                    asp-items="ViewBag.Categories"
+                    class="form-select">
+                <option value="">Seleccione...</option>
+            </select>
+        </div>
+    </div>
+
+    @* ── Cuotas ────────────────────────────────────────────── *@
+    <div id="section-installments" class="cc-installments-box mb-3">
+        <div class="cc-installments-label">
+            <i class="fas fa-calendar-alt me-1"></i>Cuotas
+        </div>
+        <div class="row g-3">
+            <div class="col-6">
+                <label asp-for="ActualInstallment" class="cc-label">Cuota actual</label>
+                <input asp-for="ActualInstallment"
+                       type="number" min="1"
+                       class="form-control text-center" />
+            </div>
+            <div class="col-6">
+                <label asp-for="Installments" class="cc-label">Total de cuotas</label>
+                <input asp-for="Installments"
+                       type="number" min="1"
+                       class="form-control text-center" />
+            </div>
+        </div>
+    </div>
+
+    @* ── Gasto fijo ────────────────────────────────────────── *@
+    <div class="cc-fixed-box">
+        <input asp-for="Fixed"
+               id="chkFixedEdit"
+               class="form-check-input cc-fixed-check"
+               type="checkbox" />
+        <label class="form-check-label" for="chkFixedEdit">
+            <span class="cc-fixed-title">
+                <i class="fas fa-lock me-1"></i>Gasto fijo / Suscripción
+            </span>
+            <span class="cc-fixed-subtitle">Se cobra todos los meses automáticamente</span>
+        </label>
+    </div>
+</form>
+
+<script>
+    (function () {
+        // Actualiza el símbolo de moneda ($  / U$S) según el optgroup de la tarjeta seleccionada
+        var $sel = $('#selectAccountSingle');
+        var $sym = $('#currencySymbolSingle');
+
+        function updateSymbol() {
+            var $opt = $sel.find('option:selected');
+            // El nombre del grupo es el label del optgroup padre
+            var groupLabel = $opt.closest('optgroup').attr('label') || 'ARS';
+            $sym.text(groupLabel === 'USD' ? 'U$S' : '$');
+        }
+
+        $sel.on('change', updateSymbol);
+        updateSymbol();
+
+        // Oculta/muestra sección cuotas al marcar gasto fijo
+        $('#chkFixedEdit').on('change', function () {
+            $('#section-installments').toggle(!this.checked);
+        });
+
+        // Estado inicial: si ya está marcado como fijo, ocultar cuotas
+        if ($('#chkFixedEdit').is(':checked')) {
+            $('#section-installments').hide();
+        }
+    })();
+</script>

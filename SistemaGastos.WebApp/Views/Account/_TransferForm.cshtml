@@ -1,0 +1,56 @@
+﻿@model SistemaGastos.Application.DTOs.TransferDto
+@{
+    Layout = null;
+}
+
+<form id="form-transfer">
+    <input type="hidden" asp-for="OriginAccountId" />
+    <input type="hidden" id="AvailableBalanceValue" value="@ViewBag.AvailableBalance" />
+
+    <div class="p-3 mb-4 rounded-4 border border-secondary border-opacity-25 bg-dark d-flex align-items-center shadow-sm">
+        <div class="bg-primary bg-opacity-25 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+            <i class="fa-solid fa-arrow-right-arrow-left fs-5"></i>
+        </div>
+        <div class="flex-grow-1 text-start">
+            <div class="text-uppercase fw-bold text-white-50 mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">Cuenta Origen</div>
+            <div class="fs-6 fw-bold text-white mb-0">@ViewBag.OriginName</div>
+        </div>
+        <div class="text-end">
+            <div class="text-uppercase fw-bold text-white-50 mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">Disponible</div>
+            <div class="fw-bold text-success">@(((decimal)ViewBag.AvailableBalance).ToString("C"))</div>
+        </div>
+    </div>
+
+    <div class="mb-4 text-start">
+        <label asp-for="DestinationAccountId" class="form-label fw-bold text-white-50 text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Transferir Hacia</label>
+        <select asp-for="DestinationAccountId" class="form-select form-select-lg bg-dark text-white border-secondary shadow-sm" asp-items="ViewBag.DestinationAccounts" required>
+            <option value="">Seleccione cuenta destino...</option>
+        </select>
+        <div class="form-text small text-muted mt-2"><i class="fa-solid fa-circle-info me-1"></i> Solo se muestran cuentas de la misma moneda.</div>
+    </div>
+
+    <div class="mb-2 text-start">
+        <label asp-for="Amount" class="form-label fw-bold text-white-50 text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">Monto a transferir</label>
+        <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border border-secondary border-opacity-50">
+            <span class="input-group-text bg-dark border-0 text-white-50 fs-4 px-4">$</span>
+            <input asp-for="Amount" type="number" step="100" class="form-control bg-dark border-0 text-white fs-2 fw-bold py-3" min="0" placeholder="0" id="TransferAmount" required style="box-shadow: none;" />
+        </div>
+    </div>
+
+    <div class="row mb-2 text-start">
+        <div class="col-12">
+            <div class="d-flex flex-column align-items-center justify-content-center p-3">
+                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2 m-0 p-0">
+                    <input class="form-check-input mt-0 shadow-sm ms-0" type="checkbox" role="switch" id="chkUseMaxBalance" style="width: 2.5em; height: 1.25em; cursor: pointer;">
+                    <label class="form-check-label small fw-bold ms-2 select-none" for="chkUseMaxBalance" style="cursor: pointer;">
+                        Enviar todo el disponible
+                    </label>
+                </div>
+                
+                <div id="transfer-warning" class="text-danger small mt-2 fw-bold text-center w-100" style="display: none;">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i> Sin saldo positivo disponible.
+                </div>
+            </div>
+        </div>
+    </div>
+</form>

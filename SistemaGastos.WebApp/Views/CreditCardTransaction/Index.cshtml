@@ -1,0 +1,108 @@
+﻿@{
+    ViewData["Title"] = "Tarjetas de crédito";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div id="credit-card-container"
+     data-url-list="@Url.Action("GetDatosTransaccionesTC", "CreditCardTransaction")"
+     data-url-create="@Url.Action("Create", "CreditCardTransaction")"
+     data-url-edit="@Url.Action("Edit", "CreditCardTransaction")"
+     data-url-delete="@Url.Action("Delete", "CreditCardTransaction")"
+     data-url-form="@Url.Action("GetTransactionForm", "CreditCardTransaction")"
+     data-url-multiple-form="@Url.Action("GetMultipleForm", "CreditCardTransaction")"
+     data-url-totals="@Url.Action("GetTotals", "CreditCardTransaction")"
+     data-intro="Bienvenido al módulo de Tarjetas de Crédito. Aquí registras todos tus consumos con tarjeta, calculas cuotas y controlas el monto total que deberás pagar en cada resumen."
+     data-step="1">
+
+    @* Header *@
+    <div class="d-flex justify-content-between align-items-start mb-4"
+         data-intro="Desde este encabezado puedes crear nuevos consumos, eliminar los seleccionados y tener una vista general de tu control de gastos con tarjeta."
+         data-step="2">
+        <div>
+            <h2 class="fw-semibold mb-0" style="font-size:22px;">
+                <i class="fa-regular fa-credit-card text-primary me-2"></i>Tarjetas de crédito
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13px;">Controlá tus consumos en tarjetas de crédito</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="deleteSelectedBtn"
+                    class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2"
+                    disabled
+                    data-intro="Selecciona varios consumos marcando sus casillas y luego usa este botón para eliminarlos en lote."
+                    data-step="3">
+                <i class="fas fa-trash"></i>Borrar seleccionados
+            </button>
+            <button id="btnCrear"
+                    class="btn btn-primary btn-sm d-flex align-items-center gap-2"
+                    data-intro="Haz clic aquí para registrar un nuevo consumo con tarjeta."
+                    data-step="4">
+                <i class="fas fa-plus"></i>Nuevo movimiento
+            </button>
+        </div>
+    </div>
+
+    @* Stats rápidas *@
+    <div class="cc-stat-row"
+         data-intro="Resumen rápido de tu deuda total en tarjetas."
+         data-step="5">
+        <div class="cc-stat-card">
+            <div class="cc-stat-label"><i class="fas fa-money-bill-1 me-1"></i>Total ARS</div>
+            <div class="cc-stat-value cc-expense" id="statTotalArs">$ —</div>
+        </div>
+        <div class="cc-stat-card">
+            <div class="cc-stat-label"><i class="fas fa-dollar-sign me-1"></i>Total USD</div>
+            <div class="cc-stat-value cc-blue" id="statTotalUsd">U$S —</div>
+        </div>
+        <div class="cc-stat-card">
+            <div class="cc-stat-label"><i class="fas fa-calculator me-1"></i>Total estimado (ARS)</div>
+            <div class="cc-stat-value cc-expense" id="statTotalGlobal">$ —</div>
+        </div>
+        <div class="cc-stat-card">
+            <div class="cc-stat-label"><i class="fas fa-list me-1"></i>Cantidad de consumos</div>
+            <div class="cc-stat-value" id="statCount">—</div>
+        </div>
+    </div>
+
+    @* Barra de composición de deuda *@
+    <div class="cc-debt-card"
+         data-intro="Esta barra muestra qué porcentaje de tu deuda corresponde a gastos fijos versus variables."
+         data-step="6">
+        <div class="cc-debt-header">
+            <span class="cc-debt-title">Composición de deuda</span>
+            <span class="cc-dolar-badge" id="dolarBadge">Dólar bolsa: —</span>
+        </div>
+        <div class="cc-progress-track">
+            <div id="bar-fijo" class="cc-prog-fijo" style="width:0%"></div>
+            <div id="bar-variable" class="cc-prog-var" style="width:0%"></div>
+        </div>
+        <div class="cc-debt-legend">
+            <div class="cc-legend-item">
+                <div class="cc-legend-dot" style="background:#378ADD"></div>
+                <span>Fijos</span>
+                <span class="cc-legend-val" id="hero-total-fijo">—</span>
+                <span class="cc-legend-pct" id="pct-fijo"></span>
+            </div>
+            <div class="cc-legend-item">
+                <div class="cc-legend-dot" style="background:#EF9F27"></div>
+                <span>Variables</span>
+                <span class="cc-legend-val" id="hero-total-var">—</span>
+                <span class="cc-legend-pct" id="pct-var"></span>
+            </div>
+        </div>
+    </div>
+
+    @* Tabla *@
+    <div class="tx-table-card"
+         data-intro="Listado completo de tus consumos con tarjeta. Podés ordenar, buscar, editar y eliminar."
+         data-step="7">
+        <div id="card-grid-wrapper"></div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/CreditCardTransactions.js" asp-append-version="true"></script>
+}
