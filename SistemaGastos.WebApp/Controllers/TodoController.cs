@@ -1,41 +1,28 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using SistemaGastos.Application.DTOs;
+using SistemaGastos.Application.Features.TodoTasks.Commands;
+using SistemaGastos.Application.Features.TodoTasks.Queries;
 
 namespace SistemaGastos.Controllers;
 
 [Authorize]
-public class TodoController(ApplicationDbContext context, ICurrentUserService currentUser) : Controller
+public class TodoController(IMediator mediator, ICurrentUserService currentUser) : Controller
 {
     public IActionResult Index()
     {
         if (!currentUser.IsAuthenticated)
             return RedirectToAction("Login", "Access");
-
         return View();
     }
 
     [HttpGet]
     public async Task<IActionResult> GetTasksJson()
     {
-        var username = currentUser.Username;
-        var user = await context.Login.FirstOrDefaultAsync(u => u.Username == username);
-        if (user == null) return Unauthorized();
+        var userId = currentUser.UserId ?? 0;
+        if (userId == 0) return Unauthorized();
 
-        var tasks = await context.TodoTask
-            .Where(t => t.UserID == user.ID)
-            .OrderBy(t => t.IsCompleted) // Primero pendientes
-            .ThenBy(t => t.DueDate)      // Luego por fecha
-            .Select(t => new
-            {
-                id = t.TaskId,
-                title = t.Title,
-                description = t.Description,
-                dueDate = t.DueDate,
-                isCompleted = t.IsCompleted,
-                // Calculamos si está vencida (solo si no está completa)
-                isOverdue = !t.IsCompleted && t.DueDate < DateTime.Today
-            })
-            .ToListAsync();
-
+        var tasks = await mediator.Send(new GetTasksQuery(userId));
         return Json(new { data = tasks });
     }
 
@@ -44,65 +31,33 @@ public class TodoController(ApplicationDbContext context, ICurrentUserService cu
     {
         if (id.HasValue)
         {
-            var task = await context.TodoTask.FindAsync(id);
+            var task = await mediator.Send(new GetTaskByIdQuery(id.Value));
             if (task == null) return NotFound();
             return PartialView("_TodoTaskForm", task);
         }
-        // Nueva tarea: Fecha de hoy por defecto
         return PartialView("_TodoTaskForm", new TodoTask { DueDate = DateTime.Now });
     }
 
     [HttpPost]
-    public async Task<IActionResult> Save([FromBody] TodoTask task)
+    public async Task<IActionResult> Save([FromBody] SaveTodoTaskDto dto)
     {
         if (!ModelState.IsValid) return Json(new { success = false, message = "Datos inválidos" });
 
-        var username = currentUser.Username;
-        var user = await context.Login.FirstOrDefaultAsync(u => u.Username == username);
-        task.UserID = user.ID;
-
-        if (task.TaskId > 0)
-        {
-            var existing = await context.TodoTask.FindAsync(task.TaskId);
-            if (existing == null) return NotFound();
-
-            existing.Title = task.Title;
-            existing.Description = task.Description;
-            existing.DueDate = task.DueDate;
-
-            context.TodoTask.Update(existing);
-        }
-        else
-        {
-            task.IsCompleted = false; // Siempre nace pendiente
-            context.TodoTask.Add(task);
-        }
-
-        await context.SaveChangesAsync();
-        return Json(new { success = true });
+        var result = await mediator.Send(new SaveTodoTaskCommand(dto));
+        return Json(new { success = result });
     }
 
     [HttpPost]
     public async Task<IActionResult> ToggleStatus(int id)
     {
-        var task = await context.TodoTask.FindAsync(id);
-        if (task == null) return Json(new { success = false });
-
-        task.IsCompleted = !task.IsCompleted; // Invertir estado
-        await context.SaveChangesAsync();
-
-        return Json(new { success = true, newState = task.IsCompleted });
+        var (success, newState) = await mediator.Send(new ToggleTodoTaskCommand(id));
+        return Json(new { success, newState });
     }
 
     [HttpPost]
     public async Task<IActionResult> Delete(int id)
     {
-        var task = await context.TodoTask.FindAsync(id);
-        if (task != null)
-        {
-            context.TodoTask.Remove(task);
-            await context.SaveChangesAsync();
-        }
+        await mediator.Send(new DeleteTodoTaskCommand(id));
         return Json(new { success = true });
     }
 }
