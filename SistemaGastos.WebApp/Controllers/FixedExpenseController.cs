@@ -18,10 +18,13 @@ public class FixedExpenseController(IMediator mediator, ICurrentUserService curr
     public IActionResult Index() => View();
 
     [HttpGet("GetList")]
-    public async Task<ActionResult<Response<List<FixedExpenseDto>>>> GetList()
+    public async Task<ActionResult<Response<List<FixedExpenseDto>>>> GetList(int? year, int? month)
     {
         int userID = currentUser.UserId ?? 0;
-        var expenses = await mediator.Send(new GetAllFixedExpensesQuery(userID));
+        var now = DateTime.Now;
+        var resolvedYear = year ?? now.Year;
+        var resolvedMonth = month ?? now.Month;
+        var expenses = await mediator.Send(new GetAllFixedExpensesQuery(userID, resolvedYear, resolvedMonth));
         return Ok(Response<List<FixedExpenseDto>>.Ok(expenses));
     }
 

@@ -12,14 +12,22 @@
     };
 
     let expensesData = [];
+    let activeYear = new Date().getFullYear();
+    let activeMonth = new Date().getMonth() + 1;
 
     init();
 
     function init() {
-        loadExpenses();
+        loadExpenses(activeYear, activeMonth);
         $('#btnNewExpense').on('click', (e) => { e.preventDefault(); openModal(); });
         $('#filterStatusFixed').on('change', applyFilters);
     }
+
+    window.cargarGastosFijos = function (year, month) {
+        activeYear = parseInt(year);
+        activeMonth = parseInt(month);
+        loadExpenses(activeYear, activeMonth);
+    };
 
     // =========================================================
     // HELPER: calcula días hasta el próximo vencimiento
@@ -55,26 +63,26 @@
     // =========================================================
     function getStatusBadge(expense) {
         if (!expense.active) {
-            return '<span class="badge text-bg-secondary">Pausado</span>';
+            return '<span class="badge text-bg-secondary"><i class="fas fa-pause me-1"></i>En pausa</span>';
         }
         if (expense.alreadyPaidThisMonth) {
-            return '<span class="badge text-bg-success"><i class="fas fa-check me-1"></i>Al día</span>';
+            return '<span class="badge text-bg-success"><i class="fas fa-check-circle me-1"></i>Al día</span>';
         }
 
         const days = calcDaysUntilDue(expense);
 
         if (days === null) return '<span class="badge text-bg-secondary">—</span>';
-        if (days < 0) return '<span class="badge text-bg-danger"><i class="fas fa-exclamation me-1"></i>Vencido</span>';
-        if (days === 0) return '<span class="badge text-bg-danger"><i class="fas fa-exclamation me-1"></i>Hoy</span>';
-        if (days <= 3) return `<span class="badge text-bg-warning"><i class="fas fa-clock me-1"></i>${days}d</span>`;
+        if (days < 0) return '<span class="badge text-bg-danger"><i class="fas fa-circle-exclamation me-1"></i>Vencido</span>';
+        if (days === 0) return '<span class="badge text-bg-danger"><i class="fas fa-circle-exclamation me-1"></i>Vence hoy</span>';
+        if (days <= 3) return `<span class="badge text-bg-warning"><i class="fas fa-clock me-1"></i>${days}d restantes</span>`;
         return `<span class="badge text-bg-light text-dark border">${days} días</span>`;
     }
 
     // =========================================================
     // RENDER DE CARDS
     // =========================================================
-    function loadExpenses() {
-        $.get(urls.list, function (response) {
+    function loadExpenses(year, month) {
+        $.get(urls.list, { year: year, month: month }, function (response) {
             if (!response.success || !response.data) { showError(); return; }
             expensesData = response.data;
             updateTabBadge();
@@ -119,34 +127,53 @@
 
         expenses.forEach(expense => {
             const isPaid = !!expense.alreadyPaidThisMonth;
+            const paidMonthName = expense.paidMonthName || '';
             const isActive = !!expense.active;
             const days = calcDaysUntilDue(expense);
 
-            // Card entera deshabilitada si está pagada este mes
-            const cardDisabled = isPaid ? 'fe-card-paid' : '';
-            const cardOpacity = !isActive ? 'opacity-50' : '';
+            // Clases de estado para la card
+            let cardStateClass = '';
+            if (isPaid) {
+                cardStateClass = 'fe-card-paid';
+            } else if (!isActive) {
+                cardStateClass = 'fe-card-paused';
+            } else if (days !== null && days < 0) {
+                cardStateClass = 'fe-card-overdue';
+            } else if (days !== null && days <= 3) {
+                cardStateClass = 'fe-card-urgent';
+            }
+
+            // Icono/logo con color según estado
+            let logoBg = 'bg-primary-subtle';
+            let logoIcon = 'text-primary';
+            if (isPaid) { logoBg = 'bg-success-subtle'; logoIcon = 'text-success'; }
+            else if (!isActive) { logoBg = 'bg-secondary-subtle'; logoIcon = 'text-secondary'; }
+            else if (days !== null && days < 0) { logoBg = 'bg-danger-subtle'; logoIcon = 'text-danger'; }
+            else if (days !== null && days <= 3) { logoBg = 'bg-warning-subtle'; logoIcon = 'text-warning-emphasis'; }
 
             const logoHtml = expense.logoUrl
                 ? `<img src="${expense.logoUrl}" alt="${expense.name}" class="rounded" style="width:40px;height:40px;object-fit:cover;">`
-                : `<div class="rounded bg-primary-subtle d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
-                       <i class="fas fa-receipt text-primary"></i>
+                : `<div class="rounded ${logoBg} d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                       <i class="fas fa-receipt ${logoIcon}"></i>
                    </div>`;
 
-            // Días hasta vencimiento — texto descriptivo
+            // Texto de estado debajo de cuenta/día
             let daysHtml = '';
-            if (isPaid) {
-                daysHtml = `<div class="d-flex align-items-center gap-2 text-success">
-                                <i class="fas fa-check-circle" style="width:16px;"></i>
-                                <span>Pagado este mes</span>
+            if (!isActive) {
+                daysHtml = `<div class="d-flex align-items-center gap-2 text-secondary">
+                                <i class="fas fa-pause-circle" style="width:16px;"></i>
+                                <span>Gasto en pausa</span>
                             </div>`;
+            } else if (isPaid) {
+                // vacío: la info de pago va en el footer strip
             } else if (days !== null) {
                 let daysClass = 'text-body-secondary';
                 let daysIcon = 'fa-calendar-day';
                 let daysText = `Vence en ${days} día${days !== 1 ? 's' : ''}`;
 
-                if (days < 0) { daysClass = 'text-danger'; daysIcon = 'fa-circle-exclamation'; daysText = `Vencido hace ${Math.abs(days)} día${Math.abs(days) !== 1 ? 's' : ''}`; }
-                if (days === 0) { daysClass = 'text-danger'; daysIcon = 'fa-circle-exclamation'; daysText = 'Vence hoy'; }
-                if (days <= 3 && days > 0) { daysClass = 'text-warning-emphasis'; daysIcon = 'fa-clock'; }
+                if (days < 0) { daysClass = 'text-danger fw-semibold'; daysIcon = 'fa-circle-exclamation'; daysText = `Vencido hace ${Math.abs(days)} día${Math.abs(days) !== 1 ? 's' : ''}`; }
+                else if (days === 0) { daysClass = 'text-danger fw-semibold'; daysIcon = 'fa-circle-exclamation'; daysText = 'Vence hoy'; }
+                else if (days <= 3) { daysClass = 'text-warning-emphasis fw-semibold'; daysIcon = 'fa-clock'; }
 
                 daysHtml = `<div class="d-flex align-items-center gap-2 ${daysClass}">
                                 <i class="fas ${daysIcon}" style="width:16px;"></i>
@@ -156,25 +183,8 @@
 
             // Botones de acción
             let actionsHtml = '';
-
             if (isPaid) {
-                // Pagado: botón Pagado deshabilitado + editar + toggle + eliminar
-                actionsHtml = `
-                    <button class="btn btn-success btn-sm flex-fill fw-bold" disabled>
-                        <i class="fas fa-check-double me-1"></i>Pagado
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button class="btn btn-outline-${isActive ? 'warning' : 'success'} btn-sm"
-                            onclick="toggleActive(${expense.id}, ${isActive})"
-                            title="${isActive ? 'Pausar' : 'Activar'}">
-                        <i class="fas fa-${isActive ? 'pause' : 'play'}"></i>
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
+                // Footer strip reemplaza los botones
             } else if (isActive) {
                 actionsHtml = `
                     <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="payExpense(${expense.id})">
@@ -183,9 +193,7 @@
                     <button class="btn btn-outline-primary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
                         <i class="fas fa-pen"></i>
                     </button>
-                    <button class="btn btn-outline-warning btn-sm"
-                            onclick="toggleActive(${expense.id}, true)"
-                            title="Pausar">
+                    <button class="btn btn-outline-warning btn-sm" onclick="toggleActive(${expense.id}, true)" title="Pausar">
                         <i class="fas fa-pause"></i>
                     </button>
                     <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
@@ -193,15 +201,13 @@
                     </button>
                 `;
             } else {
-                // Pausado: sin botón Pagar, solo editar + activar + eliminar
+                // Pausado: Reanudar como acción principal
                 actionsHtml = `
-                    <button class="btn btn-outline-primary btn-sm flex-fill" onclick="editExpense(${expense.id})" title="Editar">
-                        <i class="fas fa-pen"></i>
+                    <button class="btn btn-primary btn-sm flex-fill fw-bold" onclick="toggleActive(${expense.id}, false)" title="Reanudar gasto">
+                        <i class="fas fa-play me-1"></i>Reanudar
                     </button>
-                    <button class="btn btn-outline-success btn-sm"
-                            onclick="toggleActive(${expense.id}, false)"
-                            title="Activar">
-                        <i class="fas fa-play"></i>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
+                        <i class="fas fa-pen"></i>
                     </button>
                     <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
                         <i class="fas fa-trash"></i>
@@ -209,9 +215,17 @@
                 `;
             }
 
+            // Footer para gastos pagados (reemplaza los botones)
+            const paidFooter = isPaid
+                ? `<div class="fe-paid-footer mt-3">
+                       <i class="fas fa-circle-check"></i>
+                       <span>Pagado en ${paidMonthName || 'este mes'}</span>
+                   </div>`
+                : '';
+
             html += `
                 <div class="col-md-6 col-lg-4">
-                    <div class="card border-0 shadow-sm h-100 expense-card ${cardOpacity} ${cardDisabled}">
+                    <div class="card border-0 shadow-sm h-100 expense-card ${cardStateClass}">
                         <div class="card-body d-flex flex-column">
 
                             <div class="d-flex justify-content-between align-items-start mb-3">
@@ -227,7 +241,7 @@
 
                             <div class="mb-3">
                                 <div class="text-body-secondary small mb-1">Monto mensual</div>
-                                <h4 class="fw-bold mb-0 ${isPaid ? 'text-success' : 'text-primary-emphasis'}">
+                                <h4 class="fw-bold mb-0 ${isPaid ? 'text-success' : !isActive ? 'text-secondary' : 'text-primary-emphasis'}">
                                     ${culture.format(expense.amount)}
                                 </h4>
                             </div>
@@ -244,9 +258,10 @@
                                 ${daysHtml}
                             </div>
 
-                            <div class="d-flex gap-2 mt-auto">
-                                ${actionsHtml}
-                            </div>
+                            ${isPaid
+                                ? paidFooter
+                                : `<div class="d-flex gap-2 mt-auto">${actionsHtml}</div>`
+                            }
                         </div>
                     </div>
                 </div>
@@ -266,7 +281,7 @@
     }
 
     function notifyDashboardChanged() {
-        loadExpenses();
+        loadExpenses(activeYear, activeMonth);
         if (window.reloadCashflowBalances) window.reloadCashflowBalances();
     }
 

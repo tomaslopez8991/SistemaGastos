@@ -3675,26 +3675,50 @@ input.gridjs-input {
    ============================================ */
 
 /* ============================================
-   MÓDULO: GASTOS FIJOS — estado pagado
+   MÓDULO: GASTOS FIJOS — estados de card
    ============================================ */
 
-/* Card pagada este mes: fondo tenue verde, sin pointer-events en botones pagado */
+/* Pagado este mes */
 .expense-card.fe-card-paid {
     border: 1px solid var(--bs-success-border-subtle) !important;
     background: var(--bs-success-bg-subtle) !important;
 }
 
-    .expense-card.fe-card-paid .card-body {
-        opacity: .85;
-    }
+.expense-card.fe-card-paid .card-body {
+    opacity: .9;
+}
 
-    /* Botón Pagado deshabilitado — visual consistente */
-    .expense-card.fe-card-paid .btn-success[disabled] {
-        opacity: 1;
-        cursor: default;
-        background-color: var(--bs-success) !important;
-        border-color: var(--bs-success) !important;
-    }
+/* Footer strip de "Pagado en [mes]" */
+.fe-paid-footer {
+    border-top: 1px solid var(--bs-success-border-subtle);
+    padding-top: .5rem;
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    font-size: .8rem;
+    color: var(--bs-success-text-emphasis);
+    font-weight: 500;
+}
+
+/* Pausado: tono gris neutro, sin difuminar todo */
+.expense-card.fe-card-paused {
+    border: 1px solid var(--bs-secondary-border-subtle) !important;
+    background: var(--bs-secondary-bg-subtle) !important;
+}
+
+/* Vencido (días < 0): borde rojo */
+.expense-card.fe-card-overdue {
+    border: 1px solid var(--bs-danger-border-subtle) !important;
+    background: var(--bs-danger-bg-subtle) !important;
+}
+
+/* Urgente (≤ 3 días): borde naranja */
+.expense-card.fe-card-urgent {
+    border: 1px solid var(--bs-warning-border-subtle) !important;
+    background: var(--bs-warning-bg-subtle) !important;
+}
 
 /* ============================================
    FIN MÓDULO GASTOS FIJOS
