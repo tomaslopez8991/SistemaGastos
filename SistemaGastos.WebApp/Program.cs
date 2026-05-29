@@ -11,6 +11,8 @@ using SistemaGastos.Application.Behaviors;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Application.Validators;
 using SistemaGastos.Data;
+using SistemaGastos.Application.Interfaces;
+using SistemaGastos.Application.Options;
 using SistemaGastos.Infraestructure.Services;
 using SistemaGastos.WebApp.Services;
 using System;
@@ -20,12 +22,12 @@ using System.Net.Mail;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. CONFIGURACIÓN DE BASE DE DATOS
+// 1. CONFIGURACIï¿½N DE BASE DE DATOS
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, b => b.MigrationsAssembly("SistemaGastos.Infraestructure")));
 
-// 2. PERSISTENCIA DE LLAVES (DATA PROTECTION) - CRÍTICO EN SOMEE
+// 2. PERSISTENCIA DE LLAVES (DATA PROTECTION) - CRï¿½TICO EN SOMEE
 var keysFolder = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "keys");
 if (!Directory.Exists(keysFolder)) Directory.CreateDirectory(keysFolder);
 
@@ -33,14 +35,14 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
     .SetApplicationName("SistemaGastosApp");
 
-// 3. CONFIGURACIÓN DE COOKIES (POLÍTICA LAXA PARA QUE FUNCIONE SIEMPRE)
+// 3. CONFIGURACIï¿½N DE COOKIES (POLï¿½TICA LAXA PARA QUE FUNCIONE SIEMPRE)
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.CheckConsentNeeded = context => false;
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
 
-// 4. AGREGAR SERVICIO DE AUTENTICACIÓN (FALTABA ESTO)
+// 4. AGREGAR SERVICIO DE AUTENTICACIï¿½N (FALTABA ESTO)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -53,13 +55,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         };
     });
 
-// 5. CONFIGURACIÓN DE SESIÓN
+// 5. CONFIGURACIï¿½N DE SESIï¿½N
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(60);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
-    // IMPORTANTE: 'None' es lo más compatible para evitar problemas con el Proxy de Somee
+    // IMPORTANTE: 'None' es lo mï¿½s compatible para evitar problemas con el Proxy de Somee
     options.Cookie.SecurePolicy = CookieSecurePolicy.None;
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
@@ -79,6 +81,8 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
 builder.Services.AddScoped<IEmailTemplateHelper, EmailTemplateHelper>();
+builder.Services.AddTransient<IARCAService, ARCAServiceStub>();
+builder.Services.Configure<FiscalConfigOptions>(builder.Configuration.GetSection("FiscalConfig"));
 
 //AUTOMAPPING DE ENTIDADES
 builder.Services.AddAutoMapper(typeof(SistemaGastos.Application.Mappings.MappingProfile));
@@ -96,19 +100,19 @@ builder.Services.AddMediatR(cfg => {
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 });
 
-// 3. Registrar Validadores automáticamente
+// 3. Registrar Validadores automï¿½ticamente
 // Escanea todo el proyecto Application buscando clases que hereden de AbstractValidator
 builder.Services.AddValidatorsFromAssembly(typeof(SistemaGastos.Application.Features.Accounts.Validators.CreateAccountCommandValidator).Assembly);
 
 var app = builder.Build();
 
-// 6. CONFIGURACIÓN DE PROXY (CRÍTICO PARA HTTPS EN SOMEE)
+// 6. CONFIGURACIï¿½N DE PROXY (CRï¿½TICO PARA HTTPS EN SOMEE)
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-// Configuración Regional
+// Configuraciï¿½n Regional
 var defaultCulture = "es-AR";
 var ci = new CultureInfo(defaultCulture);
 ci.NumberFormat.NumberDecimalSeparator = ".";
@@ -135,11 +139,11 @@ app.UseMiddleware<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddlewa
 
 app.UseRouting();
 
-// 7. EL ORDEN IMPORTA (AQUÍ ESTABA EL ERROR PRINCIPAL)
-// Primero Sesión -> Luego Autenticación -> Al final Autorización
+// 7. EL ORDEN IMPORTA (AQUï¿½ ESTABA EL ERROR PRINCIPAL)
+// Primero Sesiï¿½n -> Luego Autenticaciï¿½n -> Al final Autorizaciï¿½n
 
-app.UseSession();          // <--- 1. Cargar Sesión
-app.UseAuthentication();   // <--- 2. Descifrar Quién soy (FALTABA)
+app.UseSession();          // <--- 1. Cargar Sesiï¿½n
+app.UseAuthentication();   // <--- 2. Descifrar Quiï¿½n soy (FALTABA)
 app.UseAuthorization();    // <--- 3. Verificar Permisos
 
 app.MapControllerRoute(

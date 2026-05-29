@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.Accounts.Commands;
 using SistemaGastos.Application.Features.Accounts.Queries;
@@ -6,6 +7,7 @@ using SistemaGastos.Application.Wrappers;
 
 namespace SistemaGastos.Controllers;
 
+[Authorize]
 public class AccountController(IMediator mediator) : Controller
 {
     public IActionResult Index()

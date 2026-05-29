@@ -1,0 +1,117 @@
+@model SistemaGastos.Application.DTOs.InvoicePreviewDto
+@using System.Globalization
+
+@{
+    var culture = new CultureInfo("es-AR");
+}
+
+<div class="modal-header border-bottom-0 pb-0">
+    <h5 class="modal-title fw-semibold">
+        <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>Vista previa &mdash; Factura C
+    </h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+</div>
+
+<div class="modal-body" id="invoicePreviewBody">
+
+    @if (!Model.IsConfigured)
+    {
+        <div class="alert alert-warning py-2 mb-3" style="font-size:13px;">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+            Modo <strong>simulado</strong> — complete los datos del emisor o configure
+            <code>FiscalConfig</code> en <em>appsettings.json</em> para habilitar ARCA real.
+        </div>
+    }
+
+    <input type="hidden" id="invoiceTransactionId" value="@Model.TransactionId" />
+
+    <div class="invoice-preview-card p-3 rounded border">
+
+        @* ── EMISOR ── *@
+        <p class="invoice-section-label">Emisor</p>
+        <div class="row g-2 mb-2">
+            <div class="col-7">
+                <label class="form-label invoice-field-label mb-1">Razón Social</label>
+                <input type="text" class="form-control form-control-sm"
+                       id="emisorRazonSocial" value="@Model.RazonSocial"
+                       placeholder="Razón Social" />
+            </div>
+            <div class="col-5">
+                <label class="form-label invoice-field-label mb-1">CUIT</label>
+                <input type="text" class="form-control form-control-sm"
+                       id="emisorCuit" value="@Model.Cuit"
+                       placeholder="00-00000000-0" />
+            </div>
+            <div class="col-7">
+                <label class="form-label invoice-field-label mb-1">Domicilio</label>
+                <input type="text" class="form-control form-control-sm"
+                       id="emisorDomicilio" value="@Model.Domicilio"
+                       placeholder="Domicilio fiscal" />
+            </div>
+            <div class="col-5">
+                <label class="form-label invoice-field-label mb-1">Punto de Venta</label>
+                <input type="text" class="form-control form-control-sm"
+                       id="puntoVenta" value="@Model.PuntoVenta"
+                       placeholder="0001" />
+            </div>
+        </div>
+
+        <hr class="my-2" />
+
+        @* ── COMPROBANTE ── *@
+        <div class="row g-2 mb-2">
+            <div class="col-4">
+                <span class="invoice-field-label">Tipo</span>
+                <div class="fw-semibold" style="font-size:14px;">@Model.TipoComprobante</div>
+            </div>
+            <div class="col-4">
+                <span class="invoice-field-label">Fecha</span>
+                <div class="fw-semibold" style="font-size:14px;">@Model.Fecha</div>
+            </div>
+            <div class="col-4">
+                <span class="invoice-field-label">Número</span>
+                <div class="fw-semibold text-body-secondary" style="font-size:14px;">Auto-generado</div>
+            </div>
+        </div>
+
+        <hr class="my-2" />
+
+        @* ── DETALLE ── *@
+        <p class="invoice-section-label">Detalle</p>
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div style="font-size:14px;">@Model.Descripcion</div>
+            <div class="fw-bold text-success ms-3" style="font-size:15px; white-space:nowrap;">
+                @Model.Importe.ToString("C", culture)
+            </div>
+        </div>
+
+        <hr class="my-2" />
+
+        @* ── RECEPTOR ── *@
+        <p class="invoice-section-label">Receptor</p>
+        <div class="row g-2">
+            <div class="col-7">
+                <label class="form-label invoice-field-label mb-1">Nombre / Razón Social</label>
+                <input type="text" class="form-control form-control-sm"
+                       id="receptorNombre"
+                       placeholder="Consumidor Final"
+                       value="Consumidor Final" />
+            </div>
+            <div class="col-5">
+                <label class="form-label invoice-field-label mb-1">CUIT / DNI</label>
+                <input type="text" class="form-control form-control-sm"
+                       id="receptorCuit"
+                       placeholder="00-00000000-0"
+                       value="00-00000000-0" />
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal-footer border-top-0 pt-2" id="invoiceModalFooter">
+    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-success btn-sm" id="btnEmitirFactura">
+        <i class="fa-solid fa-paper-plane me-1"></i>Emitir Factura
+    </button>
+</div>

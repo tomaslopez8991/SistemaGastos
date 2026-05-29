@@ -2632,6 +2632,31 @@ input.gridjs-input {
     color: #97C459;
 }
 
+/* ── Factura ARCA ───────────────────────────── */
+.invoice-preview-card {
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color) !important;
+}
+
+.invoice-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+    margin-bottom: 6px;
+}
+
+.invoice-field-label {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+}
+
+.invoice-result-success {
+    background-color: var(--bs-success-bg-subtle);
+    border: 1px solid var(--bs-success-border-subtle);
+}
+
 /* ── Botones de acción en tabla ────────────── */
 .tx-btn-action {
     display: inline-flex;
@@ -2661,6 +2686,17 @@ input.gridjs-input {
         border-color: #F09595;
     }
 
+    .tx-btn-action.inv {
+        color: #16a34a;
+        border-color: #86efac;
+    }
+
+    .tx-btn-action.inv:hover {
+        background: #ECFDF5;
+        color: #15803d;
+        border-color: #4ade80;
+    }
+
 [data-bs-theme="dark"] .tx-btn-action.edit:hover {
     background: #0C447C;
     color: #85B7EB;
@@ -2671,6 +2707,17 @@ input.gridjs-input {
     background: #791F1F;
     color: #F09595;
     border-color: #E24B4A;
+}
+
+[data-bs-theme="dark"] .tx-btn-action.inv {
+    color: #4ade80;
+    border-color: #166534;
+}
+
+[data-bs-theme="dark"] .tx-btn-action.inv:hover {
+    background: #14532d;
+    color: #86efac;
+    border-color: #4ade80;
 }
 
 /* ── Fecha ─────────────────────────────────── */

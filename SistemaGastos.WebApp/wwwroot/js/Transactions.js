@@ -19,7 +19,9 @@
         editForm: $container.data('url-edit-form'),
         dropdownData: $container.data('url-dropdown-data'),
         update: $container.data('url-update') || $container.data('url-save'),
-        createBulk: $container.data('url-create-bulk') || $container.data('url-create')
+        createBulk: $container.data('url-create-bulk') || $container.data('url-create'),
+        invoicePreview: $container.data('url-invoice-preview'),
+        emitInvoice: $container.data('url-emit-invoice')
     };
 
     let cachedAccounts = '<option value="">Seleccione</option>';
@@ -73,7 +75,7 @@
             `<span class="tx-badge ${t.isIncome ? 'tx-badge-income' : 'tx-badge-expense'}">${t.categoryName}</span>`,
             t.description || '<em class="text-muted" style="font-size:12px;">Sin descripción</em>',
             `<span class="tx-amount-${t.isIncome ? 'income' : 'expense'}">${t.isIncome ? '+' : '-'} ${t.amountFormatted}</span>`,
-            t.id
+            JSON.stringify({ id: t.id, isIncome: t.isIncome })
         ]);
     }
 
@@ -177,18 +179,29 @@
             {
                 id: 'acciones',
                 name: '',
-                width: '7%',
+                width: '10%',
                 sort: false,
-                formatter: (cell) => gridjs.html(`
-                    <div class="d-flex justify-content-center gap-1">
-                        <button class="tx-btn-action edit btn-edit" data-id="${cell}" title="Editar">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button class="tx-btn-action del btn-delete" data-id="${cell}" title="Eliminar">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                `)
+                formatter: (cell) => {
+                    let data;
+                    try { data = JSON.parse(cell); } catch { data = { id: cell, isIncome: false }; }
+                    const id = data.id;
+                    const invoiceBtn = data.isIncome
+                        ? `<button class="tx-btn-action inv btn-invoice" data-id="${id}" title="Generar Factura C">
+                               <i class="fa-solid fa-file-invoice"></i>
+                           </button>`
+                        : '';
+                    return gridjs.html(`
+                        <div class="d-flex justify-content-center gap-1">
+                            <button class="tx-btn-action edit btn-edit" data-id="${id}" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            ${invoiceBtn}
+                            <button class="tx-btn-action del btn-delete" data-id="${id}" title="Eliminar">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    `);
+                }
             }
         ],
         server: buildServerConfig(),
@@ -324,6 +337,114 @@
         });
         $('#lblEditTotalAmount').text(total.toLocaleString('es-AR', { minimumFractionDigits: 2 }));
     }
+
+    // ==========================================
+    // 8b. FACTURA ARCA – ABRIR PREVIEW
+    // ==========================================
+    $(document).off('click', '.btn-invoice').on('click', '.btn-invoice', function () {
+        const id = $(this).data('id');
+
+        // Resetear contenido del modal al spinner
+        $('#modalInvoiceContent').html(`
+            <div class="text-center p-5">
+                <div class="spinner-border text-success" role="status"></div>
+                <div class="mt-2 text-muted small">Cargando vista previa...</div>
+            </div>
+        `);
+
+        const modal = new bootstrap.Modal(document.getElementById('modalInvoice'));
+        modal.show();
+
+        $.get(`${urls.invoicePreview}?id=${id}`, function (html) {
+            $('#modalInvoiceContent').html(html);
+        }).fail(function () {
+            $('#modalInvoiceContent').html(`
+                <div class="modal-body text-center text-danger py-4">
+                    <i class="fa-solid fa-circle-xmark fa-2x mb-2"></i>
+                    <div>No se pudo cargar la vista previa de la factura.</div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            `);
+        });
+    });
+
+    // ==========================================
+    // 8c. FACTURA ARCA – EMITIR
+    // ==========================================
+    $(document).off('click', '#btnEmitirFactura').on('click', '#btnEmitirFactura', function () {
+        const transactionId      = parseInt($('#invoiceTransactionId').val());
+        const receptorNombre     = $('#receptorNombre').val().trim();
+        const receptorCuit       = $('#receptorCuit').val().trim();
+        const emisorRazonSocial  = $('#emisorRazonSocial').val().trim();
+        const emisorCuit         = $('#emisorCuit').val().trim();
+        const emisorDomicilio    = $('#emisorDomicilio').val().trim();
+        const puntoVenta         = $('#puntoVenta').val().trim();
+
+        if (!receptorNombre || !receptorCuit) {
+            Swal.fire('Atención', 'Completa los datos del receptor antes de emitir.', 'warning');
+            return;
+        }
+        if (!emisorRazonSocial || !emisorCuit) {
+            Swal.fire('Atención', 'Completa la Razón Social y CUIT del emisor antes de emitir.', 'warning');
+            return;
+        }
+
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i>Emitiendo...');
+
+        $.ajax({
+            url: urls.emitInvoice,
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            data: JSON.stringify({
+                transactionId,
+                receptorNombre,
+                receptorCuit,
+                emisorRazonSocial,
+                emisorCuit,
+                emisorDomicilio,
+                puntoVenta
+            }),
+            success: function (result) {
+                if (result.success) {
+                    $('#invoicePreviewBody').html(`
+                        <div class="text-center py-3">
+                            <div class="text-success mb-2">
+                                <i class="fa-solid fa-circle-check" style="font-size:3rem;"></i>
+                            </div>
+                            <h5 class="fw-semibold text-success mb-3">¡Factura emitida!</h5>
+                            <div class="invoice-result-success p-3 rounded">
+                                <div class="mb-1">
+                                    <span class="text-body-secondary" style="font-size:13px;">CAE:</span>
+                                    <strong class="text-success ms-1">${result.cae}</strong>
+                                </div>
+                                <div>
+                                    <span class="text-body-secondary" style="font-size:13px;">Vencimiento CAE:</span>
+                                    <strong class="ms-1">${result.caeVencimiento}</strong>
+                                </div>
+                            </div>
+                            <p class="text-body-secondary mt-3 mb-0" style="font-size:12px;">
+                                <i class="fa-solid fa-circle-info me-1"></i>${result.message}
+                            </p>
+                        </div>
+                    `);
+                    $('#invoiceModalFooter').html(
+                        '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>'
+                    );
+                } else {
+                    Swal.fire('Error', result.message || 'No se pudo emitir la factura.', 'error');
+                    $btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-1"></i>Emitir Factura');
+                }
+            },
+            error: function () {
+                Swal.fire('Error', 'Error del servidor al emitir la factura.', 'error');
+                $btn.prop('disabled', false).html('<i class="fa-solid fa-paper-plane me-1"></i>Emitir Factura');
+            }
+        });
+    });
 
     // ==========================================
     // 9. SUBMIT DE EDICIÓN
