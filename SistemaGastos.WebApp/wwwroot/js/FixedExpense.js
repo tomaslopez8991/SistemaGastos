@@ -12,14 +12,22 @@
     };
 
     let expensesData = [];
+    let activeYear = new Date().getFullYear();
+    let activeMonth = new Date().getMonth() + 1;
 
     init();
 
     function init() {
-        loadExpenses();
+        loadExpenses(activeYear, activeMonth);
         $('#btnNewExpense').on('click', (e) => { e.preventDefault(); openModal(); });
         $('#filterStatusFixed').on('change', applyFilters);
     }
+
+    window.cargarGastosFijos = function (year, month) {
+        activeYear = parseInt(year);
+        activeMonth = parseInt(month);
+        loadExpenses(activeYear, activeMonth);
+    };
 
     // =========================================================
     // HELPER: calcula días hasta el próximo vencimiento
@@ -58,7 +66,8 @@
             return '<span class="badge text-bg-secondary">Pausado</span>';
         }
         if (expense.alreadyPaidThisMonth) {
-            return '<span class="badge text-bg-success"><i class="fas fa-check me-1"></i>Al día</span>';
+            const label = expense.paidMonthName ? `Pagado en ${expense.paidMonthName}` : 'Al día';
+            return `<span class="badge text-bg-success"><i class="fas fa-check me-1"></i>${label}</span>`;
         }
 
         const days = calcDaysUntilDue(expense);
@@ -73,8 +82,8 @@
     // =========================================================
     // RENDER DE CARDS
     // =========================================================
-    function loadExpenses() {
-        $.get(urls.list, function (response) {
+    function loadExpenses(year, month) {
+        $.get(urls.list, { year: year, month: month }, function (response) {
             if (!response.success || !response.data) { showError(); return; }
             expensesData = response.data;
             updateTabBadge();
@@ -119,6 +128,7 @@
 
         expenses.forEach(expense => {
             const isPaid = !!expense.alreadyPaidThisMonth;
+            const paidMonthName = expense.paidMonthName || '';
             const isActive = !!expense.active;
             const days = calcDaysUntilDue(expense);
 
@@ -159,9 +169,10 @@
 
             if (isPaid) {
                 // Pagado: botón Pagado deshabilitado + editar + toggle + eliminar
+                const paidLabel = paidMonthName ? `Pagado en ${paidMonthName}` : 'Pagado';
                 actionsHtml = `
-                    <button class="btn btn-success btn-sm flex-fill fw-bold" disabled>
-                        <i class="fas fa-check-double me-1"></i>Pagado
+                    <button class="btn btn-success btn-sm flex-fill fw-bold" disabled title="${paidLabel}">
+                        <i class="fas fa-check-double me-1"></i>${paidLabel}
                     </button>
                     <button class="btn btn-outline-primary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
                         <i class="fas fa-pen"></i>
@@ -266,7 +277,7 @@
     }
 
     function notifyDashboardChanged() {
-        loadExpenses();
+        loadExpenses(activeYear, activeMonth);
         if (window.reloadCashflowBalances) window.reloadCashflowBalances();
     }
 

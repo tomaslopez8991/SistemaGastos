@@ -3,4 +3,4 @@ using SistemaGastos.Application.DTOs;
 
 namespace SistemaGastos.Application.Features.FixedExpense.Queries;
 
-public record GetAllFixedExpensesQuery(int UserID) : IRequest<List<FixedExpenseDto>>;
+public record GetAllFixedExpensesQuery(int UserID, int Year, int Month) : IRequest<List<FixedExpenseDto>>;

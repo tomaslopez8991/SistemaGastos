@@ -14,4 +14,6 @@ public class FixedExpenseDto
     public string? LogoUrl { get; set; }
     public bool Active { get; set; }
     public DateTime? LastGeneratedDate { get; set; }
+    public bool AlreadyPaidThisMonth { get; set; }
+    public string? PaidMonthName { get; set; }
 }

@@ -62,6 +62,11 @@
                 window.cargarPresupuestos(year, month);
             }
 
+            if (typeof window.cargarGastosFijos === 'function') {
+                const [year, month] = activeMonthKey.split('-');
+                window.cargarGastosFijos(year, month);
+            }
+
         }).fail(function (xhr) {
             console.error("Error GetBalances:", xhr);
             Swal.fire('Error', 'No se pudieron cargar los balances mensuales', 'error');
@@ -110,6 +115,11 @@
         if (typeof window.cargarPresupuestos === 'function') {
             const [year, month] = key.split('-');
             window.cargarPresupuestos(year, month);
+        }
+
+        if (typeof window.cargarGastosFijos === 'function') {
+            const [year, month] = key.split('-');
+            window.cargarGastosFijos(year, month);
         }
     }
 

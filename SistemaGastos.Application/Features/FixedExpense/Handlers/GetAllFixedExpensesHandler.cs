@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.FixedExpense.Queries;
@@ -19,13 +19,40 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context)
             .Include(f => f.Category)
             .Include(f => f.Account)
             .Where(f => f.UserID == request.UserID)
-            .OrderBy(f => f.PaymentDay) // ✅ Usar PaymentDay
+            .OrderBy(f => f.PaymentDay)
             .ToListAsync(cancellationToken);
+
+        // IDs de gastos fijos pagados en el mes/año solicitado (vía Transaction normal)
+        var paidViaTransaction = await context.Transaction
+            .AsNoTracking()
+            .Where(t => t.FixedExpenseID != null
+                     && t.Date.Year == request.Year
+                     && t.Date.Month == request.Month)
+            .Select(t => t.FixedExpenseID!.Value)
+            .ToListAsync(cancellationToken);
+
+        // IDs de gastos fijos pagados en el mes/año solicitado (vía CreditCardTransaction)
+        var paidViaCreditCard = await context.CreditCardTransaction
+            .AsNoTracking()
+            .Where(t => t.FixedExpenseID != null
+                     && t.TransactionDate.Year == request.Year
+                     && t.TransactionDate.Month == request.Month)
+            .Select(t => t.FixedExpenseID!.Value)
+            .ToListAsync(cancellationToken);
+
+        var paidIds = paidViaTransaction.Union(paidViaCreditCard).ToHashSet();
+
+        var monthName = new DateTimeFormatInfo { MonthNames = CultureInfo.GetCultureInfo("es-AR").DateTimeFormat.MonthNames }
+            .GetMonthName(request.Month);
+
+        // Capitalizar primera letra
+        if (!string.IsNullOrEmpty(monthName))
+            monthName = char.ToUpper(monthName[0]) + monthName[1..];
 
         return fixedExpenses.Select(f => new FixedExpenseDto
         {
             ID = f.ID,
-            Name = f.Name ?? string.Empty, // ✅ Por si acaso
+            Name = f.Name ?? string.Empty,
             Amount = f.Amount,
             AmountFormatted = f.Amount.ToString("C", culture),
             PaymentDay = f.PaymentDay,
@@ -35,7 +62,9 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context)
             AccountName = f.Account?.Name ?? "Sin cuenta",
             LogoUrl = f.LogoUrl,
             Active = f.Active,
-            LastGeneratedDate = f.LastGeneratedDate
+            LastGeneratedDate = f.LastGeneratedDate,
+            AlreadyPaidThisMonth = paidIds.Contains(f.ID),
+            PaidMonthName = paidIds.Contains(f.ID) ? monthName : null
         }).ToList();
     }
 }
