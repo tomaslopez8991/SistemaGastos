@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaGastos.Application.DTOs;
+using SistemaGastos.Application.Features.Invoices.Commands;
+using SistemaGastos.Application.Features.Invoices.Queries;
 using SistemaGastos.Application.Features.Transactions.Commands;
 using SistemaGastos.Application.Features.Transactions.Queries;
 using SistemaGastos.Application.Interfaces;
@@ -199,6 +201,33 @@ public class TransactionController(IMediator mediator, ICurrentUserService curre
         {
             return StatusCode(500, Response<object>.Fail($"Error del servidor: {ex.Message}"));
         }
+    }
+
+    // ==========================================
+    // FACTURACIÓN ARCA
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> GetInvoicePreview(int id)
+    {
+        var userID = currentUserService.UserId ?? 0;
+        if (userID == 0) return Unauthorized();
+
+        var preview = await mediator.Send(new GetInvoicePreviewQuery(id, userID));
+        if (preview is null) return NotFound("Transacción no encontrada");
+
+        return PartialView("_InvoicePreview", preview);
+    }
+
+    [HttpPost]
+    [Route("EmitInvoice")]
+    public async Task<ActionResult<EmitInvoiceResultDto>> EmitInvoice([FromBody] EmitInvoiceDto dto)
+    {
+        var userID = currentUserService.UserId ?? 0;
+        if (userID == 0) return Unauthorized();
+
+        var result = await mediator.Send(new EmitInvoiceCommand(dto, userID));
+        return Ok(result);
     }
 
     [HttpDelete]
