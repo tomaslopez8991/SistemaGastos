@@ -56,6 +56,9 @@ public class StatisticsDto
 
     // Últimas transacciones
     public List<TransactionDTO> RecentTransactions { get; set; } = new();
+
+    // Tendencia histórica (últimos 6 meses)
+    public List<MonthlyTrendDto> MonthlyTrend { get; set; } = new();
 }
 
 public class CategoryStatDto
@@ -74,4 +77,12 @@ public class AccountBalanceDto
     public decimal Balance { get; set; }
     public string BalanceFmt { get; set; } = string.Empty;
     public decimal Percentage { get; set; }
+}
+
+public class MonthlyTrendDto
+{
+    public string Month { get; set; } = string.Empty;
+    public decimal Income { get; set; }
+    public decimal Expense { get; set; }
+    public decimal Balance { get; set; }
 }
