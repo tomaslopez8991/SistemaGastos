@@ -179,6 +179,37 @@
 
                 <div class="flex-grow-1"></div>
 
+                <!-- Notificaciones -->
+                @if (CurrentUser.IsAuthenticated)
+                {
+                    <div class="dropdown" id="notif-wrapper"
+                         data-url="@Url.Action("GetAll", "Notifications")">
+                        <button class="btn btn-icon position-relative" id="notifBell" type="button"
+                                data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                aria-label="Notificaciones">
+                            <i class="fa-regular fa-bell"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  id="notif-badge"
+                                  style="display:none; font-size:0.6rem; min-width:18px;">0</span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end shadow border-0 p-0 notif-dropdown-menu"
+                             id="notif-dropdown">
+                            <!-- Cabecera: recibe border-radius superior vía CSS -->
+                            <div class="notif-header d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+                                <span class="fw-bold small text-uppercase text-muted">Notificaciones</span>
+                                <a asp-controller="Notifications" asp-action="Index"
+                                   class="text-decoration-none small text-primary">Ver todas</a>
+                            </div>
+                            <!-- Lista scrollable: recibe border-radius inferior vía CSS -->
+                            <div id="notif-list" class="notif-list-scroll">
+                                <div class="text-center py-3 text-muted small">
+                                    <i class="fa-solid fa-spinner fa-spin me-1"></i>Cargando...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
                 <!-- Theme Switcher -->
                 <div class="dropdown">
                     <button class="btn btn-icon" id="bd-theme" type="button" data-bs-toggle="dropdown" aria-label="Toggle theme">
@@ -279,7 +310,12 @@
     <script src="~/js/color-modes.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="https://cdn.jsdelivr.net/npm/intro.js@7.2.0/intro.min.js"></script>
+    <script src="~/js/notifications.js" asp-append-version="true"></script>
     <partial name="_NotificationPartial" />
+    @if (TempData["ShowLoginNotifications"] is bool show && show)
+    {
+        <script>window._showLoginNotifications = true;</script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 
     <button class="btn btn-primary btn-floating shadow-lg" 

@@ -1,0 +1,161 @@
+@using SistemaGastos.Application.DTOs
+@model List<NotificationDto>
+@{
+    ViewData["Title"] = "Notificaciones";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var groups = Model
+        .GroupBy(n => n.Type)
+        .OrderBy(g => g.Min(n => n.Severity == "danger" ? 0 : n.Severity == "warning" ? 1 : 2))
+        .ToList();
+
+    var typeConfig = new Dictionary<string, (string Label, string Icon, string Color)>
+    {
+        ["task"]         = ("Tareas",         "fa-list-check",       "#ffc107"),
+        ["fixedexpense"] = ("Gastos Fijos",    "fa-receipt",          "#0dcaf0"),
+        ["budget"]       = ("Presupuestos",    "fa-chart-pie",        "#6f42c1"),
+        ["balance"]      = ("Cuentas",         "fa-building-columns", "#dc3545")
+    };
+
+    var severityConfig = new Dictionary<string, (string BadgeClass, string BorderColor, string BgColor, string Label)>
+    {
+        ["danger"]  = ("bg-danger",           "#dc3545", "rgba(220,53,69,0.08)",   "Crítico"),
+        ["warning"] = ("bg-warning text-dark","#ffc107", "rgba(255,193,7,0.08)",   "Atención"),
+        ["info"]    = ("bg-info text-dark",   "#0dcaf0", "rgba(13,202,240,0.08)",  "Info")
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">
+            <i class="fa-regular fa-bell me-2 text-primary"></i>Notificaciones
+        </h2>
+        <p class="small text-muted mb-0">
+            @if (Model.Count == 0)
+            {
+                <span>Todo en orden — sin alertas activas</span>
+            }
+            else
+            {
+                <span>@Model.Count alerta@(Model.Count != 1 ? "s" : "") activa@(Model.Count != 1 ? "s" : "")</span>
+            }
+        </p>
+    </div>
+
+    @if (Model.Count > 0)
+    {
+        <div class="d-flex gap-2">
+            @foreach (var sev in new[] { "danger", "warning", "info" })
+            {
+                var count = Model.Count(n => n.Severity == sev);
+                if (count == 0) continue;
+                var sc = severityConfig[sev];
+                <span class="badge @sc.BadgeClass rounded-pill px-3 py-2">
+                    @count @sc.Label@(count != 1 ? "s" : "")
+                </span>
+            }
+        </div>
+    }
+</div>
+
+@if (Model.Count == 0)
+{
+    <div class="text-center py-5 mt-4">
+        <div class="mb-4" style="font-size:4rem; opacity:0.2;">
+            <i class="fa-regular fa-bell-slash"></i>
+        </div>
+        <h5 class="text-muted fw-normal">Sin alertas activas</h5>
+        <p class="text-muted small">Cuando haya tareas vencidas, gastos fijos próximos a pagar,<br>presupuestos excedidos o cuentas en negativo, aparecerán aquí.</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary mt-2">
+            <i class="fa-solid fa-house me-2"></i>Volver al Dashboard
+        </a>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var group in groups)
+        {
+            var type = group.Key;
+            var (label, icon, color) = typeConfig.TryGetValue(type, out var tc)
+                ? tc : ("Otros", "fa-bell", "#6c757d");
+
+            <div class="col-12">
+                <!-- Cabecera de sección -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:36px;height:36px;background:@(color)22;">
+                        <i class="fa-solid @icon" style="color:@color;font-size:0.9rem;"></i>
+                    </div>
+                    <h5 class="mb-0 fw-bold">@label</h5>
+                    <span class="badge bg-secondary rounded-pill">@group.Count()</span>
+                </div>
+
+                <!-- Items -->
+                <div class="row g-3">
+                    @foreach (var n in group.OrderBy(n => n.Severity == "danger" ? 0 : n.Severity == "warning" ? 1 : 2))
+                    {
+                        var (badgeClass, borderColor, bgColor, sevLabel) = severityConfig.TryGetValue(n.Severity, out var sc)
+                            ? sc : severityConfig["info"];
+
+                        <div class="col-md-6 col-lg-4">
+                            <a href="@n.ActionUrl"
+                               class="text-decoration-none d-block notif-card h-100"
+                               style="border-left-color: @borderColor; background: @bgColor;">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="notif-card-icon flex-shrink-0"
+                                         style="background:@(borderColor)22; color:@borderColor;">
+                                        <i class="fa-solid @icon"></i>
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <p class="mb-1 fw-semibold small text-truncate">@n.Title</p>
+                                            <span class="badge @badgeClass flex-shrink-0" style="font-size:0.6rem;">
+                                                @sevLabel
+                                            </span>
+                                        </div>
+                                        <p class="mb-0 text-muted" style="font-size:0.78rem;">@n.Subtitle</p>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    }
+                </div>
+
+                @if (group != groups.Last())
+                {
+                    <hr class="my-4 opacity-25" />
+                }
+            </div>
+        }
+    </div>
+}
+
+<style>
+    .notif-card {
+        border-left: 4px solid transparent;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    [data-bs-theme="light"] .notif-card {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .notif-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .notif-card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+</style>

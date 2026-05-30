@@ -1,6 +1,7 @@
-﻿@model SistemaGastos.Domain.Models.TodoTask
+@model SistemaGastos.Domain.Models.TodoTask
 @{
     Layout = null;
+    var selectedPriority = Model.Priority > 0 ? Model.Priority : 2;
 }
 
 <form id="form-todo">
@@ -12,12 +13,53 @@
     </div>
 
     <div class="mb-3">
-        <label asp-for="DueDate" class="form-label fw-bold text-uppercase small">Fecha Vencimiento</label>
-        <input asp-for="DueDate" type="date" class="form-control" value="@(Model.DueDate.ToString("yyyy-MM-dd"))" required />
+        <label class="form-label fw-bold text-uppercase small">Prioridad</label>
+        <div class="d-flex gap-2">
+            <input type="radio" class="btn-check" name="Priority" id="prio-alta" value="1"
+                   @(selectedPriority == 1 ? "checked" : "") />
+            <label class="btn btn-sm btn-outline-danger" for="prio-alta">
+                <i class="fa-solid fa-arrow-up me-1"></i>Alta
+            </label>
+
+            <input type="radio" class="btn-check" name="Priority" id="prio-media" value="2"
+                   @(selectedPriority == 2 ? "checked" : "") />
+            <label class="btn btn-sm btn-outline-warning" for="prio-media">
+                <i class="fa-solid fa-minus me-1"></i>Media
+            </label>
+
+            <input type="radio" class="btn-check" name="Priority" id="prio-baja" value="3"
+                   @(selectedPriority == 3 ? "checked" : "") />
+            <label class="btn btn-sm btn-outline-success" for="prio-baja">
+                <i class="fa-solid fa-arrow-down me-1"></i>Baja
+            </label>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-6">
+            <div class="mb-3">
+                <label asp-for="DueDate" class="form-label fw-bold text-uppercase small">
+                    Fecha Vencimiento
+                </label>
+                <input asp-for="DueDate" type="date" class="form-control"
+                       value="@(Model.DueDate.ToString("yyyy-MM-dd"))" required />
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="mb-3">
+                <label asp-for="ReminderDate" class="form-label fw-bold text-uppercase small">
+                    <i class="fa-regular fa-bell me-1"></i>Recordar desde
+                    <small class="text-muted fw-normal">(opcional)</small>
+                </label>
+                <input asp-for="ReminderDate" type="date" class="form-control"
+                       value="@(Model.ReminderDate.HasValue ? Model.ReminderDate.Value.ToString("yyyy-MM-dd") : "")" />
+            </div>
+        </div>
     </div>
 
     <div class="mb-3">
         <label asp-for="Description" class="form-label fw-bold text-uppercase small">Descripción / Notas</label>
-        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Detalles adicionales..."></textarea>
+        <textarea asp-for="Description" class="form-control" rows="3"
+                  placeholder="Detalles adicionales..."></textarea>
     </div>
 </form>

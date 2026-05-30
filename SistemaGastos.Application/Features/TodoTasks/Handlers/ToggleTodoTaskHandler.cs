@@ -10,7 +10,7 @@ public class ToggleTodoTaskHandler(IApplicationDbContext context)
     public async Task<(bool Success, bool NewState)> Handle(ToggleTodoTaskCommand request, CancellationToken cancellationToken)
     {
         var task = await context.TodoTask.FindAsync([request.Id], cancellationToken);
-        if (task == null) return (false, false);
+        if (task == null || task.UserID != request.UserId) return (false, false);
 
         task.IsCompleted = !task.IsCompleted;
         await context.SaveChangesAsync(cancellationToken);

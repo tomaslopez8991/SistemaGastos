@@ -21,11 +21,13 @@ public class SaveTodoTaskHandler(IApplicationDbContext context, ICurrentUserServ
         if (dto.TaskId > 0)
         {
             var existing = await context.TodoTask.FindAsync([dto.TaskId], cancellationToken);
-            if (existing == null) return false;
+            if (existing == null || existing.UserID != user.ID) return false;
 
             existing.Title = dto.Title;
             existing.Description = dto.Description;
             existing.DueDate = dto.DueDate;
+            existing.Priority = dto.Priority > 0 ? dto.Priority : 2;
+            existing.ReminderDate = dto.ReminderDate;
 
             context.TodoTask.Update(existing);
         }
@@ -37,6 +39,8 @@ public class SaveTodoTaskHandler(IApplicationDbContext context, ICurrentUserServ
                 Description = dto.Description,
                 DueDate = dto.DueDate,
                 IsCompleted = false,
+                Priority = dto.Priority > 0 ? dto.Priority : 2,
+                ReminderDate = dto.ReminderDate,
                 UserID = user.ID
             };
             context.TodoTask.Add(task);
