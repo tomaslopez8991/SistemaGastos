@@ -2345,6 +2345,49 @@ input.gridjs-input {
     color: #000;
 }
 
+/* ── Notification dropdown ──────────────────────────────────────────────── */
+.notif-dropdown-menu {
+    width: 320px;
+    border-radius: 12px;
+    /* Sin overflow:hidden en el contenedor — cada sección lo maneja */
+}
+
+.notif-header {
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;         /* Clipa el borde superior redondeado */
+}
+
+.notif-list-scroll {
+    max-height: 360px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-radius: 0 0 12px 12px; /* Clipa el borde inferior redondeado */
+}
+
+/* Override del hover global para items de notificación — sin margin lateral */
+.notif-dropdown-menu .dropdown-item {
+    border-radius: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    transition: background-color 0.15s ease;
+}
+
+/* Último item visible toma el border-radius inferior del contenedor */
+.notif-dropdown-menu .dropdown-item:last-child {
+    border-radius: 0 0 10px 10px !important;
+}
+
+/* Sección header dentro de la lista */
+.notif-section-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem 0.25rem;
+    color: var(--text-secondary);
+}
+/* ───────────────────────────────────────────────────────────────────────── */
+
 .dropdown-item:hover {
     background-color: #f0f2f5; /* Un gris muy suave y moderno */
     border-radius: 8px; /* Bordes redondeados en los items se ven más "app-like" */

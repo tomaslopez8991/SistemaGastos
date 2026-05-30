@@ -521,6 +521,13 @@ async function fetchApi(url, method = 'GET', body = null) {
 
     $(document).on('turbo:load', function () {
         inicializarTutoriales();
+
+        // Activar tab de Bootstrap según el hash de la URL (ej: /TmpTransaction/Index#fijos)
+        const tabHash = window.location.hash;
+        if (tabHash) {
+            const trigger = document.querySelector(`[data-bs-target="${tabHash}"]`);
+            if (trigger) new bootstrap.Tab(trigger).show();
+        }
     });
 
 })();

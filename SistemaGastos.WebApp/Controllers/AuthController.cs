@@ -45,6 +45,7 @@ public class AuthController(IMediator mediator) : Controller
 
             TempData["ToastType"] = "success";
             TempData["ToastMessage"] = $"¡Bienvenido de nuevo, {usuario.Username}!";
+            TempData["ShowLoginNotifications"] = true;
 
             return RedirectToAction("Index", "Home");
         }

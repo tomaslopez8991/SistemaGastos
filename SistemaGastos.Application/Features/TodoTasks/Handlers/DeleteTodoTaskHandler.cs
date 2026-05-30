@@ -11,6 +11,7 @@ public class DeleteTodoTaskHandler(IApplicationDbContext context)
     {
         var task = await context.TodoTask.FindAsync([request.Id], cancellationToken);
         if (task == null) return true;
+        if (task.UserID != request.UserId) return false;
 
         context.TodoTask.Remove(task);
         await context.SaveChangesAsync(cancellationToken);

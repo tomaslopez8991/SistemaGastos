@@ -7,15 +7,22 @@ namespace SistemaGastos.Domain.Models
     {
         [Key]
         public int TaskId { get; set; }
+
         [Required]
         public string Title { get; set; }
-        [Required]
-        public string Description { get; set; }
+
+        public string? Description { get; set; }
 
         [DataType(DataType.Date)]
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:dd/MM/yyyy}")]
         public DateTime DueDate { get; set; }
+
         public bool IsCompleted { get; set; }
+
+        /// <summary>1 = Alta, 2 = Media, 3 = Baja</summary>
+        public int Priority { get; set; } = 2;
+
+        public DateTime? ReminderDate { get; set; }
 
         //Foreign keys
         public int UserID { get; set; }

@@ -17,6 +17,7 @@ public class GetTasksHandler(IApplicationDbContext context)
             .AsNoTracking()
             .Where(t => t.UserID == request.UserId)
             .OrderBy(t => t.IsCompleted)
+            .ThenBy(t => t.Priority)
             .ThenBy(t => t.DueDate)
             .ToListAsync(cancellationToken);
 
@@ -26,7 +27,9 @@ public class GetTasksHandler(IApplicationDbContext context)
             t.Description,
             t.DueDate,
             t.IsCompleted,
-            !t.IsCompleted && t.DueDate < today
+            !t.IsCompleted && t.DueDate < today,
+            t.Priority,
+            t.ReminderDate
         )).ToList();
     }
 }
