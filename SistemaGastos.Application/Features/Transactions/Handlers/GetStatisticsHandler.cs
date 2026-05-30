@@ -81,16 +81,22 @@ public class GetStatisticsHandler(IApplicationDbContext context)
         dto.NetWorthFmt = dto.NetWorth.ToString("C", culture);
 
         // ============================================
-        // 3. MES ACTUAL
+        // CARGA DE TRANSACCIONES (últimos 6 meses, query única)
         // ============================================
-        var currentMonthTransactions = await context.Transaction
+        var sixMonthsAgo = startOfMonth.AddMonths(-5);
+        var allTransactions = await context.Transaction
             .AsNoTracking()
             .Include(t => t.Account)
             .Include(t => t.Category)
-            .Where(t => t.Account.UserID == request.UserID
-                && t.Date >= startOfMonth
-                && t.Date <= endOfMonth)
+            .Where(t => t.Account.UserID == request.UserID && t.Date >= sixMonthsAgo)
             .ToListAsync(cancellationToken);
+
+        // ============================================
+        // 3. MES ACTUAL
+        // ============================================
+        var currentMonthTransactions = allTransactions
+            .Where(t => t.Date >= startOfMonth && t.Date <= endOfMonth)
+            .ToList();
 
         dto.CurrentMonthIncome = currentMonthTransactions
             .Where(t => t.Category.Type == "Ingreso")
@@ -115,14 +121,9 @@ public class GetStatisticsHandler(IApplicationDbContext context)
         // ============================================
         // 4. MES ANTERIOR
         // ============================================
-        var lastMonthTransactions = await context.Transaction
-            .AsNoTracking()
-            .Include(t => t.Account)
-            .Include(t => t.Category)
-            .Where(t => t.Account.UserID == request.UserID
-                && t.Date >= startOfLastMonth
-                && t.Date <= endOfLastMonth)
-            .ToListAsync(cancellationToken);
+        var lastMonthTransactions = allTransactions
+            .Where(t => t.Date >= startOfLastMonth && t.Date <= endOfLastMonth)
+            .ToList();
 
         dto.LastMonthIncome = lastMonthTransactions
             .Where(t => t.Category.Type == "Ingreso")
@@ -228,6 +229,29 @@ public class GetStatisticsHandler(IApplicationDbContext context)
                 IsIncome = t.Category.Type == "Ingreso"
             })
             .ToListAsync(cancellationToken);
+
+        // ============================================
+        // 8. TENDENCIA HISTÓRICA (últimos 6 meses)
+        // ============================================
+        dto.MonthlyTrend = Enumerable.Range(0, 6)
+            .Select(i =>
+            {
+                var mStart = sixMonthsAgo.AddMonths(i);
+                var mEnd = mStart.AddMonths(1);
+                var txs = allTransactions
+                    .Where(t => t.Date >= mStart && t.Date < mEnd)
+                    .ToList();
+                var inc = txs.Where(t => t.Category.Type == "Ingreso").Sum(t => t.Amount);
+                var exp = txs.Where(t => t.Category.Type == "Gasto").Sum(t => t.Amount);
+                return new MonthlyTrendDto
+                {
+                    Month = mStart.ToString("MMM yy", culture).Replace(".", ""),
+                    Income = inc,
+                    Expense = exp,
+                    Balance = inc - exp
+                };
+            })
+            .ToList();
 
         return dto;
     }
