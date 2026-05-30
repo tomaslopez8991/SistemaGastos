@@ -119,6 +119,7 @@ document.addEventListener("turbo:before-cache", function () {
     $('#overlay-mobile').hide();
     $('#spinner').hide();
     $('.nav-item').removeClass('active');
+    $('#btnAyudaGlobal').removeClass('tutorial-fab--visible tutorial-fab--new tutorial-pulse');
 
     // Limpiar tooltips y dropdowns
     $('[data-bs-toggle="tooltip"]').each(function () {
@@ -236,293 +237,292 @@ async function fetchApi(url, method = 'GET', body = null) {
     'use strict';
 
     const tutorialesConfig = {
-        // Gestión diaria
+        'dashboard': {
+            storageKey: 'dashboard_tutorial_completed',
+            icono: 'fa-house',
+            titulo: 'Dashboard Financiero',
+            descripcion: 'Tu panel de control con un resumen completo de tu situación financiera.',
+            features: ['Saldo total y métricas clave del mes', 'Deuda en tarjetas en tiempo real', 'Accesos rápidos a todos los módulos'],
+            stepTitles: ['Panel de Control', 'Métricas Financieras', 'Saldo Total', 'Gastos del Mes', 'Deuda en Tarjetas', 'Accesos Rápidos', 'Atajos del Sistema', 'Proyección', 'Calculadora TC', 'Tareas Pendientes', 'Categorías']
+        },
         'transacciones': {
             storageKey: 'transacciones_tutorial_completed',
-            titulo: '¡Bienvenido a Transacciones!',
-            descripcion: '¿Quieres ver cómo registrar tus ingresos y gastos diarios?'
+            icono: 'fa-money-bill-transfer',
+            titulo: 'Transacciones',
+            descripcion: 'El corazón del sistema: registrá todos tus movimientos financieros diarios.',
+            features: ['Crear ingresos y gastos fácilmente', 'Filtrar por fecha, cuenta y categoría', 'Ver el balance neto del mes en tiempo real'],
+            stepTitles: ['Módulo de Transacciones', 'Panel de Control', 'Nuevo Movimiento', 'Filtros de Búsqueda', 'Filtro por Fecha', 'Filtro Hasta', 'Filtro por Cuenta', 'Filtro por Categoría', 'Aplicar Filtros', 'Limpiar Filtros', 'Lista de Movimientos']
         },
         'billetera': {
             storageKey: 'billetera_tutorial_completed',
-            titulo: '¡Bienvenido a Mi Billetera!',
-            descripcion: '¿Quieres aprender a gestionar tus cuentas y ver tus saldos?'
+            icono: 'fa-building-columns',
+            titulo: 'Mis Cuentas',
+            descripcion: 'Gestioná todas tus cuentas bancarias y efectivo en un solo lugar.',
+            features: ['Registrar cuentas bancarias y efectivo', 'Ver saldo consolidado por moneda', 'Agregar y editar cuentas'],
+            stepTitles: ['Mis Cuentas', 'Panel General', 'Agregar Cuenta', 'Saldo por Moneda', 'Detalle de Cuentas']
         },
         'tareas': {
             storageKey: 'tareas_tutorial_completed',
-            titulo: '¡Bienvenido a Tareas!',
-            descripcion: '¿Quieres ver cómo organizar tus pendientes financieros?'
+            icono: 'fa-list-check',
+            titulo: 'Tareas Financieras',
+            descripcion: 'Organizá tus pendientes financieros para no olvidar ningún pago.',
+            features: ['Crear tareas con prioridad (Alta / Media / Baja)', 'Configurar recordatorios por fecha', 'Seguir el historial de tareas completadas'],
+            stepTitles: ['Tareas Financieras', 'Panel de Tareas', 'Nueva Tarea', 'Filtrar por Prioridad', 'Vista Kanban', 'Pendientes', 'Gestionar Tarea', 'Completadas', 'Historial']
         },
-
-        // Análisis
         'creditcard': {
             storageKey: 'creditcard_tutorial_completed',
-            titulo: '¡Bienvenido a Tarjetas de Crédito!',
-            descripcion: '¿Quieres aprender a gestionar tus consumos y cuotas?'
+            icono: 'fa-credit-card',
+            titulo: 'Tarjetas de Crédito',
+            descripcion: 'Controlá tus consumos con tarjeta, cuotas y deuda total.',
+            features: ['Registrar consumos en cuotas', 'Ver deuda total y distribución', 'Eliminar consumos en lote'],
+            stepTitles: ['Tarjetas de Crédito', 'Panel de Control', 'Eliminar en Lote', 'Nuevo Consumo', 'Deuda Total', 'Distribución de Deuda', 'Lista de Consumos']
         },
         'cashflow': {
             storageKey: 'cashflow_tutorial_completed',
-            titulo: '¡Bienvenido a Cashflow!',
-            descripcion: '¿Quieres ver cómo proyectar tu liquidez futura mes a mes?'
+            icono: 'fa-timeline',
+            titulo: 'Proyección / Cashflow',
+            descripcion: 'Proyectá tu liquidez futura y planificá tus finanzas con anticipación.',
+            features: ['Planificar ingresos y gastos futuros', 'Ver cashflow proyectado mes a mes', 'Gestionar gastos recurrentes'],
+            stepTitles: ['Cashflow Pro']
         },
         'presupuestos': {
             storageKey: 'presupuestos_tutorial_completed',
-            titulo: '¡Bienvenido a Presupuestos!',
-            descripcion: '¿Quieres aprender a controlar tus límites de gasto?'
+            icono: 'fa-chart-pie',
+            titulo: 'Presupuestos',
+            descripcion: 'Definí límites de gasto por categoría y seguí tu cumplimiento en tiempo real.',
+            features: ['Definir límites por categoría', 'Ver progreso visual de cada presupuesto', 'Recibir alertas inteligentes al acercarte al límite'],
+            stepTitles: ['Presupuestos', 'Panel de Presupuestos', 'Navegar por Meses', 'Nuevo Presupuesto', 'Resumen del Mes', 'Estado Financiero', 'Cifras Clave', 'Progreso del Mes', 'Días Restantes', 'Tarjetas por Categoría', 'Sin Presupuesto Aún', 'Crear desde Cero', 'Copiar del Mes Anterior', 'Tarjeta de Categoría', 'Opciones de Categoría', 'Alerta Inteligente']
         },
         'estadisticas': {
             storageKey: 'estadisticas_tutorial_completed',
-            titulo: '¡Bienvenido a Estadísticas!',
-            descripcion: '¿Quieres ver cómo analizar tus patrones de gasto?'
+            icono: 'fa-chart-line',
+            titulo: 'Estadísticas',
+            descripcion: 'Analizá tus finanzas con gráficos, tendencias históricas y proyecciones.',
+            features: ['Tendencia de ingresos vs gastos (6 meses)', 'Top de categorías de gasto e ingreso', 'Patrimonio neto y proyecciones futuras'],
+            stepTitles: ['Dashboard Financiero', 'Panel de Análisis', 'Actualizar Datos', 'Situación Patrimonial', 'Patrimonio Neto', 'Saldo Total', 'Deuda en Tarjetas', 'Actividad del Mes', 'Ingresos del Mes', 'Gastos del Mes', 'Ahorro del Mes', 'Gasto Diario', 'Tendencia Histórica', 'Top Gastos', 'Top Ingresos', 'Distribución de Cuentas', 'Proyecciones', 'Últimas Transacciones']
         },
         'gastosfijos': {
             storageKey: 'gastosfijos_tutorial_completed',
-            titulo: '¡Bienvenido a Gastos Fijos!',
-            descripcion: '¿Quieres controlar tus suscripciones y servicios recurrentes?'
+            icono: 'fa-file-invoice-dollar',
+            titulo: 'Gastos Fijos',
+            descripcion: 'Controlá tus suscripciones y pagos recurrentes mensuales.',
+            features: ['Registrar suscripciones y servicios', 'Ver próximos vencimientos', 'Marcar gastos como pagados cada mes'],
+            stepTitles: ['Gastos Fijos', 'Panel de Gastos Fijos', 'Nuevo Gasto Fijo', 'Resumen Mensual', 'Total Mensual', 'Pagado Este Mes', 'Pendientes de Pago', 'Próximo Vencimiento', 'Filtros', 'Filtrar por Estado', 'Filtrar por Categoría', 'Aplicar Filtros', 'Lista de Gastos']
         },
-
-        // Administración
         'categorias': {
             storageKey: 'categorias_tutorial_completed',
-            titulo: '¡Bienvenido a Categorías!',
-            descripcion: '¿Quieres aprender a organizar tus movimientos con etiquetas?'
+            icono: 'fa-tags',
+            titulo: 'Categorías',
+            descripcion: 'Organizá tus movimientos con etiquetas personalizadas.',
+            features: ['Crear categorías de ingresos y gastos', 'Elegir ícono y color personalizados', 'Filtrar por tipo de categoría'],
+            stepTitles: ['Categorías', 'Panel de Categorías', 'Nueva Categoría', 'Filtrar por Tipo', 'Ver Todas', 'Solo Gastos', 'Solo Ingresos', 'Lista de Categorías']
         },
         'perfil': {
             storageKey: 'perfil_tutorial_completed',
-            titulo: '¡Bienvenido a tu Perfil!',
-            descripcion: '¿Quieres ver cómo personalizar tu cuenta?'
-        },
-
-        // Dashboard
-        'dashboard': {
-            storageKey: 'dashboard_tutorial_completed',
-            titulo: '¡Bienvenido a tu Dashboard!',
-            descripcion: '¿Quieres un recorrido por las funciones principales del sistema?'
+            icono: 'fa-user-gear',
+            titulo: 'Mi Perfil',
+            descripcion: 'Gestioná tu cuenta, datos personales y configuración de seguridad.',
+            features: ['Actualizar tu correo de contacto', 'Cambiar tu contraseña', 'Ver tu rol y estado de cuenta'],
+            stepTitles: ['Mi Perfil', 'Tu Identidad', 'Estado de Conexión', 'Tu Rol', 'Secciones del Perfil', 'Pestañas de Configuración', 'Pestaña Datos', 'Pestaña Seguridad', 'Datos Personales', 'Nombre de Usuario', 'Tu Rol', 'Email de Contacto', 'Guardar Email', 'Cambiar Contraseña', 'Nueva Contraseña', 'Confirmar Contraseña', 'Guardar Contraseña']
         }
     };
 
     // =========================================================
-    // DETECTAR MÓDULO ACTUAL (MEJORADO Y COMPLETO)
+    // DETECTAR MÓDULO ACTUAL
     // =========================================================
 
     function detectarModuloActual() {
         const path = window.location.pathname.toLowerCase();
 
-        // ============================================
-        // GESTIÓN DIARIA
-        // ============================================
-
         if (path.includes('/transaction/index') ||
-            (path.includes('/transaction') && !path.includes('tmp') && !path.includes('credit'))) {
+            (path.includes('/transaction') && !path.includes('tmp') && !path.includes('credit') && !path.includes('statistics'))) {
             return 'transacciones';
         }
-
-        if (path.includes('/account')) {
-            return 'billetera';
-        }
-
-        if (path.includes('/todo')) {
-            return 'tareas';
-        }
-
-        // ============================================
-        // ANÁLISIS
-        // ============================================
-
-        if (path.includes('/creditcard')) {
-            return 'creditcard';
-        }
-
-        if (path.includes('/tmptransaction')) {
-            return 'cashflow';
-        }
-
-        if (path.includes('/budget')) {
-            return 'presupuestos';
-        }
-
-        if (path.includes('/transaction/statistics') || path.includes('/statistics')) {
-            return 'estadisticas';
-        }
-
-        if (path.includes('/fixedexpense')) {
-            return 'gastosfijos';
-        }
-
-        // ============================================
-        // ADMINISTRACIÓN
-        // ============================================
-
-        if (path.includes('/category')) {
-            return 'categorias';
-        }
-
-        if (path.includes('/login/profile') || path.includes('/profile')) {
-            return 'perfil';
-        }
-
-        if (path === '/' || path === '/home' || path.includes('/home/index')) {
-            return 'dashboard';
-        }
+        if (path.includes('/account')) return 'billetera';
+        if (path.includes('/todo')) return 'tareas';
+        if (path.includes('/creditcard')) return 'creditcard';
+        if (path.includes('/tmptransaction')) return 'cashflow';
+        if (path.includes('/budget')) return 'presupuestos';
+        if (path.includes('/transaction/statistics') || path.includes('/statistics')) return 'estadisticas';
+        if (path.includes('/fixedexpense')) return 'gastosfijos';
+        if (path.includes('/category')) return 'categorias';
+        if (path.includes('/login/profile') || path.includes('/profile')) return 'perfil';
+        if (path === '/' || path === '/home' || path.includes('/home/index')) return 'dashboard';
 
         return null;
     }
 
-    // ✅ INICIAR TUTORIAL
+    // =========================================================
+    // INICIAR TUTORIAL
+    // =========================================================
+
     function iniciarTutorial(moduloKey) {
         const config = tutorialesConfig[moduloKey];
-        if (!config) {
-            console.warn('No hay tutorial configurado para este módulo');
-            return;
-        }
+        if (!config) return;
 
         const intro = introJs();
 
         intro.setOptions({
-            nextLabel: 'Siguiente →',
-            prevLabel: '← Anterior',
-            skipLabel: 'Saltar',
-            doneLabel: '¡Entendido!',
+            nextLabel: 'Siguiente <i class="fa-solid fa-arrow-right ms-1" style="font-size:0.75rem"></i>',
+            prevLabel: '<i class="fa-solid fa-arrow-left me-1" style="font-size:0.75rem"></i> Anterior',
+            skipLabel: '✕',
+            doneLabel: '<i class="fa-solid fa-check me-1"></i> ¡Listo!',
             showProgress: true,
             showBullets: false,
             exitOnOverlayClick: false,
             disableInteraction: false,
             scrollToElement: true,
-            overlayOpacity: 0.7,
+            scrollPadding: 80,
+            overlayOpacity: 0.72,
             tooltipClass: 'customTooltip',
-            highlightClass: 'customHighlight'
+            highlightClass: 'customHighlight',
+            showStepNumbers: false
         });
 
-        // Callback al completar
+        // Aplicar títulos de cada paso dinámicamente (sin tocar el HTML)
+        if (config.stepTitles && config.stepTitles.length > 0) {
+            const elements = Array.from(document.querySelectorAll('[data-intro]'))
+                .sort((a, b) => parseInt(a.dataset.step || 0) - parseInt(b.dataset.step || 0));
+            elements.forEach((el, idx) => {
+                if (config.stepTitles[idx] && !el.hasAttribute('data-title')) {
+                    el.setAttribute('data-title', config.stepTitles[idx]);
+                }
+            });
+        }
+
         intro.oncomplete(function () {
             localStorage.setItem(config.storageKey, 'true');
+            $('#btnAyudaGlobal').removeClass('tutorial-fab--new');
             Swal.fire({
                 icon: 'success',
                 title: '¡Tutorial completado!',
-                text: 'Ahora puedes usar este módulo con confianza. Usa el botón de ayuda (?) si necesitas verlo de nuevo.',
-                confirmButtonText: 'Comenzar',
-                timer: 3000,
+                html: `<p class="mb-0 text-muted" style="font-size:0.9rem">Ya conocés <strong>${config.titulo}</strong>. Podés repetirlo cuando quieras desde el botón <span class="badge text-bg-primary px-2 py-1"><i class="fa-solid fa-graduation-cap me-1"></i>Tutorial</span> abajo a la derecha.</p>`,
+                confirmButtonText: 'Comenzar a usar',
+                confirmButtonColor: '#10b981',
+                timer: 5000,
                 timerProgressBar: true
             });
         });
 
-        // Callback al salir
         intro.onexit(function () {
             localStorage.setItem(config.storageKey, 'true');
+            $('#btnAyudaGlobal').removeClass('tutorial-fab--new');
         });
 
         intro.start();
     }
 
-    // ✅ VERIFICAR PRIMERA VISITA AL MÓDULO
+    // =========================================================
+    // VERIFICAR PRIMERA VISITA
+    // =========================================================
+
     function verificarPrimeraVisita(moduloKey) {
         const config = tutorialesConfig[moduloKey];
         if (!config) return;
 
+        if (localStorage.getItem(config.storageKey)) return;
+
+        setTimeout(() => {
+            const tieneIntros = document.querySelectorAll('[data-intro]').length > 0;
+            if (!tieneIntros) {
+                localStorage.setItem(config.storageKey, 'true');
+                return;
+            }
+
+            const featuresList = config.features
+                .map(f => `<li class="d-flex align-items-start gap-2 mb-1"><i class="fa-solid fa-circle-check text-success mt-1" style="font-size:0.8rem;flex-shrink:0"></i><span>${f}</span></li>`)
+                .join('');
+
+            Swal.fire({
+                customClass: {
+                    popup: 'tutorial-welcome-popup',
+                    confirmButton: 'btn btn-primary px-4',
+                    cancelButton: 'btn btn-link text-muted text-decoration-none'
+                },
+                buttonsStyling: false,
+                html: `
+                    <div class="text-center mb-3">
+                        <div style="width:64px;height:64px;background:linear-gradient(135deg,rgb(var(--bs-primary-rgb)),#7c3aed);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 8px 24px rgba(var(--bs-primary-rgb),0.4)">
+                            <i class="fa-solid ${config.icono} fa-xl text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-1">${config.titulo}</h5>
+                        <p class="text-muted mb-0" style="font-size:0.875rem">${config.descripcion}</p>
+                    </div>
+                    <ul class="list-unstyled text-start small mb-0" style="border-top:1px solid var(--bs-border-color);padding-top:12px;margin-top:4px;">
+                        ${featuresList}
+                    </ul>
+                `,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa-solid fa-graduation-cap me-2"></i>Iniciar tutorial',
+                cancelButtonText: 'Ahora no'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    iniciarTutorial(moduloKey);
+                } else {
+                    localStorage.setItem(config.storageKey, 'true');
+                    $('#btnAyudaGlobal').removeClass('tutorial-fab--new');
+                }
+            });
+        }, 1200);
+    }
+
+    // =========================================================
+    // CONFIGURAR BOTÓN FLOTANTE
+    // =========================================================
+
+    function configurarBotonAyuda() {
+        const moduloActual = detectarModuloActual();
+        const $btn = $('#btnAyudaGlobal');
+
+        $btn.removeClass('tutorial-fab--visible tutorial-fab--new tutorial-pulse');
+
+        if (!moduloActual || !tutorialesConfig[moduloActual]) return;
+
+        const tieneIntros = document.querySelectorAll('[data-intro]').length > 0;
+        if (!tieneIntros) return;
+
+        const config = tutorialesConfig[moduloActual];
         const tutorialCompletado = localStorage.getItem(config.storageKey);
 
         if (!tutorialCompletado) {
-            // Esperar a que se carguen los datos del módulo
+            $btn.addClass('tutorial-fab--visible tutorial-fab--new tutorial-pulse');
+        } else {
             setTimeout(() => {
-                // Verificar si el módulo tiene pasos de tutorial definidos
-                const tieneIntros = document.querySelectorAll('[data-intro]').length > 0;
-
-                if (!tieneIntros) {
-                    console.warn('No hay elementos con data-intro en este módulo');
-                    localStorage.setItem(config.storageKey, 'true');
-                    return;
-                }
-
-                Swal.fire({
-                    icon: 'info',
-                    title: config.titulo,
-                    text: config.descripcion,
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, mostrar tutorial',
-                    cancelButtonText: 'No, saltar',
-                    customClass: {
-                        confirmButton: 'btn btn-primary',
-                        cancelButton: 'btn btn-outline-secondary'
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        iniciarTutorial(moduloKey);
-                    } else {
-                        localStorage.setItem(config.storageKey, 'true');
-                    }
-                });
+                $btn.addClass('tutorial-fab--visible tutorial-pulse');
+                setTimeout(() => $btn.removeClass('tutorial-pulse'), 7000);
             }, 1500);
         }
-    }
 
-    // ✅ BOTÓN DE AYUDA FLOTANTE
-    function configurarBotonAyuda() {
-        const moduloActual = detectarModuloActual();
-        const $btnAyuda = $('#btnAyudaGlobal');
-
-        if (!moduloActual || !tutorialesConfig[moduloActual]) {
-            // Si no hay tutorial para este módulo, ocultar el botón
-            $btnAyuda.hide();
-            return;
-        }
-
-        // Verificar si hay elementos con data-intro
-        const tieneIntros = document.querySelectorAll('[data-intro]').length > 0;
-
-        if (!tieneIntros) {
-            $btnAyuda.hide();
-            return;
-        }
-
-        // Mostrar botón y configurar click
-        $btnAyuda.show();
-
-        $btnAyuda.off('click').on('click', function () {
+        $btn.off('click.tutorial').on('click.tutorial', function () {
             iniciarTutorial(moduloActual);
         });
-
-        // Animación de pulso para llamar la atención (solo primeras 5 segundos)
-        setTimeout(() => {
-            $btnAyuda.addClass('pulse');
-            setTimeout(() => {
-                $btnAyuda.removeClass('pulse');
-            }, 5000);
-        }, 2000);
     }
 
-    // ✅ INICIALIZAR SISTEMA DE TUTORIALES
+    // =========================================================
+    // INICIALIZAR
+    // =========================================================
+
     function inicializarTutoriales() {
+        configurarBotonAyuda();
         const moduloActual = detectarModuloActual();
-
-        if (moduloActual) {
-            configurarBotonAyuda();
-            verificarPrimeraVisita(moduloActual);
-        } else {
-            $('#btnAyudaGlobal').hide();
-        }
+        if (moduloActual) verificarPrimeraVisita(moduloActual);
     }
 
-    // ✅ REINICIAR TODOS LOS TUTORIALES (Para desarrollo/testing)
+    // Reiniciar todos los tutoriales (dev/testing)
     window.resetearTutoriales = function () {
-        Object.values(tutorialesConfig).forEach(config => {
-            localStorage.removeItem(config.storageKey);
-        });
-        Swal.fire('Tutoriales reiniciados', 'Recarga la página para verlos de nuevo', 'info');
+        Object.values(tutorialesConfig).forEach(c => localStorage.removeItem(c.storageKey));
+        Swal.fire('Tutoriales reiniciados', 'Recargá la página para verlos de nuevo.', 'info');
     };
 
-    // ✅ EXPORTAR FUNCIÓN PARA USO MANUAL
     window.mostrarTutorial = function () {
         const moduloActual = detectarModuloActual();
-        if (moduloActual) {
-            iniciarTutorial(moduloActual);
-        } else {
-            Swal.fire('Aviso', 'No hay tutorial disponible para esta página', 'info');
-        }
+        if (moduloActual) iniciarTutorial(moduloActual);
+        else Swal.fire('Sin tutorial', 'No hay tutorial disponible para esta página.', 'info');
     };
 
     $(document).on('turbo:load', function () {
         inicializarTutoriales();
 
-        // Activar tab de Bootstrap según el hash de la URL (ej: /TmpTransaction/Index#fijos)
         const tabHash = window.location.hash;
         if (tabHash) {
             const trigger = document.querySelector(`[data-bs-target="${tabHash}"]`);
