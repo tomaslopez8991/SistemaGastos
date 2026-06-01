@@ -17,8 +17,11 @@ namespace SistemaGastos.Domain.Models
         public bool Active { get; set; }
         public DateTime? LastGeneratedDate { get; set; }
 
+        public int? PersonID { get; set; }
+
         public virtual Login User { get; set; } = null!;
         public virtual Account Account { get; set; } = null!;
         public virtual Category Category { get; set; } = null!;
+        public virtual Person? Person { get; set; }
     }
 }

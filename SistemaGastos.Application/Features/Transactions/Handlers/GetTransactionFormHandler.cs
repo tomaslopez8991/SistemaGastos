@@ -59,6 +59,13 @@ public class GetTransactionFormHandler(IApplicationDbContext context)
             })
             .ToListAsync(cancellationToken);
 
+        formDto.Persons = await context.Person
+            .AsNoTracking()
+            .Where(p => p.UserID == request.UserID && p.Active)
+            .OrderBy(p => p.Name)
+            .Select(p => new PersonDropdownDto { ID = p.ID, Name = p.Name })
+            .ToListAsync(cancellationToken);
+
         if (request.ID.HasValue && request.ID.Value > 0)
         {
             var transaction = await context.Transaction
@@ -76,6 +83,7 @@ public class GetTransactionFormHandler(IApplicationDbContext context)
                 formDto.CategoryID = transaction.CategoryID;
                 formDto.Description = transaction.Description;
                 formDto.FixedExpenseID = transaction.FixedExpenseID;
+                formDto.PersonID = transaction.PersonID;
             }
         }
 

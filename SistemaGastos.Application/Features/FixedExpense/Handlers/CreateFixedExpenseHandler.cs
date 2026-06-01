@@ -18,7 +18,8 @@ public class CreateFixedExpenseHandler(IApplicationDbContext context)
             CategoryID = request.CategoryID,
             PaymentDay = request.PaymentDay,
             LogoUrl = request.LogoUrl,
-            Active = true
+            Active = true,
+            PersonID = request.PersonID
         };
 
         await context.FixedExpense.AddAsync(expense, cancellationToken);

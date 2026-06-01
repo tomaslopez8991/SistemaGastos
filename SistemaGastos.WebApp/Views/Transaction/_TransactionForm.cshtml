@@ -68,6 +68,23 @@
                     <input type="text" class="form-control form-control-sm tx-desc" placeholder="Opcional..." />
                 </div>
             </div>
+            @if (Model.Persons != null && Model.Persons.Any())
+            {
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted mb-1">
+                            <i class="fa-solid fa-user me-1"></i>Solicitado por
+                        </label>
+                        <select class="form-select form-select-sm tx-person">
+                            <option value="">— Propio —</option>
+                            @foreach (var p in Model.Persons)
+                            {
+                                <option value="@p.ID">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            }
 
             <div class="splits-wrapper border-start border-3 border-success ps-3 mt-2">
                 <div class="d-flex justify-content-between align-items-center mb-2">

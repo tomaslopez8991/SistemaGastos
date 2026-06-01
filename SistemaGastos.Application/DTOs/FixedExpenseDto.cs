@@ -16,4 +16,6 @@ public class FixedExpenseDto
     public DateTime? LastGeneratedDate { get; set; }
     public bool AlreadyPaidThisMonth { get; set; }
     public string? PaidMonthName { get; set; }
+    public int? PersonID { get; set; }
+    public string? PersonName { get; set; }
 }

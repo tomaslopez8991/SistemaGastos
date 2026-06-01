@@ -12,4 +12,5 @@ public record CreateFixedExpenseCommand : IRequest<int>
     public int CategoryID { get; init; }
     public int PaymentDay { get; init; }
     public string LogoUrl { get; init; }
+    public int? PersonID { get; init; }
 }

@@ -391,6 +391,7 @@
                         CategoryID: parseInt(form.find('#CategoryID').val()) || 0,
                         AccountID: parseInt(form.find('#AccountID').val()) || 0,
                         LogoUrl: form.find('#LogoUrl').val()?.trim() || null,
+                        PersonID: parseInt(form.find('#PersonID').val()) || null,
                         Active: true
                     };
                 }

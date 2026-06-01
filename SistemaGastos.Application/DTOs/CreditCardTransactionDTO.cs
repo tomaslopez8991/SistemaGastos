@@ -13,11 +13,13 @@ public record CreditCardTransactionDto
     public int? ActualInstallment { get; init; }
     public int? Installments { get; init; }
     public bool Fixed { get; init; }
+    public int? PersonID { get; init; }
 
     // Propiedades de lectura (aplanadas)
     public string CategoryName { get; init; } = string.Empty;
     public string AccountName { get; init; } = string.Empty;
     public string Currency { get; init; } = string.Empty;
+    public string PersonName { get; init; } = string.Empty;
 }
 
 public record CreditCardAccountLookupDto(int ID, string Name, string Currency);
@@ -28,7 +30,8 @@ public record CreditCardFormDto(
     List<CreditCardAccountLookupDto> CreditCards,
     List<CreditCardAccountLookupDto> Accounts,
     List<CreditCardFormCategoryDto> Categories,
-    SistemaGastos.Domain.Models.CreditCardTransaction? Transaction);
+    SistemaGastos.Domain.Models.CreditCardTransaction? Transaction,
+    List<PersonDropdownDto>? Persons = null);
 
 public record CreditCardTotalsDto(
     decimal TotalArs, decimal TotalUsd,
@@ -36,7 +39,7 @@ public record CreditCardTotalsDto(
     decimal VariableArs, decimal VariableUsd);
 
 public record UpdateCreditCardTransactionDto(
-    int ID, // El JS envía "ID" en mayúsculas a veces, el binding de .NET es case-insensitive
+    int ID,
     string Description,
     decimal Amount,
     DateTime TransactionDate,
@@ -44,5 +47,6 @@ public record UpdateCreditCardTransactionDto(
     int AccountID,
     int? Installments,
     int? ActualInstallment,
-    bool Fixed
+    bool Fixed,
+    int? PersonID = null
 );

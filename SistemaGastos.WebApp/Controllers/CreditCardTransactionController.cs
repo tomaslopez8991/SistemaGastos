@@ -97,6 +97,7 @@ public class CreditCardTransactionController(IMediator mediator, ICurrentUserSer
             .ToList();
 
         ViewBag.Categories = new SelectList(result.Categories, "ID", "Name");
+        ViewBag.Persons = result.Persons ?? new List<SistemaGastos.Application.DTOs.PersonDropdownDto>();
 
         var accountsList = new List<SelectListItem>();
         foreach (var currency in result.Accounts.Select(a => a.Currency).Distinct())

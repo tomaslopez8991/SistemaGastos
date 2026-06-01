@@ -13,5 +13,6 @@ public record UpdateTransactionCommand : IRequest<bool>
     public int CategoryID { get; init; }
     public string Description { get; init; }
     public int? FixedExpenseID { get; init; }
+    public int? PersonID { get; init; }
     public List<TransactionSplitDto> Splits { get; set; } = new();
 }

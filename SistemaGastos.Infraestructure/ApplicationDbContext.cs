@@ -16,4 +16,5 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Budget> Budget { get; set; }
     public DbSet<FixedExpense> FixedExpense { get; set; }
     public DbSet<FixedExpenseHistory> FixedExpenseHistory { get; set; }
+    public DbSet<Person> Person { get; set; }
 }

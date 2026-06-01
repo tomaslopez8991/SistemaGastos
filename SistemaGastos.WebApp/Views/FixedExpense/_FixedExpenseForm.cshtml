@@ -120,6 +120,25 @@
         </div>
     </div>
 
+    <!-- Solicitado por -->
+    @if (Model.Persons != null && Model.Persons.Any())
+    {
+        <div class="mb-4">
+            <label for="PersonID" class="form-label fw-bold">
+                <i class="fa-solid fa-user text-primary me-2"></i>Solicitado por
+                <span class="badge bg-secondary ms-2">Opcional</span>
+            </label>
+            <select class="form-select form-select-lg" id="PersonID" name="PersonID">
+                <option value="">— Propio (sin atribución) —</option>
+                @foreach (var p in Model.Persons)
+                {
+                    <option value="@p.ID" selected="@(p.ID == Model.Expense.PersonID)">@p.Name</option>
+                }
+            </select>
+            <small class="text-muted d-block mt-1">Asigná este servicio a otra persona para verlo en su cuenta.</small>
+        </div>
+    }
+
     <!-- Logo URL -->
     <div class="mb-4">
         <label for="LogoUrl" class="form-label fw-bold">

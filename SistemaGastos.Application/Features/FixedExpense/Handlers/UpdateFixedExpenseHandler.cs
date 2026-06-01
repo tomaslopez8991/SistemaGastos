@@ -38,6 +38,7 @@ public class UpdateFixedExpenseHandler(IApplicationDbContext context)
         expense.CategoryID = request.CategoryID;
         expense.PaymentDay = request.PaymentDay;
         expense.LogoUrl = request.LogoUrl;
+        expense.PersonID = request.PersonID;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

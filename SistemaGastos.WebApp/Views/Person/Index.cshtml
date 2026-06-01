@@ -1,0 +1,105 @@
+@{
+    ViewData["Title"] = "Cuentas por Persona";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div id="persons-container"
+     data-url-list="@Url.Action("GetList", "Person")"
+     data-url-save="@Url.Action("Save", "Person")"
+     data-url-delete="@Url.Action("Delete", "Person")"
+     data-url-accounts="@Url.Action("GetAccounts", "Person")">
+
+    @* ── Header ───────────────────────────────────────────── *@
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-semibold mb-0" style="font-size:22px;">
+                <i class="fa-solid fa-people-group text-primary me-2"></i>Cuentas por Persona
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13px;">Seguimiento de gastos atribuidos a cada persona</p>
+        </div>
+        <button class="btn btn-primary d-flex align-items-center gap-2" id="btnNuevaPersona">
+            <i class="fas fa-plus"></i>Nueva Persona
+        </button>
+    </div>
+
+    @* ── Tabs: Cuentas / Personas ─────────────────────────── *@
+    <div class="tx-table-card mb-4">
+        <div class="tmp-tabs-header">
+            <ul class="nav nav-tabs border-bottom-0" id="personTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active tmp-tab-btn"
+                            id="cuentas-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#tab-cuentas"
+                            type="button" role="tab">
+                        <i class="fa-solid fa-wallet me-2 text-primary"></i>Cuentas
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link tmp-tab-btn"
+                            id="personas-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#tab-personas"
+                            type="button" role="tab">
+                        <i class="fa-solid fa-users me-2 text-info"></i>Personas
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content">
+            @* Tab: Cuentas *@
+            <div class="tab-pane fade show active p-4" id="tab-cuentas" role="tabpanel">
+                <div id="accounts-grid" class="row g-3">
+                    <div class="col-12 text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <span class="ms-2 small">Calculando saldos...</span>
+                    </div>
+                </div>
+            </div>
+
+            @* Tab: Personas (ABM) *@
+            <div class="tab-pane fade p-4" id="tab-personas" role="tabpanel">
+                <div id="persons-grid">
+                    <div class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                        <span class="ms-2 small">Cargando personas...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Modal persona *@
+<div class="modal fade" id="modalPersona" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="modalPersonaTitle">
+                    <i class="fa-solid fa-user-plus me-2"></i>Nueva Persona
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="personID" value="0" />
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nombre</label>
+                    <input type="text" class="form-control" id="personName" placeholder="Ej: Mamá, Juan, Socio..." maxlength="100" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarPersona">
+                    <i class="fas fa-save me-1"></i>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Person.js" asp-append-version="true"></script>
+}

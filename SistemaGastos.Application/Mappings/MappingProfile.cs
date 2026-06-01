@@ -59,7 +59,8 @@ public class MappingProfile : Profile
         CreateMap<FixedExpense, FixedExpenseDto>()
             .ForMember(d => d.AccountName, opt => opt.MapFrom(s => s.Account != null ? s.Account.Name : string.Empty))
             .ForMember(d => d.CategoryName, opt => opt.MapFrom(s => s.Category != null ? s.Category.Name : string.Empty))
-            .ForMember(d => d.AmountFormatted, opt => opt.MapFrom(s => s.Amount.ToString("C", new System.Globalization.CultureInfo("es-AR"))));
+            .ForMember(d => d.AmountFormatted, opt => opt.MapFrom(s => s.Amount.ToString("C", new System.Globalization.CultureInfo("es-AR"))))
+            .ForMember(d => d.PersonName, opt => opt.MapFrom(s => s.Person != null ? s.Person.Name : null));
 
         CreateMap<TmpTransaction, TmpTransactionDto>()
             .ForMember(d => d.CategoryName, opt => opt.MapFrom(s => s.Category != null ? s.Category.Name : string.Empty))

@@ -47,7 +47,8 @@ public class CreateTransactionHandler(IApplicationDbContext context)
                     AccountID = split.AccountID,
                     CategoryID = request.CategoryID,
                     Description = request.Description,
-                    FixedExpenseID = request.FixedExpenseID
+                    FixedExpenseID = request.FixedExpenseID,
+                    PersonID = request.PersonID
                 };
 
                 await context.Transaction.AddAsync(transaction, cancellationToken);

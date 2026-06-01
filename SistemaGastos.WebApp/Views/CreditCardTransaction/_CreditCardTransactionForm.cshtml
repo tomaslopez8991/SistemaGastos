@@ -95,6 +95,24 @@
             <span class="cc-fixed-subtitle">Se cobra todos los meses automáticamente</span>
         </label>
     </div>
+
+    @* ── Solicitado por ────────────────────────────────────────── *@
+    @if (ViewBag.Persons != null && ((IEnumerable<SistemaGastos.Application.DTOs.PersonDropdownDto>)ViewBag.Persons).Any())
+    {
+        <div class="mt-3">
+            <label asp-for="PersonID" class="cc-label">
+                <i class="fa-solid fa-user me-1"></i>Solicitado por
+            </label>
+            <select asp-for="PersonID" class="form-select" id="selectPersonCC">
+                <option value="">— Propio (sin atribución) —</option>
+                @foreach (var p in (IEnumerable<SistemaGastos.Application.DTOs.PersonDropdownDto>)ViewBag.Persons)
+                {
+                    <option value="@p.ID">@p.Name</option>
+                }
+            </select>
+            <small class="text-muted">Asigná este gasto a otra persona para verlo en su cuenta.</small>
+        </div>
+    }
 </form>
 
 <script>

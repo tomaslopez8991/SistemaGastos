@@ -124,11 +124,13 @@
                 $block.removeClass('border-danger border-2').addClass('border-primary border-opacity-50');
 
                 // Mapeamos el DTO clonando la primera cuenta a la raíz para evadir al validador genérico
+                const personId = parseInt($block.find('.tx-person').val()) || null;
                 dataPayload.push({
                     Date: dateVal,
                     CategoryID: catId,
                     Description: descVal,
                     FixedExpenseID: null,
+                    PersonID: personId,
                     AccountID: splits[0].AccountID,
                     Amount: splits[0].Amount,
                     Splits: splits

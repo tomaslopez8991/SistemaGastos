@@ -470,6 +470,7 @@
             CategoryID: parseInt($('#Edit_Transaction_CategoryID').val()),
             Description: $('#Edit_Transaction_Description').val(),
             FixedExpenseID: parseInt($('#Edit_Transaction_FixedExpenseID').val()) || null,
+            PersonID: parseInt($('#Edit_Transaction_PersonID').val()) || null,
             AccountID: splits[0].AccountID,
             Amount: splits[0].Amount,
             Splits: splits

@@ -13,4 +13,5 @@ public record UpdateFixedExpenseCommand : IRequest<bool>
     public int CategoryID { get; init; }
     public int PaymentDay { get; init; }
     public string LogoUrl { get; init; }
+    public int? PersonID { get; init; }
 }

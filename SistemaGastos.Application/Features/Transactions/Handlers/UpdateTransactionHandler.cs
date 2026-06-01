@@ -68,6 +68,7 @@ public class UpdateTransactionHandler(IApplicationDbContext context)
                     transaction.CategoryID = request.CategoryID;
                     transaction.Description = request.Description;
                     transaction.FixedExpenseID = request.FixedExpenseID;
+                    transaction.PersonID = request.PersonID;
 
                     isFirstSplit = false;
                 }
@@ -80,7 +81,8 @@ public class UpdateTransactionHandler(IApplicationDbContext context)
                         AccountID = split.AccountID,
                         CategoryID = request.CategoryID,
                         Description = request.Description,
-                        FixedExpenseID = request.FixedExpenseID
+                        FixedExpenseID = request.FixedExpenseID,
+                        PersonID = request.PersonID
                     };
 
                     await context.Transaction.AddAsync(newTransaction, cancellationToken);

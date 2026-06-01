@@ -32,6 +32,13 @@ public class GetFixedExpenseFormHandler(IApplicationDbContext context, IMapper m
                     ID = c.ID,
                     Name = c.Name
                 })
+                .ToListAsync(cancellationToken),
+
+            Persons = await context.Person
+                .AsNoTracking()
+                .Where(p => p.UserID == request.UserID && p.Active)
+                .OrderBy(p => p.Name)
+                .Select(p => new PersonDropdownDto { ID = p.ID, Name = p.Name })
                 .ToListAsync(cancellationToken)
         };
 
