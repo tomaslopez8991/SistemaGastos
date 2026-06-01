@@ -1908,417 +1908,365 @@ input.gridjs-input {
     }
 }
 
-/* 
-   INTRO.JS - TUTORIAL INTERACTIVO
-    */
+/* ===================================================
+   INTRO.JS — SISTEMA DE TUTORIALES INTERACTIVOS
+   =================================================== */
 
-/* Tooltip personalizado */
-.customTooltip {
-    background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.95), rgba(var(--bs-primary-rgb), 0.85)) !important;
-    color: white !important;
-    border-radius: 16px !important;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
-    padding: 1.5rem !important;
-    max-width: 450px !important;
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-    .customTooltip .introjs-tooltip-header {
-        padding-bottom: 1rem !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-    }
-
-    .customTooltip .introjs-tooltiptext {
-        font-size: 0.95rem !important;
-        line-height: 1.6 !important;
-        color: rgba(255, 255, 255, 0.95) !important;
-        padding: 1rem 0 !important;
-    }
-
-    .customTooltip .introjs-tooltipbuttons {
-        border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
-        padding-top: 1rem !important;
-        margin-top: 1rem !important;
-    }
-
-    .customTooltip .introjs-button {
-        background: rgba(255, 255, 255, 0.2) !important;
-        color: white !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        border-radius: 8px !important;
-        padding: 0.5rem 1.25rem !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-        text-shadow: none !important;
-    }
-
-        .customTooltip .introjs-button:hover {
-            background: rgba(255, 255, 255, 0.3) !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-        }
-
-    .customTooltip .introjs-nextbutton {
-        background: white !important;
-        color: rgb(var(--bs-primary-rgb)) !important;
-        border-color: white !important;
-    }
-
-        .customTooltip .introjs-nextbutton:hover {
-            background: rgba(255, 255, 255, 0.9) !important;
-        }
-
-    .customTooltip .introjs-skipbutton {
-        color: rgba(255, 255, 255, 0.7) !important;
-        border: none !important;
-        background: transparent !important;
-    }
-
-        .customTooltip .introjs-skipbutton:hover {
-            color: white !important;
-            background: rgba(255, 255, 255, 0.1) !important;
-        }
-
-/* Progress bar */
-.introjs-progress {
-    background: rgba(255, 255, 255, 0.3) !important;
-    height: 4px !important;
-    border-radius: 2px !important;
-}
-
-.introjs-progressbar {
-    background: white !important;
-    border-radius: 2px !important;
-}
-
-/* Highlight personalizado */
-.customHighlight {
-    border: 3px solid rgb(var(--bs-primary-rgb)) !important;
-    box-shadow: 0 0 0 5px rgba(var(--bs-primary-rgb), 0.3), 0 0 0 10px rgba(var(--bs-primary-rgb), 0.1) !important;
-    border-radius: 12px !important;
-    transition: all 0.3s ease !important;
-}
-
-/* Overlay oscuro */
+/* ── Overlay ──────────────────────────────────────── */
 .introjs-overlay {
-    background-color: rgba(0, 0, 0, 0.75) !important;
-    backdrop-filter: blur(3px);
+    background-color: rgba(0, 0, 0, 0.72) !important;
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
     z-index: 999998 !important;
 }
 
-/* Arrow personalizada */
-.introjs-arrow {
-    border-color: rgba(var(--bs-primary-rgb), 0.95) !important;
+[data-bs-theme="dark"] .introjs-overlay {
+    background-color: rgba(0, 0, 0, 0.82) !important;
 }
 
-/* 
-   BOTÓN FLOTANTE DE AYUDA
-    */
-
-.btn-floating {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 6px 20px rgba(var(--bs-primary-rgb), 0.4);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    border: none;
-}
-
-    .btn-floating:hover {
-        transform: scale(1.1) rotate(5deg);
-        box-shadow: 0 8px 30px rgba(var(--bs-primary-rgb), 0.6);
-    }
-
-    .btn-floating:active {
-        transform: scale(0.95);
-    }
-
-    .btn-floating i {
-        font-size: 1.25rem;
-    }
-
-/* Animación de pulso */
-@keyframes pulse-help {
-    0%, 100% {
-        box-shadow: 0 6px 20px rgba(var(--bs-primary-rgb), 0.4);
-        transform: scale(1);
-    }
-
-    50% {
-        box-shadow: 0 6px 30px rgba(var(--bs-primary-rgb), 0.7);
-        transform: scale(1.05);
-    }
-}
-
-.btn-floating.pulse {
-    animation: pulse-help 2s infinite;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .btn-floating {
-        width: 48px;
-        height: 48px;
-        bottom: 15px;
-        right: 15px;
-    }
-
-        .btn-floating i {
-            font-size: 1rem;
-        }
-
-    .customTooltip {
-        max-width: 90vw !important;
-        padding: 1rem !important;
-    }
-}
-
-/* Ocultar por defecto hasta que se detecte el módulo */
-.btn-floating {
-    display: none;
-}
-
-.introjs-overlay {
-    background-color: rgba(0, 0, 0, 0.75) !important; /* Fondo negro al 75% */
-    backdrop-filter: blur(3px); /* Desenfoque opcional */
-    z-index: 999998 !important;
-}
-
-/* 2. TOOLTIP - Caja del tutorial */
-.introjs-tooltip {
-    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
-    border: 2px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 16px !important;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
-    padding: 0 !important;
-    max-width: 450px !important;
-    color: #fff !important;
-    min-width: 350px !important;
-}
-
-/* 3. HEADER DEL TOOLTIP */
-.introjs-tooltip-header {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-    padding: 1rem 3.5rem 1rem 1.5rem !important; /* Espacio para el botón X */
-    border-radius: 14px 14px 0 0 !important;
-    position: relative !important;
-}
-
-.introjs-tooltip-title {
-    color: #fff !important;
-    font-weight: 700 !important;
-    font-size: 1.1rem !important;
-    margin: 0 !important;
-}
-
-/* 4. CONTENIDO DEL TOOLTIP */
-.introjs-tooltiptext {
-    padding: 1.5rem !important;
-    color: rgba(255, 255, 255, 0.95) !important;
-    font-size: 0.95rem !important;
-    line-height: 1.6 !important;
-    min-height: 60px !important;
-}
-
-/* 5. BOTONES DE NAVEGACIÓN */
-.introjs-tooltipbuttons {
-    padding: 0 1.5rem 1.5rem !important;
-    border-top: none !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-}
-
-/* Botón Anterior */
-.introjs-button.introjs-prevbutton {
-    background: rgba(255, 255, 255, 0.15) !important;
-    color: #fff !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 8px !important;
-    padding: 0.5rem 1.25rem !important;
-    font-weight: 600 !important;
-    transition: all 0.3s ease !important;
-}
-
-    .introjs-button.introjs-prevbutton:hover {
-        background: rgba(255, 255, 255, 0.25) !important;
-        transform: translateX(-3px) !important;
-    }
-
-    .introjs-button.introjs-prevbutton:disabled {
-        opacity: 0.4 !important;
-        cursor: not-allowed !important;
-    }
-
-/* Botón Siguiente */
-.introjs-button.introjs-nextbutton {
-    background: #fff !important;
-    color: #1e3a8a !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 0.5rem 1.5rem !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3) !important;
-    transition: all 0.3s ease !important;
-}
-
-    .introjs-button.introjs-nextbutton:hover {
-        background: #f0f0f0 !important;
-        transform: translateX(3px) !important;
-    }
-
-/* Botón Finalizar/Hecho */
-.introjs-button.introjs-donebutton {
-    background: #10b981 !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 0.5rem 1.5rem !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
-    transition: all 0.3s ease !important;
-}
-
-    .introjs-button.introjs-donebutton:hover {
-        background: #059669 !important;
-        transform: scale(1.05) !important;
-    }
-
-/* 7. BOTÓN DE CIERRE (X) - EN EL HEADER */
-.introjs-tooltip-header .introjs-skipbutton {
-    position: absolute !important;
-    top: 50% !important;
-    right: 1rem !important;
-    transform: translateY(-50%) !important;
-    width: 32px !important;
-    height: 32px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: rgba(255, 255, 255, 0.15) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 50% !important;
-    transition: all 0.3s ease !important;
-    color: #fff !important;
-    text-shadow: none !important;
-    font-size: 1.2rem !important;
-    line-height: 1 !important;
-    padding: 0 !important;
-}
-
-    .introjs-tooltip-header .introjs-skipbutton:hover {
-        background: rgba(220, 38, 38, 0.9) !important;
-        border-color: rgba(220, 38, 38, 1) !important;
-        transform: translateY(-50%) rotate(90deg) !important;
-    }
-
-/* 8. FLECHA DEL TOOLTIP */
-.introjs-arrow {
-    border-color: transparent !important;
-}
-
-    .introjs-arrow.top {
-        border-bottom-color: #1e3a8a !important;
-    }
-
-    .introjs-arrow.bottom {
-        border-top-color: #1e3a8a !important;
-    }
-
-    .introjs-arrow.left {
-        border-right-color: #1e3a8a !important;
-    }
-
-    .introjs-arrow.right {
-        border-left-color: #1e3a8a !important;
-    }
-
-/* 9. ELEMENTO DESTACADO */
+/* ── Elemento resaltado ───────────────────────────── */
 .introjs-helperLayer {
     background: transparent !important;
-    box-shadow: 0 0 0 5000px rgba(0, 0, 0, 0.75), 0 0 20px rgba(59, 130, 246, 0.6), inset 0 0 40px rgba(255, 255, 255, 0.1) !important;
-    border: 3px solid rgba(59, 130, 246, 0.8) !important;
-    border-radius: 8px !important;
+    box-shadow: 0 0 0 5000px rgba(0,0,0,0.72), 0 0 0 3px rgb(var(--bs-primary-rgb)), 0 0 20px rgba(var(--bs-primary-rgb), 0.5) !important;
+    border-radius: 10px !important;
     z-index: 999999 !important;
 }
 
-/* 10. ANIMACIONES SUAVES */
+.customHighlight {
+    border: 2px solid rgb(var(--bs-primary-rgb)) !important;
+    box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.25), 0 0 20px rgba(var(--bs-primary-rgb), 0.15) !important;
+    border-radius: 10px !important;
+}
+
 .introjs-tooltipReferenceLayer,
 .introjs-helperLayer {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* 11. RESPONSIVE - Adaptación móvil */
-@media (max-width: 768px) {
-    .introjs-tooltip {
-        max-width: 90vw !important;
-        min-width: unset !important;
-        margin: 0 1rem !important;
-    }
-
-    .introjs-tooltiptext {
-        font-size: 0.9rem !important;
-        padding: 1rem !important;
-    }
-
-    .introjs-tooltipbuttons {
-        flex-direction: column !important;
-        gap: 0.5rem !important;
-    }
-
-        .introjs-tooltipbuttons > div {
-            width: 100% !important;
-            justify-content: space-between !important;
-        }
-
-    .introjs-button {
-        flex: 1 !important;
-    }
+/* ── Tooltip container ────────────────────────────── */
+.introjs-tooltip,
+.customTooltip {
+    background: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid rgba(var(--bs-primary-rgb), 0.2) !important;
+    padding: 0 !important;
+    max-width: 440px !important;
+    min-width: 320px !important;
+    overflow: hidden !important;
 }
 
-/* 12. MODO DARK/LIGHT - Ajustes automáticos */
-[data-bs-theme="light"] .introjs-overlay {
-    background-color: rgba(0, 0, 0, 0.6) !important;
+/* ── Header del tooltip ───────────────────────────── */
+.introjs-tooltip-header {
+    background: linear-gradient(135deg, rgb(var(--bs-primary-rgb)) 0%, #7c3aed 100%) !important;
+    padding: 1rem 3.5rem 1rem 1.25rem !important;
+    border-bottom: none !important;
+    border-radius: 20px 20px 0 0 !important;
+    position: relative !important;
+    min-height: 52px !important;
 }
 
-[data-bs-theme="dark"] .introjs-overlay {
-    background-color: rgba(0, 0, 0, 0.85) !important;
-}
-
-/* 13. FIX: Evitar conflictos con Bootstrap */
-.introjs-button {
-    text-decoration: none !important;
-    outline: none !important;
-}
-
-    .introjs-button:focus {
-        outline: 2px solid rgba(255, 255, 255, 0.5) !important;
-        outline-offset: 2px !important;
-    }
-
-/* 14. PROGRESS BAR (opcional) */
-.introjs-progress {
-    background: rgba(255, 255, 255, 0.2) !important;
-    height: 4px !important;
+.introjs-tooltip-title {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
     margin: 0 !important;
+    letter-spacing: 0.01em !important;
+}
+
+/* ── Barra de progreso ────────────────────────────── */
+.introjs-progress {
+    background: rgba(var(--bs-primary-rgb), 0.12) !important;
+    height: 3px !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
     overflow: hidden !important;
 }
 
 .introjs-progressbar {
-    background: #10b981 !important;
+    background: linear-gradient(90deg, rgb(var(--bs-primary-rgb)), #7c3aed) !important;
     height: 100% !important;
-    transition: width 0.3s ease !important;
+    border-radius: 0 !important;
+    transition: width 0.4s ease !important;
 }
+
+/* ── Contenido ────────────────────────────────────── */
+.introjs-tooltiptext {
+    padding: 1.1rem 1.25rem !important;
+    color: var(--bs-body-color) !important;
+    font-size: 0.9rem !important;
+    line-height: 1.65 !important;
+    min-height: 60px !important;
+}
+
+/* ── Botones ──────────────────────────────────────── */
+.introjs-tooltipbuttons {
+    padding: 0.8rem 1.25rem !important;
+    border-top: 1px solid rgba(var(--bs-primary-rgb), 0.1) !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    background: var(--bs-body-bg) !important;
+}
+
+.introjs-button {
+    border-radius: 10px !important;
+    padding: 0.45rem 1.1rem !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    text-shadow: none !important;
+    transition: all 0.2s ease !important;
+    outline: none !important;
+    text-decoration: none !important;
+    letter-spacing: 0.01em !important;
+}
+
+    .introjs-button:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+.introjs-button.introjs-prevbutton {
+    background: transparent !important;
+    color: var(--bs-secondary-color, #6c757d) !important;
+    border: 1px solid rgba(108, 117, 125, 0.3) !important;
+}
+
+    .introjs-button.introjs-prevbutton:hover {
+        background: rgba(108, 117, 125, 0.08) !important;
+        color: var(--bs-body-color) !important;
+    }
+
+    .introjs-button.introjs-prevbutton:disabled {
+        opacity: 0.35 !important;
+        cursor: not-allowed !important;
+    }
+
+.introjs-button.introjs-nextbutton {
+    background: linear-gradient(135deg, rgb(var(--bs-primary-rgb)), #7c3aed) !important;
+    color: #ffffff !important;
+    border: none !important;
+    margin-left: auto !important;
+    box-shadow: 0 4px 14px rgba(var(--bs-primary-rgb), 0.4) !important;
+}
+
+    .introjs-button.introjs-nextbutton:hover {
+        opacity: 0.9 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 18px rgba(var(--bs-primary-rgb), 0.5) !important;
+    }
+
+.introjs-button.introjs-donebutton {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: #ffffff !important;
+    border: none !important;
+    margin-left: auto !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+}
+
+    .introjs-button.introjs-donebutton:hover {
+        opacity: 0.9 !important;
+        transform: translateY(-1px) !important;
+    }
+
+/* ── Botón cerrar (X) en el header ───────────────── */
+.introjs-tooltip-header .introjs-skipbutton {
+    position: absolute !important;
+    top: 50% !important;
+    right: 1rem !important;
+    transform: translateY(-50%) !important;
+    width: 30px !important;
+    height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 50% !important;
+    color: #ffffff !important;
+    font-size: 1.1rem !important;
+    text-shadow: none !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    transition: all 0.2s ease !important;
+}
+
+    .introjs-tooltip-header .introjs-skipbutton:hover {
+        background: rgba(239, 68, 68, 0.85) !important;
+        border-color: rgba(239, 68, 68, 0.9) !important;
+        transform: translateY(-50%) rotate(90deg) !important;
+    }
+
+/* ── Flechas ──────────────────────────────────────── */
+.introjs-arrow { border-color: transparent !important; }
+.introjs-arrow.top,
+.introjs-arrow.top-right,
+.introjs-arrow.top-middle { border-bottom-color: var(--bs-body-bg) !important; }
+.introjs-arrow.bottom,
+.introjs-arrow.bottom-right,
+.introjs-arrow.bottom-middle { border-top-color: var(--bs-body-bg) !important; }
+.introjs-arrow.left,
+.introjs-arrow.left-bottom { border-right-color: var(--bs-body-bg) !important; }
+.introjs-arrow.right,
+.introjs-arrow.right-bottom { border-left-color: var(--bs-body-bg) !important; }
+
+/* ── Popup de bienvenida ──────────────────────────── */
+.tutorial-welcome-popup {
+    border-radius: 20px !important;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 768px) {
+    .introjs-tooltip,
+    .customTooltip {
+        max-width: 92vw !important;
+        min-width: unset !important;
+    }
+
+    .introjs-tooltipbuttons {
+        flex-wrap: wrap !important;
+    }
+
+        .introjs-tooltipbuttons .introjs-nextbutton,
+        .introjs-tooltipbuttons .introjs-donebutton {
+            flex: 1 !important;
+            text-align: center !important;
+        }
+}
+
+/* ===================================================
+   BOTÓN FLOTANTE DE TUTORIAL (FAB)
+   =================================================== */
+
+.tutorial-fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 1050;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgb(var(--bs-primary-rgb)) 0%, #7c3aed 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 20px 12px 14px;
+    box-shadow: 0 8px 28px rgba(var(--bs-primary-rgb), 0.45), 0 2px 8px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
+    font-family: inherit;
+    outline: none;
+}
+
+.tutorial-fab:hover {
+    transform: translateY(-3px) scale(1.04);
+    box-shadow: 0 14px 36px rgba(var(--bs-primary-rgb), 0.6), 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tutorial-fab:active {
+    transform: translateY(-1px) scale(0.97);
+}
+
+/* Ícono circular */
+.tutorial-fab-icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+}
+
+.tutorial-fab:hover .tutorial-fab-icon-wrap {
+    transform: rotate(-10deg) scale(1.1);
+}
+
+.tutorial-fab-icon-wrap i {
+    font-size: 0.9rem;
+}
+
+.tutorial-fab-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+/* Badge NUEVO */
+.tutorial-fab-new {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 0.58rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 10px;
+    letter-spacing: 0.06em;
+    border: 2px solid var(--bs-body-bg);
+    display: none;
+}
+
+/* ── Estados del FAB ──────────────────────────────── */
+@keyframes fab-slide-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.85); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pulse-fab {
+    0%, 100% { box-shadow: 0 8px 28px rgba(var(--bs-primary-rgb), 0.45), 0 2px 8px rgba(0,0,0,0.12); }
+    50%       { box-shadow: 0 8px 28px rgba(var(--bs-primary-rgb), 0.7), 0 2px 8px rgba(0,0,0,0.12), 0 0 0 8px rgba(var(--bs-primary-rgb), 0.18); }
+}
+
+@keyframes pulse-badge {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.2); }
+}
+
+.tutorial-fab.tutorial-fab--visible {
+    display: flex;
+    animation: fab-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.tutorial-fab.tutorial-pulse {
+    animation: fab-slide-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, pulse-fab 2s 0.4s ease-in-out 3;
+}
+
+.tutorial-fab.tutorial-fab--new .tutorial-fab-new {
+    display: block;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 768px) {
+    .tutorial-fab {
+        bottom: 18px;
+        right: 18px;
+        padding: 10px 16px 10px 11px;
+        gap: 8px;
+    }
+
+    .tutorial-fab-icon-wrap {
+        width: 28px;
+        height: 28px;
+    }
+
+    .tutorial-fab-icon-wrap i {
+        font-size: 0.8rem;
+    }
+
+    .tutorial-fab-label {
+        font-size: 0.8rem;
+    }
+}
+
 
 /* Animación suave para el punto rojo */
 @keyframes pulse-red {
