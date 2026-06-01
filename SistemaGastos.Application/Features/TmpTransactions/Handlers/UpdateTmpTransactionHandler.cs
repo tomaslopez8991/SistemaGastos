@@ -18,6 +18,7 @@ public class UpdateTmpTransactionHandler(IApplicationDbContext context)
 
         existing.Description = request.Description;
         existing.Amount = request.Amount;
+        existing.Currency = request.Currency;
         existing.CategoryID = request.CategoryID;
         existing.AccountID = (int)request.AccountID;
         existing.DateTransaction = request.DateTransaction;

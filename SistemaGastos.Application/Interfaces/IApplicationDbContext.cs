@@ -16,6 +16,7 @@ public interface IApplicationDbContext
     DbSet<Category> Category { get; }
     DbSet<FixedExpense> FixedExpense { get; set; }
     DbSet<FixedExpenseHistory> FixedExpenseHistory { get; set; }
+    DbSet<FixedIncome> FixedIncome { get; set; }
     DbSet<TodoTask> TodoTask { get; set; }
     DbSet<Budget> Budget { get; set; }
 

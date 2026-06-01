@@ -23,9 +23,16 @@
         </div>
     </div>
 
-    <!-- Monto y Día de Vencimiento (Fila) -->
-    <div class="row mb-4">
-        <div class="col-md-6">
+    <!-- Monto + Moneda y Día de Vencimiento -->
+    <div class="row mb-3 g-2">
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Moneda</label>
+            <select class="form-select form-select-lg" id="Currency" name="Currency">
+                <option value="ARS" @(Model.Expense.Currency == "ARS" ? "selected" : "")>ARS $</option>
+                <option value="USD" @(Model.Expense.Currency == "USD" ? "selected" : "")>USD U$S</option>
+            </select>
+        </div>
+        <div class="col-md-5">
             <label for="Amount" class="form-label fw-bold">
                 <i class="fas fa-dollar-sign text-success me-2"></i>Monto Mensual
                 <span class="text-danger">*</span>
@@ -34,22 +41,13 @@
                 <span class="input-group-text bg-success bg-opacity-10 border-success text-success">
                     <i class="fas fa-money-bill-wave"></i>
                 </span>
-                <input type="number"
-                       step="0.01"
-                       class="form-control"
-                       id="Amount"
-                       name="Amount"
-                       value="@Model.Expense.Amount"
-                       placeholder="0.00"
-                       min="0.01"
-                       required />
+                <input type="number" step="0.01" class="form-control" id="Amount" name="Amount"
+                       value="@Model.Expense.Amount" placeholder="0.00" min="0.01" required />
             </div>
-            <div class="invalid-feedback">
-                Ingresa un monto válido
-            </div>
+            <div class="invalid-feedback">Ingresa un monto válido</div>
         </div>
 
-        <div class="col-md-6">
+        <div class="col-md-4">
             <label for="PaymentDay" class="form-label fw-bold">
                 <i class="fas fa-calendar-day text-warning me-2"></i>Día de Vencimiento
                 <span class="text-danger">*</span>
@@ -58,23 +56,28 @@
                 <span class="input-group-text bg-warning bg-opacity-10 border-warning text-warning">
                     <i class="fas fa-calendar"></i>
                 </span>
-                <input type="number"
-                       class="form-control"
-                       id="PaymentDay"
-                       name="PaymentDay"
-                       value="@Model.Expense.PaymentDay"
-                       min="1"
-                       max="31"
-                       placeholder="15"
-                       required />
+                <input type="number" class="form-control" id="PaymentDay" name="PaymentDay"
+                       value="@Model.Expense.PaymentDay" min="1" max="31" placeholder="15" required />
             </div>
             <small class="text-muted d-block mt-1">
                 <i class="fas fa-info-circle me-1"></i>Del 1 al 31
             </small>
-            <div class="invalid-feedback">
-                Ingresa un día válido (1-31)
-            </div>
+            <div class="invalid-feedback">Ingresa un día válido (1-31)</div>
         </div>
+    </div>
+
+    <!-- Fecha de inicio -->
+    <div class="mb-4">
+        <label for="StartDate" class="form-label fw-bold">
+            <i class="fas fa-calendar-plus text-primary me-2"></i>Fecha de inicio
+            <span class="badge bg-secondary ms-1">Opcional</span>
+        </label>
+        <input type="date" class="form-control" id="StartDate" name="StartDate"
+               value="@(Model.Expense.StartDate?.ToString("yyyy-MM-dd") ?? "")" />
+        <small class="text-muted d-block mt-1">
+            <i class="fas fa-info-circle me-1"></i>
+            Si no se indica, se proyecta desde el mes actual
+        </small>
     </div>
 
     <!-- Cuenta y Categoría (Fila) -->

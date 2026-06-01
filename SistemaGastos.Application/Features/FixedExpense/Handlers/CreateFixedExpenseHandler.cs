@@ -14,10 +14,12 @@ public class CreateFixedExpenseHandler(IApplicationDbContext context)
             UserID = request.UserID,
             Name = request.Name,
             Amount = request.Amount,
+            Currency = request.Currency,
             AccountID = request.AccountID,
             CategoryID = request.CategoryID,
             PaymentDay = request.PaymentDay,
             LogoUrl = request.LogoUrl,
+            StartDate = request.StartDate,
             Active = true
         };
 

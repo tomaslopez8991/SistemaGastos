@@ -31,6 +31,7 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
                 {
                     Description = request.Description,
                     Amount = request.Amount,
+                    Currency = request.Currency,
                     CategoryID = request.CategoryID,
                     AccountID = (int)request.AccountID,
                     UserID = request.UserID,
@@ -46,6 +47,7 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
             {
                 Description = request.Description,
                 Amount = request.Amount,
+                Currency = request.Currency,
                 CategoryID = request.CategoryID,
                 AccountID = (int)request.AccountID,
                 UserID = request.UserID,

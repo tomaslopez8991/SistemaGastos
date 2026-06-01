@@ -3527,6 +3527,17 @@ input.gridjs-input {
     color: #ffe69c;
 }
 
+.tmp-badge-success {
+    background: #d1e7dd;
+    color: #0a3622;
+    font-size: 11px;
+}
+
+[data-bs-theme="dark"] .tmp-badge-success {
+    background: #0a3622;
+    color: #a3cfbb;
+}
+
 /* Grid.js overrides para #grid-wrapper de TmpTransaction */
 #grid-wrapper .gridjs-wrapper {
     border: none !important;

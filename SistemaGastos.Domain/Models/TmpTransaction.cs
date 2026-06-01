@@ -16,6 +16,8 @@ namespace SistemaGastos.Domain.Models
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:dd/MM/yyyy}")]
         public DateTime? DateTransaction { get; set; }
         public bool? EsRecurrente { get; set; }
+        /// <summary>"ARS" o "USD". El Amount se almacena en la moneda original.</summary>
+        public string Currency { get; set; } = "ARS";
         [NotMapped]
         public List<string>? MesesSeleccionados { get; set; }
 

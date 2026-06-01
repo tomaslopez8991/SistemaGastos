@@ -5,6 +5,8 @@ public class TmpTransactionDto
     public long ID { get; set; }
     public string Description { get; set; }
     public decimal Amount { get; set; }
+    /// <summary>"ARS" o "USD". El Amount está en la moneda original.</summary>
+    public string Currency { get; set; } = "ARS";
     public int CategoryID { get; set; }
     public string CategoryName { get; set; }
     public string CategoryType { get; set; } // "Ingreso" o "Gasto"
