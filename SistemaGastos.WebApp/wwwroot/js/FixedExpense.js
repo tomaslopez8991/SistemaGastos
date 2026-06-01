@@ -384,14 +384,16 @@
                 preConfirm: () => {
                     const form = $('#expenseForm');
                     return {
-                        ID: parseInt(form.find('#ID').val()) || 0,
-                        Name: form.find('#Name').val()?.trim(),
-                        Amount: parseFloat(form.find('#Amount').val()) || 0,
-                        PaymentDay: parseInt(form.find('#PaymentDay').val()) || 1,
-                        CategoryID: parseInt(form.find('#CategoryID').val()) || 0,
+                        ID:        parseInt(form.find('#ID').val()) || 0,
+                        Name:      form.find('#Name').val()?.trim(),
+                        Amount:    parseFloat(form.find('#Amount').val()) || 0,
+                        Currency:  form.find('#Currency').val() || 'ARS',
+                        PaymentDay:parseInt(form.find('#PaymentDay').val()) || 1,
+                        StartDate: form.find('#StartDate').val() || null,
+                        CategoryID:parseInt(form.find('#CategoryID').val()) || 0,
                         AccountID: parseInt(form.find('#AccountID').val()) || 0,
-                        LogoUrl: form.find('#LogoUrl').val()?.trim() || null,
-                        Active: true
+                        LogoUrl:   form.find('#LogoUrl').val()?.trim() || null,
+                        Active:    true
                     };
                 }
             }).then((result) => {

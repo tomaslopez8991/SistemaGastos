@@ -67,6 +67,11 @@
                 window.cargarGastosFijos(year, month);
             }
 
+            if (typeof window.cargarIngresosFijos === 'function') {
+                const [year, month] = activeMonthKey.split('-');
+                window.cargarIngresosFijos(year, month);
+            }
+
         }).fail(function (xhr) {
             console.error("Error GetBalances:", xhr);
             Swal.fire('Error', 'No se pudieron cargar los balances mensuales', 'error');
@@ -120,6 +125,11 @@
         if (typeof window.cargarGastosFijos === 'function') {
             const [year, month] = key.split('-');
             window.cargarGastosFijos(year, month);
+        }
+
+        if (typeof window.cargarIngresosFijos === 'function') {
+            const [year, month] = key.split('-');
+            window.cargarIngresosFijos(year, month);
         }
     }
 
@@ -451,6 +461,31 @@
                     const $btnAll = $(popup).find('#btnSelectAllMonths');
                     const $btnClear = $(popup).find('#btnClearMonths');
 
+                    // ── Conversión USD ──────────────────────────────────
+                    const dolarRate = parseFloat($(popup).find('#Transaction_DolarMep').val()) || 0;
+                    const fmtArs = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+
+                    function updateCurrencyUI() {
+                        const currency = $(popup).find('#Transaction_CurrencySelect').val();
+                        const amount = parseFloat($(popup).find('#Transaction_Amount').val()) || 0;
+                        const $symbol = $(popup).find('#tmp-currency-symbol');
+                        const $preview = $(popup).find('#tmp-usd-preview');
+                        const $arsPreview = $(popup).find('#tmp-ars-preview');
+
+                        if (currency === 'USD') {
+                            $symbol.text('U$S');
+                            $preview.removeClass('d-none');
+                            $arsPreview.text(dolarRate > 0 ? fmtArs.format(amount * dolarRate) : '—');
+                        } else {
+                            $symbol.text('$');
+                            $preview.addClass('d-none');
+                        }
+                    }
+
+                    $(popup).find('#Transaction_CurrencySelect').on('change', updateCurrencyUI);
+                    $(popup).find('#Transaction_Amount').on('input', updateCurrencyUI);
+                    updateCurrencyUI();
+
                     // Estado inicial
                     if ($check.is(':checked')) {
                         $panel.show();
@@ -505,6 +540,7 @@
                         ID: parseInt(form.find('#Transaction_ID').val()) || 0,
                         Description: form.find('#Transaction_Description').val()?.trim(),
                         Amount: parseFloat(form.find('#Transaction_Amount').val()) || 0,
+                        Currency: form.find('#Transaction_CurrencySelect').val() || 'ARS',
                         CategoryID: parseInt(form.find('#Transaction_CategoryID').val()) || 0,
                         AccountID: parseInt(form.find('#Transaction_AccountID').val()) || null,
                         DateTransaction: esRecurrente

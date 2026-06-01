@@ -1,17 +1,16 @@
-﻿using MediatR;
-using SistemaGastos.Application.Features.FixedExpense.Commands;
+using MediatR;
+using SistemaGastos.Application.Features.FixedIncome.Commands;
 
-namespace SistemaGastos.Application.Features.FixedExpense.Handlers;
+namespace SistemaGastos.Application.Features.FixedIncome.Handlers;
 
-public class SaveFixedExpenseHandler(IMediator mediator)
-    : IRequestHandler<SaveFixedExpenseCommand, int>
+public class SaveFixedIncomeHandler(IMediator mediator)
+    : IRequestHandler<SaveFixedIncomeCommand, int>
 {
-    public async Task<int> Handle(SaveFixedExpenseCommand request, CancellationToken cancellationToken)
+    public async Task<int> Handle(SaveFixedIncomeCommand request, CancellationToken cancellationToken)
     {
         if (request.Dto.ID > 0)
         {
-            // Actualizar
-            var updateCommand = new UpdateFixedExpenseCommand
+            var update = new UpdateFixedIncomeCommand
             {
                 ID = request.Dto.ID,
                 UserID = request.UserID,
@@ -20,18 +19,16 @@ public class SaveFixedExpenseHandler(IMediator mediator)
                 Currency = request.Dto.Currency,
                 AccountID = request.Dto.AccountID,
                 CategoryID = request.Dto.CategoryID,
-                PaymentDay = request.Dto.PaymentDay,
+                ReceiptDay = request.Dto.ReceiptDay,
                 LogoUrl = request.Dto.LogoUrl,
                 StartDate = request.Dto.StartDate
             };
-
-            var success = await mediator.Send(updateCommand, cancellationToken);
-            return success ? request.Dto.ID : 0;
+            var ok = await mediator.Send(update, cancellationToken);
+            return ok ? request.Dto.ID : 0;
         }
         else
         {
-            // Crear
-            var createCommand = new CreateFixedExpenseCommand
+            var create = new CreateFixedIncomeCommand
             {
                 UserID = request.UserID,
                 Name = request.Dto.Name,
@@ -39,12 +36,11 @@ public class SaveFixedExpenseHandler(IMediator mediator)
                 Currency = request.Dto.Currency,
                 AccountID = request.Dto.AccountID,
                 CategoryID = request.Dto.CategoryID,
-                PaymentDay = request.Dto.PaymentDay,
+                ReceiptDay = request.Dto.ReceiptDay,
                 LogoUrl = request.Dto.LogoUrl,
                 StartDate = request.Dto.StartDate
             };
-
-            return await mediator.Send(createCommand, cancellationToken);
+            return await mediator.Send(create, cancellationToken);
         }
     }
 }

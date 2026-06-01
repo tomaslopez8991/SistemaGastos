@@ -7,12 +7,15 @@ using SistemaGastos.Application.Interfaces;
 
 namespace SistemaGastos.Application.Features.TmpTransactions.Handlers;
 
-public class GetTmpTransactionFormHandler(IApplicationDbContext context)
+public class GetTmpTransactionFormHandler(IApplicationDbContext context, IDolarService dolarService)
     : IRequestHandler<GetTmpTransactionFormQuery, TmpTransactionFormDto>
 {
     public async Task<TmpTransactionFormDto> Handle(GetTmpTransactionFormQuery request, CancellationToken cancellationToken)
     {
-        var formDto = new TmpTransactionFormDto();
+        var formDto = new TmpTransactionFormDto
+        {
+            DolarMep = await dolarService.GetDolarBolsaAsync()
+        };
 
         // Categories como SelectListItem
         formDto.Categories = await context.Category
@@ -92,6 +95,7 @@ public class GetTmpTransactionFormHandler(IApplicationDbContext context)
                     ID = transaction.ID,
                     Description = transaction.Description,
                     Amount = transaction.Amount,
+                    Currency = transaction.Currency,
                     CategoryID = transaction.CategoryID,
                     AccountID = transaction.AccountID,
                     DateTransaction = transaction.DateTransaction,
