@@ -106,6 +106,13 @@ builder.Services.AddValidatorsFromAssembly(typeof(SistemaGastos.Application.Feat
 
 var app = builder.Build();
 
+// AUTO-MIGRACIÓN: aplica migraciones pendientes al iniciar la app
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
 // 6. CONFIGURACI�N DE PROXY (CR�TICO PARA HTTPS EN SOMEE)
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
