@@ -24,5 +24,9 @@ public class FixedIncomeConfiguration : IEntityTypeConfiguration<FixedIncome>
         builder.HasOne(f => f.Category).WithMany().HasForeignKey(f => f.CategoryID).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(f => f.Account).WithMany().HasForeignKey(f => f.AccountID).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserID).OnDelete(DeleteBehavior.Cascade);
+
+        // La FK inversa Transaction → FixedIncome usa NoAction para evitar
+        // ciclos de cascade (Transaction ya tiene Cascade desde Account y Category)
+        // La nullificación se maneja manualmente en DeleteFixedIncomeHandler.
     }
 }

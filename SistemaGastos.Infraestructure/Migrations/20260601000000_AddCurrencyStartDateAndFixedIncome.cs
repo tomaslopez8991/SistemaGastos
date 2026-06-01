@@ -104,14 +104,14 @@ namespace SistemaGastos.Infraestructure.Migrations
                 table: "FixedIncome",
                 column: "UserID");
 
-            // FK: Transaction → FixedIncome
+            // FK: Transaction → FixedIncome (NO ACTION para evitar ciclos de cascade)
             migrationBuilder.AddForeignKey(
                 name: "FK_Transaction_FixedIncome_FixedIncomeID",
                 table: "Transaction",
                 column: "FixedIncomeID",
                 principalTable: "FixedIncome",
                 principalColumn: "ID",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
         }
 
         /// <inheritdoc />

@@ -665,7 +665,7 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.HasOne("SistemaGastos.Domain.Models.FixedIncome", "FixedIncome")
                         .WithMany()
                         .HasForeignKey("FixedIncomeID")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Account");
 
