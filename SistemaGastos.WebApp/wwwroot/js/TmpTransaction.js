@@ -199,34 +199,9 @@
             .removeClass('text-success-emphasis text-danger-emphasis text-success text-danger')
             .addClass(data.balance >= 0 ? 'text-success-emphasis' : 'text-danger-emphasis');
 
-        $('#dash-income').text(data.incomeFmt);
-        $('#dash-expense').text(data.expenseFmt);
-
-        const now = new Date();
-        const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const nextKey = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
-        const nextData = monthsData.find(m => m.key === nextKey);
-
-        if (nextData && (nextData.installmentsFmt || nextData.pendingInstallments)) {
-            $('#dash-installments').text(nextData.installmentsFmt || culture.format(nextData.pendingInstallments));
-        } else if (data.installmentsFmt) {
-            $('#dash-installments').text(data.installmentsFmt);
-        } else if (data.BalanceBreakdown && data.BalanceBreakdown.CreditCardInstallments !== undefined) {
-            $('#dash-installments').text(culture.format(data.BalanceBreakdown.CreditCardInstallments));
-        } else {
-            $('#dash-installments').text('$ 0,00');
-        }
-
-        if (data.BalanceBreakdown && data.BalanceBreakdown.FixedExpenses !== undefined) {
-            $('#dash-fixed-subtotal').text(culture.format(data.BalanceBreakdown.FixedExpenses));
-        }
-
-        const hasTotalPayment = (nextData && nextData.hasCreditCardPayment) || data.hasCreditCardPayment;
-        if (hasTotalPayment) {
-            $('#tc-payment-note').show();
-        } else {
-            $('#tc-payment-note').hide();
-        }
+        $('#dash-income').text(data.incomeFmt || culture.format(data.income));
+        $('#dash-expense').text(data.expenseFmt || culture.format(data.expense));
+        $('#dash-fixed-subtotal').text(data.fixedExpensesFmt || culture.format(data.fixedExpenses || 0));
 
         // Card "A cobrar" — actualizar valor del mes seleccionado
         const $personsCard = $('#dash-persons-card');

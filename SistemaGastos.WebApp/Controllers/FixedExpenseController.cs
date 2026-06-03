@@ -66,10 +66,13 @@ public class FixedExpenseController(IMediator mediator, ICurrentUserService curr
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<ActionResult<Response<bool>>> ToggleActive([FromBody] int id)
+    public async Task<ActionResult<Response<bool>>> ToggleActive([FromBody] ToggleActiveRequest request)
     {
         int userID = currentUser.UserId ?? 0;
-        var command = new ToggleFixedExpenseActiveCommand(id, userID);
+        var activateFrom = (request.Year.HasValue && request.Month.HasValue)
+            ? new DateTime(request.Year.Value, request.Month.Value, 1)
+            : (DateTime?)null;
+        var command = new ToggleFixedExpenseActiveCommand(request.ID, userID, activateFrom);
         var result = await mediator.Send(command);
 
         if (result)
@@ -95,4 +98,14 @@ public class FixedExpenseController(IMediator mediator, ICurrentUserService curr
 
         return Ok(Response<bool>.Fail("No se pudo eliminar el gasto"));
     }
+}
+
+/// <summary>Body del endpoint ToggleActive — incluye mes de activación para reanudar desde un mes específico.</summary>
+public class ToggleActiveRequest
+{
+    public int ID { get; set; }
+    /// <summary>Año del mes desde el que se reanuda (solo aplica al reanudar).</summary>
+    public int? Year { get; set; }
+    /// <summary>Mes desde el que se reanuda (solo aplica al reanudar).</summary>
+    public int? Month { get; set; }
 }
