@@ -218,6 +218,16 @@
             $('#tc-payment-note').hide();
         }
 
+        // Card "A cobrar" — actualizar valor del mes seleccionado
+        const $personsCard = $('#dash-persons-card');
+        const $personsVal  = $('#dash-persons-receivable');
+        if (data.personsReceivable > 0) {
+            $personsVal.text(data.personsReceivableFmt || culture.format(data.personsReceivable));
+            $personsCard.show();
+        } else {
+            $personsCard.hide();
+        }
+
         $('#month-dashboard').fadeIn();
 
         if (typeof updateBalanceBreakdown === 'function') {
