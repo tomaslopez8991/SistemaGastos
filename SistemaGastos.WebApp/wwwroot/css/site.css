@@ -366,10 +366,6 @@ button {
     transition: all 0.2s ease;
 }
 
-    .dropdown-item:hover {
-        background-color: rgba(var(--bs-primary-rgb), 0.1);
-    }
-
     .dropdown-item.text-danger:hover {
         background-color: rgba(var(--bs-danger-rgb), 0.1);
     }
@@ -2337,10 +2333,7 @@ input.gridjs-input {
 /* ───────────────────────────────────────────────────────────────────────── */
 
 .dropdown-item:hover {
-    background-color: #f0f2f5; /* Un gris muy suave y moderno */
-    border-radius: 8px; /* Bordes redondeados en los items se ven más "app-like" */
-    margin: 0 5px; /* Margen para que el hover no toque los bordes del contenedor */
-    width: auto;
+    border-radius: 8px;
 }
 
 .dropdown-menu .dropdown-item:not(.active):not(:hover) {
@@ -3738,6 +3731,20 @@ input.gridjs-input {
 /* ============================================
    FIN MÓDULO GASTOS FIJOS
    ============================================ */
+
+/* ============================================
+   THEME SWITCHER
+   ============================================ */
+
+/* Ocultar el check por defecto; mostrarlo solo en la opción activa */
+.dropdown-item .theme-check {
+    opacity: 0;
+    font-size: 0.75rem;
+}
+
+.dropdown-item.active .theme-check {
+    opacity: 1;
+}
 
 /* ============================================
    FIN DEL STYLESHEET

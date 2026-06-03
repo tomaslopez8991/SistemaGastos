@@ -638,8 +638,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("FixedExpense");
                 });
 
-            modelBuilder.Entity("SistemaGastos.Domain.Models.Person", b =>
-                {
             modelBuilder.Entity("SistemaGastos.Domain.Models.FixedIncome", b =>
                 {
                     b.HasOne("SistemaGastos.Domain.Models.Account", "Account")
@@ -758,7 +756,6 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.Navigation("Transactions");
                 });
-#pragma warning restore 612, 618
         }
     }
 }

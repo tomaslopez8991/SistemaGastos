@@ -323,10 +323,9 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                 InstallmentsFmt = pendingInstallments.ToString("C", culture),
                 HasCreditCardPayment = hasCreditCardPayment,
                 PersonsReceivable = personsReceivable,
-                PersonsReceivableFmt = personsReceivable.ToString("C", culture)
+                PersonsReceivableFmt = personsReceivable.ToString("C", culture),
                 Balance = acumulado,
-                BalanceFmt = acumulado.ToString("C", culture),
-                HasCreditCardPayment = hasCreditCardPayment
+                BalanceFmt = acumulado.ToString("C", culture)
             });
         }
 

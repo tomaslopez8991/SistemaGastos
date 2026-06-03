@@ -21,9 +21,8 @@ public class CreateFixedExpenseHandler(IApplicationDbContext context)
             LogoUrl = request.LogoUrl,
             Active = true,
             PersonID = request.PersonID,
-            PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null
-            StartDate = request.StartDate,
-            Active = true
+            PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null,
+            StartDate = request.StartDate
         };
 
         await context.FixedExpense.AddAsync(expense, cancellationToken);
