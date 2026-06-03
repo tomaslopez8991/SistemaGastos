@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaGastos.Data;
 
@@ -11,9 +12,11 @@ using SistemaGastos.Data;
 namespace SistemaGastos.Infraestructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260601000000_AddCurrencyStartDateAndFixedIncome")]
+    partial class AddCurrencyStartDateAndFixedIncome
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -158,12 +161,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int?>("Installments")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PersonID")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("PersonPercentage")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("datetime2");
 
@@ -174,8 +171,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.HasIndex("CategoryID");
 
                     b.HasIndex("FixedExpenseID");
-
-                    b.HasIndex("PersonID");
 
                     b.ToTable("CreditCardTransaction");
                 });
@@ -221,11 +216,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int>("PaymentDay")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PersonID")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("PersonPercentage")
-                        .HasColumnType("decimal(18,2)");
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 
@@ -237,8 +227,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.HasIndex("AccountID");
 
                     b.HasIndex("CategoryID");
-
-                    b.HasIndex("PersonID");
 
                     b.HasIndex("UserID");
 
@@ -372,31 +360,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.ToTable("Login");
                 });
 
-            modelBuilder.Entity("SistemaGastos.Domain.Models.Person", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("Person");
-                });
-
             modelBuilder.Entity("SistemaGastos.Domain.Models.TmpTransaction", b =>
                 {
                     b.Property<int>("ID")
@@ -508,12 +471,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int?>("FixedExpenseID")
                         .HasColumnType("int");
 
-                    b.Property<int?>("PersonID")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("PersonPercentage")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int?>("FixedIncomeID")
                         .HasColumnType("int");
 
@@ -525,7 +482,6 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.HasIndex("FixedExpenseID");
 
-                    b.HasIndex("PersonID");
                     b.HasIndex("FixedIncomeID");
 
                     b.ToTable("Transaction");
@@ -581,17 +537,11 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .WithMany()
                         .HasForeignKey("FixedExpenseID");
 
-                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
-                        .WithMany("CreditCardTransactions")
-                        .HasForeignKey("PersonID");
-
                     b.Navigation("Account");
 
                     b.Navigation("Category");
 
                     b.Navigation("FixedExpense");
-
-                    b.Navigation("Person");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.FixedExpense", b =>
@@ -608,10 +558,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
-                        .WithMany("FixedExpenses")
-                        .HasForeignKey("PersonID");
-
                     b.HasOne("SistemaGastos.Domain.Models.Login", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
@@ -621,8 +567,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("Category");
-
-                    b.Navigation("Person");
 
                     b.Navigation("User");
                 });
@@ -638,8 +582,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("FixedExpense");
                 });
 
-            modelBuilder.Entity("SistemaGastos.Domain.Models.Person", b =>
-                {
             modelBuilder.Entity("SistemaGastos.Domain.Models.FixedIncome", b =>
                 {
                     b.HasOne("SistemaGastos.Domain.Models.Account", "Account")
@@ -723,9 +665,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .WithMany()
                         .HasForeignKey("FixedExpenseID");
 
-                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
-                        .WithMany("Transactions")
-                        .HasForeignKey("PersonID");
                     b.HasOne("SistemaGastos.Domain.Models.FixedIncome", "FixedIncome")
                         .WithMany()
                         .HasForeignKey("FixedIncomeID")
@@ -737,20 +676,10 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.Navigation("FixedExpense");
 
-                    b.Navigation("Person");
                     b.Navigation("FixedIncome");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.Account", b =>
-                {
-                    b.Navigation("CreditCardTransactions");
-
-                    b.Navigation("FixedExpenses");
-
-                    b.Navigation("Transactions");
-                });
-
-            modelBuilder.Entity("SistemaGastos.Domain.Models.Person", b =>
                 {
                     b.Navigation("CreditCardTransactions");
 

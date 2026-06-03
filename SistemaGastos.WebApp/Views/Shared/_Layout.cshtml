@@ -333,11 +333,12 @@
     }
     @await RenderSectionAsync("Scripts", required: false)
 
-    <button class="btn btn-primary btn-floating shadow-lg" 
-            id="btnAyudaGlobal" 
-            title="Ver tutorial del módulo actual"
-            style="display:none;">
-        <i class="fa-solid fa-question fs-5"></i>
+    <button class="tutorial-fab" id="btnAyudaGlobal" aria-label="Tutorial interactivo del módulo">
+        <div class="tutorial-fab-icon-wrap">
+            <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <span class="tutorial-fab-label">Tutorial</span>
+        <span class="tutorial-fab-new" id="tutorialNewBadge">NUEVO</span>
     </button>
 </body>
 </html>

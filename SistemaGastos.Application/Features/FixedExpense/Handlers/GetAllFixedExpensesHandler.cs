@@ -55,6 +55,7 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context)
             Name = f.Name ?? string.Empty,
             Amount = f.Amount,
             AmountFormatted = f.Amount.ToString("C", culture),
+            Currency = f.Currency,
             PaymentDay = f.PaymentDay,
             CategoryID = f.CategoryID,
             CategoryName = f.Category?.Name ?? "Sin categoría",
@@ -62,6 +63,7 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context)
             AccountName = f.Account?.Name ?? "Sin cuenta",
             LogoUrl = f.LogoUrl,
             Active = f.Active,
+            StartDate = f.StartDate,
             LastGeneratedDate = f.LastGeneratedDate,
             AlreadyPaidThisMonth = paidIds.Contains(f.ID),
             PaidMonthName = paidIds.Contains(f.ID) ? monthName : null

@@ -18,6 +18,12 @@
      data-url-fixed-pay="@Url.Action("PayNow", "FixedExpense")"
      data-url-fixed-delete="@Url.Action("Delete", "FixedExpense")"
      data-url-fixed-toggle="@Url.Action("ToggleActive", "FixedExpense")"
+     data-url-income-list="@Url.Action("GetList", "FixedIncome")"
+     data-url-income-form="@Url.Action("GetForm", "FixedIncome")"
+     data-url-income-save="@Url.Action("Save", "FixedIncome")"
+     data-url-income-receive="@Url.Action("ReceiveNow", "FixedIncome")"
+     data-url-income-delete="@Url.Action("Delete", "FixedIncome")"
+     data-url-income-toggle="@Url.Action("ToggleActive", "FixedIncome")"
      data-url-budget-list="@Url.Action("GetBudgetTab", "Budget")"
      data-url-budget-form="@Url.Action("GetBudgetForm", "Budget")"
      data-url-budget-save="@Url.Action("Save", "Budget")"
@@ -55,6 +61,11 @@
                 <li>
                     <a class="dropdown-item py-2" href="#" id="btnNewExpense">
                         <i class="fa-solid fa-repeat text-warning me-2"></i>Gasto fijo
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2" href="#" id="btnNewIncome">
+                        <i class="fa-solid fa-arrow-trend-up text-success me-2"></i>Ingreso fijo
                     </a>
                 </li>
                 <li>
@@ -162,6 +173,16 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link tmp-tab-btn"
+                            id="ingresos-fijos-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#ingresos-fijos"
+                            type="button" role="tab">
+                        <i class="fa-solid fa-arrow-trend-up me-2 text-success"></i>Ingresos fijos
+                        <span class="badge rounded-pill ms-1 tmp-badge-success" id="badge-pending-income">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link tmp-tab-btn"
                             id="presupuestos-tab"
                             data-bs-toggle="tab"
                             data-bs-target="#presupuestos"
@@ -199,6 +220,16 @@
                     <div class="col-12 text-center py-4 text-muted">
                         <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
                         <span class="ms-2 small">Cargando compromisos...</span>
+                    </div>
+                </div>
+            </div>
+
+            @* Tab: Ingresos Fijos *@
+            <div class="tab-pane fade p-4" id="ingresos-fijos" role="tabpanel">
+                <div id="incomes-grid" class="row g-3">
+                    <div class="col-12 text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                        <span class="ms-2 small">Cargando ingresos fijos...</span>
                     </div>
                 </div>
             </div>
@@ -247,6 +278,7 @@
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/TmpTransaction.js" asp-append-version="true"></script>
     <script src="~/js/FixedExpense.js" asp-append-version="true"></script>
+    <script src="~/js/FixedIncome.js" asp-append-version="true"></script>
     <script src="~/js/Budget.js" asp-append-version="true"></script>
     <script src="~/js/PersonAccounts.js" asp-append-version="true"></script>
 }

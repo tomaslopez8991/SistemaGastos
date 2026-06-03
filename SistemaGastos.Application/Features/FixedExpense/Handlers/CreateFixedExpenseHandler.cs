@@ -14,6 +14,7 @@ public class CreateFixedExpenseHandler(IApplicationDbContext context)
             UserID = request.UserID,
             Name = request.Name,
             Amount = request.Amount,
+            Currency = request.Currency,
             AccountID = request.AccountID,
             CategoryID = request.CategoryID,
             PaymentDay = request.PaymentDay,
@@ -21,6 +22,8 @@ public class CreateFixedExpenseHandler(IApplicationDbContext context)
             Active = true,
             PersonID = request.PersonID,
             PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null
+            StartDate = request.StartDate,
+            Active = true
         };
 
         await context.FixedExpense.AddAsync(expense, cancellationToken);

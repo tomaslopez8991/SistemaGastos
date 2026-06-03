@@ -34,12 +34,14 @@ public class UpdateFixedExpenseHandler(IApplicationDbContext context)
         // Actualizar campos
         expense.Name = request.Name;
         expense.Amount = request.Amount;
+        expense.Currency = request.Currency;
         expense.AccountID = request.AccountID;
         expense.CategoryID = request.CategoryID;
         expense.PaymentDay = request.PaymentDay;
         expense.LogoUrl = request.LogoUrl;
         expense.PersonID = request.PersonID;
         expense.PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null;
+        expense.StartDate = request.StartDate;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

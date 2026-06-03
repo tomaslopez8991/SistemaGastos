@@ -23,6 +23,7 @@ namespace SistemaGastos.Domain.Models
         public int AccountID { get; set; }
         public int CategoryID { get; set; }
         public int? FixedExpenseID { get; set; }
+        public int? FixedIncomeID { get; set; }
 
         [ForeignKey("AccountID")]
         public virtual Account? Account { get; set; }
@@ -37,5 +38,7 @@ namespace SistemaGastos.Domain.Models
         public decimal? PersonPercentage { get; set; }
         [ForeignKey("PersonID")]
         public virtual Person? Person { get; set; }
+        [ForeignKey("FixedIncomeID")]
+        public virtual FixedIncome? FixedIncome { get; set; }
     }
 }

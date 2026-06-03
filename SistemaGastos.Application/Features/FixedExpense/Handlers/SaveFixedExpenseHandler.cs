@@ -17,12 +17,14 @@ public class SaveFixedExpenseHandler(IMediator mediator)
                 UserID = request.UserID,
                 Name = request.Dto.Name,
                 Amount = request.Dto.Amount,
+                Currency = request.Dto.Currency,
                 AccountID = request.Dto.AccountID,
                 CategoryID = request.Dto.CategoryID,
                 PaymentDay = request.Dto.PaymentDay,
                 LogoUrl = request.Dto.LogoUrl,
                 PersonID = request.Dto.PersonID,
                 PersonPercentage = request.Dto.PersonPercentage
+                StartDate = request.Dto.StartDate
             };
 
             var success = await mediator.Send(updateCommand, cancellationToken);
@@ -36,12 +38,14 @@ public class SaveFixedExpenseHandler(IMediator mediator)
                 UserID = request.UserID,
                 Name = request.Dto.Name,
                 Amount = request.Dto.Amount,
+                Currency = request.Dto.Currency,
                 AccountID = request.Dto.AccountID,
                 CategoryID = request.Dto.CategoryID,
                 PaymentDay = request.Dto.PaymentDay,
                 LogoUrl = request.Dto.LogoUrl,
                 PersonID = request.Dto.PersonID,
                 PersonPercentage = request.Dto.PersonPercentage
+                StartDate = request.Dto.StartDate
             };
 
             return await mediator.Send(createCommand, cancellationToken);

@@ -2,10 +2,13 @@
 
 @{
     Layout = null;
+    var dolarRateStr = Model.DolarMep.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
 }
 
 <form id="form-planning" class="tmp-form">
     <input type="hidden" id="Transaction_ID" asp-for="Transaction.ID" />
+    <input type="hidden" id="Transaction_Currency" value="@Model.Transaction.Currency" />
+    <input type="hidden" id="Transaction_DolarMep" value="@dolarRateStr" />
 
     @* ── Descripción ──────────────────────────────────────── *@
     <div class="tmp-field mb-3">
@@ -48,12 +51,21 @@
         </div>
     </div>
 
-    @* ── Monto + Fecha ────────────────────────────────────── *@
-    <div class="row g-3 mb-3">
-        <div class="col-6">
+    @* ── Monto + Moneda ───────────────────────────────────── *@
+    <div class="row g-3 mb-1">
+        <div class="col-4">
+            <label class="tmp-label">Moneda</label>
+            <select id="Transaction_CurrencySelect" class="form-select">
+                <option value="ARS">ARS $</option>
+                <option value="USD">USD U$S</option>
+            </select>
+        </div>
+        <div class="col-8">
             <label asp-for="Transaction.Amount" class="tmp-label">Monto</label>
             <div class="input-group">
-                <span class="input-group-text">$</span>
+                <span class="input-group-text" id="tmp-currency-symbol">
+                    @(Model.Transaction.Currency == "USD" ? "U$S" : "$")
+                </span>
                 <input asp-for="Transaction.Amount"
                        id="Transaction_Amount"
                        type="number"
@@ -64,17 +76,29 @@
             </div>
             <span asp-validation-for="Transaction.Amount" class="text-danger small"></span>
         </div>
+    </div>
 
-        <div id="bloque-fecha" class="col-6">
-            <label asp-for="Transaction.DateTransaction" class="tmp-label">Mes de impacto</label>
-            <input asp-for="Transaction.DateTransaction"
-                   id="Transaction_DateTransaction"
-                   type="date"
-                   class="form-control"
-                   value="@(Model.Transaction.DateTransaction?.ToString("yyyy-MM-dd"))"
-                   required />
-            <span asp-validation-for="Transaction.DateTransaction" class="text-danger small"></span>
-        </div>
+    @* Preview conversión USD *@
+    <div id="tmp-usd-preview" class="alert alert-info py-2 mb-3 small @(Model.Transaction.Currency != "USD" ? "d-none" : "")">
+        <i class="fas fa-exchange-alt me-1"></i>
+        MEP: <strong>$@dolarRateStr</strong>
+        → equivale a <strong id="tmp-ars-preview">
+            @(Model.Transaction.Currency == "USD" && Model.DolarMep > 0
+                ? (Model.Transaction.Amount * Model.DolarMep).ToString("C", new System.Globalization.CultureInfo("es-AR"))
+                : "—")
+        </strong>
+    </div>
+
+    @* ── Fecha de impacto ─────────────────────────────────── *@
+    <div id="bloque-fecha" class="mb-3">
+        <label asp-for="Transaction.DateTransaction" class="tmp-label">Mes de impacto</label>
+        <input asp-for="Transaction.DateTransaction"
+               id="Transaction_DateTransaction"
+               type="date"
+               class="form-control"
+               value="@(Model.Transaction.DateTransaction?.ToString("yyyy-MM-dd"))"
+               required />
+        <span asp-validation-for="Transaction.DateTransaction" class="text-danger small"></span>
     </div>
 
     @* ── Panel de recurrencia (solo en creación) ───────────── *@
