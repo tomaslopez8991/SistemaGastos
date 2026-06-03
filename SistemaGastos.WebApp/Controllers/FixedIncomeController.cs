@@ -78,10 +78,3 @@ public class FixedIncomeController(IMediator mediator, ICurrentUserService curre
             : Ok(Response<bool>.Fail("No se pudo eliminar el ingreso"));
     }
 }
-
-public class ToggleActiveRequest
-{
-    public int ID { get; set; }
-    public int? Year { get; set; }
-    public int? Month { get; set; }
-}

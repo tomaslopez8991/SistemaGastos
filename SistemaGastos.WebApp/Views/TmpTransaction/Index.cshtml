@@ -96,20 +96,21 @@
     @* ── Dashboard de mes ─────────────────────────────────── *@
     <div class="row g-3 mb-4" id="month-dashboard" style="display:none;">
         <div class="col-md-3 col-lg">
-            <div class="tmp-dash-card income">
+            <div class="tmp-dash-card income clickable" id="dash-income-card" data-breakdown="income">
                 <div>
                     <div class="tmp-dash-label">Ingresos proyectados</div>
                     <div class="tmp-dash-value" id="dash-income">$ —</div>
+                    <div class="tmp-dash-detail-hint"><i class="fa-regular fa-eye"></i>Ver detalle</div>
                 </div>
                 <i class="fa-solid fa-arrow-trend-up tmp-dash-icon"></i>
             </div>
         </div>
         <div class="col-md-3 col-lg">
-            <div class="tmp-dash-card expense">
+            <div class="tmp-dash-card expense clickable" id="dash-expense-card" data-breakdown="expense">
                 <div>
-                    <div class="tmp-dash-label">Gastos únicos + fijos</div>
+                    <div class="tmp-dash-label">Gastos proyectados</div>
                     <div class="tmp-dash-value" id="dash-expense">$ —</div>
-                    <div class="tmp-dash-sub">Fijos: <span id="dash-fixed-subtotal">$ —</span></div>
+                    <div class="tmp-dash-detail-hint"><i class="fa-regular fa-eye"></i>Ver detalle</div>
                 </div>
                 <i class="fa-solid fa-arrow-trend-down tmp-dash-icon"></i>
             </div>

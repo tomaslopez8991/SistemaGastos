@@ -50,8 +50,16 @@
     // BADGE de estado
     // =========================================================
     function getStatusBadge(expense) {
+        const selectedMonthStart = new Date(activeYear, activeMonth - 1, 1);
+        const startDate = expense.startDate ? new Date(expense.startDate) : null;
+        const notStartedYet = startDate !== null && startDate > selectedMonthStart;
+
         if (!expense.active) {
             return '<span class="badge text-bg-secondary"><i class="fas fa-pause me-1"></i>En pausa</span>';
+        }
+        if (notStartedYet) {
+            const from = startDate.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+            return `<span class="badge text-bg-secondary"><i class="fas fa-clock me-1"></i>Desde ${from}</span>`;
         }
         if (expense.alreadyPaidThisMonth) {
             return '<span class="badge text-bg-success"><i class="fas fa-check-circle me-1"></i>Al día</span>';
@@ -117,13 +125,21 @@
             const isPaid = !!expense.alreadyPaidThisMonth;
             const paidMonthName = expense.paidMonthName || '';
             const isActive = !!expense.active;
-            const days = calcDaysUntilDue(expense, activeYear, activeMonth);
+
+            // Si el gasto tiene una fecha de inicio posterior al mes seleccionado,
+            // se trata como "aún no activo" (igual que pausado) para ese mes
+            const selectedMonthStart = new Date(activeYear, activeMonth - 1, 1);
+            const startDate = expense.startDate ? new Date(expense.startDate) : null;
+            const notStartedYet = startDate !== null && startDate > selectedMonthStart;
+            const effectivelyActive = isActive && !notStartedYet;
+
+            const days = effectivelyActive ? calcDaysUntilDue(expense, activeYear, activeMonth) : null;
 
             // Clases de estado para la card
             let cardStateClass = '';
             if (isPaid) {
                 cardStateClass = 'fe-card-paid';
-            } else if (!isActive) {
+            } else if (!effectivelyActive) {
                 cardStateClass = 'fe-card-paused';
             } else if (days !== null && days < 0) {
                 cardStateClass = 'fe-card-overdue';
@@ -135,7 +151,7 @@
             let logoBg = 'bg-primary-subtle';
             let logoIcon = 'text-primary';
             if (isPaid) { logoBg = 'bg-success-subtle'; logoIcon = 'text-success'; }
-            else if (!isActive) { logoBg = 'bg-secondary-subtle'; logoIcon = 'text-secondary'; }
+            else if (!effectivelyActive) { logoBg = 'bg-secondary-subtle'; logoIcon = 'text-secondary'; }
             else if (days !== null && days < 0) { logoBg = 'bg-danger-subtle'; logoIcon = 'text-danger'; }
             else if (days !== null && days <= 3) { logoBg = 'bg-warning-subtle'; logoIcon = 'text-warning-emphasis'; }
 
@@ -147,10 +163,13 @@
 
             // Texto de estado debajo de cuenta/día
             let daysHtml = '';
-            if (!isActive) {
+            if (!effectivelyActive) {
+                const pauseLabel = notStartedYet
+                    ? `Activo desde ${startDate.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })}`
+                    : 'Gasto en pausa';
                 daysHtml = `<div class="d-flex align-items-center gap-2 text-secondary">
                                 <i class="fas fa-pause-circle" style="width:16px;"></i>
-                                <span>Gasto en pausa</span>
+                                <span>${pauseLabel}</span>
                             </div>`;
             } else if (isPaid) {
                 // vacío: la info de pago va en el footer strip
@@ -173,7 +192,7 @@
             let actionsHtml = '';
             if (isPaid) {
                 // Footer strip reemplaza los botones
-            } else if (isActive) {
+            } else if (effectivelyActive) {
                 actionsHtml = `
                     <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="payExpense(${expense.id})">
                         <i class="fas fa-check me-1"></i>Pagar
@@ -188,8 +207,18 @@
                         <i class="fas fa-trash"></i>
                     </button>
                 `;
+            } else if (notStartedYet) {
+                // Aún no comenzó: solo editar y eliminar (no tiene sentido reanudar/pausar)
+                actionsHtml = `
+                    <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="editExpense(${expense.id})" title="Editar">
+                        <i class="fas fa-pen me-1"></i>Editar
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
             } else {
-                // Pausado: Reanudar como acción principal (desde el mes seleccionado)
+                // Pausado manualmente: ofrecer reanudar desde este mes
                 actionsHtml = `
                     <button class="btn btn-primary btn-sm flex-fill fw-bold" onclick="toggleActive(${expense.id}, false, ${activeYear}, ${activeMonth})" title="Reanudar desde ${activeMonth}/${activeYear}">
                         <i class="fas fa-play me-1"></i>Reanudar desde este mes
