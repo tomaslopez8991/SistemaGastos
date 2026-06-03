@@ -18,6 +18,7 @@ namespace SistemaGastos.Domain.Models
         public DateTime? LastGeneratedDate { get; set; }
 
         public int? PersonID { get; set; }
+        public decimal? PersonPercentage { get; set; }
 
         public virtual Login User { get; set; } = null!;
         public virtual Account Account { get; set; } = null!;

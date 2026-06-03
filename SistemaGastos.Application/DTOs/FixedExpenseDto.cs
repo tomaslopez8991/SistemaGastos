@@ -17,5 +17,6 @@ public class FixedExpenseDto
     public bool AlreadyPaidThisMonth { get; set; }
     public string? PaidMonthName { get; set; }
     public int? PersonID { get; set; }
+    public decimal? PersonPercentage { get; set; }
     public string? PersonName { get; set; }
 }

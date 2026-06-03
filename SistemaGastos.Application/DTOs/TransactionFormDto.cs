@@ -11,6 +11,7 @@ public class TransactionFormDto
     public string Description { get; set; }
     public int? FixedExpenseID { get; set; }
     public int? PersonID { get; set; }
+    public decimal? PersonPercentage { get; set; }
 
     public List<AccountDto> Accounts { get; set; }
     public List<CategoryDropdownDto> Categories { get; set; }

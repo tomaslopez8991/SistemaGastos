@@ -48,7 +48,8 @@ public class CreateTransactionHandler(IApplicationDbContext context)
                     CategoryID = request.CategoryID,
                     Description = request.Description,
                     FixedExpenseID = request.FixedExpenseID,
-                    PersonID = request.PersonID
+                    PersonID = request.PersonID,
+                    PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null
                 };
 
                 await context.Transaction.AddAsync(transaction, cancellationToken);

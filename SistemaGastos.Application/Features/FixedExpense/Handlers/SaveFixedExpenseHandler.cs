@@ -21,7 +21,8 @@ public class SaveFixedExpenseHandler(IMediator mediator)
                 CategoryID = request.Dto.CategoryID,
                 PaymentDay = request.Dto.PaymentDay,
                 LogoUrl = request.Dto.LogoUrl,
-                PersonID = request.Dto.PersonID
+                PersonID = request.Dto.PersonID,
+                PersonPercentage = request.Dto.PersonPercentage
             };
 
             var success = await mediator.Send(updateCommand, cancellationToken);
@@ -39,7 +40,8 @@ public class SaveFixedExpenseHandler(IMediator mediator)
                 CategoryID = request.Dto.CategoryID,
                 PaymentDay = request.Dto.PaymentDay,
                 LogoUrl = request.Dto.LogoUrl,
-                PersonID = request.Dto.PersonID
+                PersonID = request.Dto.PersonID,
+                PersonPercentage = request.Dto.PersonPercentage
             };
 
             return await mediator.Send(createCommand, cancellationToken);

@@ -14,6 +14,7 @@ public record CreditCardTransactionDto
     public int? Installments { get; init; }
     public bool Fixed { get; init; }
     public int? PersonID { get; init; }
+    public decimal? PersonPercentage { get; init; }
 
     // Propiedades de lectura (aplanadas)
     public string CategoryName { get; init; } = string.Empty;
@@ -48,5 +49,6 @@ public record UpdateCreditCardTransactionDto(
     int? Installments,
     int? ActualInstallment,
     bool Fixed,
-    int? PersonID = null
+    int? PersonID = null,
+    decimal? PersonPercentage = null
 );

@@ -45,13 +45,17 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
             foreach (var t in transactions.Where(t => t.PersonID == person.ID))
             {
+                var pct = t.PersonPercentage ?? 100m;
+                var attributed = t.Amount * pct / 100m;
                 items.Add(new PersonAccountItemDto
                 {
                     Description = t.Description,
-                    Amount = t.Amount,
-                    AmountFmt = t.Amount.ToString("C", culture),
+                    OriginalAmount = t.Amount,
+                    Amount = attributed,
+                    AmountFmt = attributed.ToString("C", culture),
                     Type = "Transaction",
                     TypeLabel = "Transacción",
+                    Percentage = pct,
                     Date = t.Date,
                     DateFmt = t.Date.ToString("dd/MM/yyyy")
                 });
@@ -59,13 +63,19 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
             foreach (var cc in cardTransactions.Where(t => t.PersonID == person.ID))
             {
+                var pct = cc.PersonPercentage ?? 100m;
+                var attributed = cc.Amount * pct / 100m;
                 items.Add(new PersonAccountItemDto
                 {
                     Description = cc.Description,
-                    Amount = cc.Amount,
-                    AmountFmt = cc.Amount.ToString("C", culture),
+                    OriginalAmount = cc.Amount,
+                    Amount = attributed,
+                    AmountFmt = attributed.ToString("C", culture),
                     Type = "CreditCard",
-                    TypeLabel = cc.Installments > 1 ? $"TC ({cc.ActualInstallment}/{cc.Installments} cuotas)" : "Tarjeta de crédito",
+                    TypeLabel = cc.Installments > 1
+                        ? $"TC ({cc.ActualInstallment}/{cc.Installments} cuotas)"
+                        : "Tarjeta de crédito",
+                    Percentage = pct,
                     Date = cc.TransactionDate,
                     DateFmt = cc.TransactionDate.ToString("dd/MM/yyyy")
                 });
@@ -73,21 +83,24 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
             foreach (var fe in fixedExpenses.Where(f => f.PersonID == person.ID))
             {
+                var pct = fe.PersonPercentage ?? 100m;
+                var attributed = fe.Amount * pct / 100m;
                 items.Add(new PersonAccountItemDto
                 {
                     Description = fe.Name,
-                    Amount = fe.Amount,
-                    AmountFmt = fe.Amount.ToString("C", culture),
+                    OriginalAmount = fe.Amount,
+                    Amount = attributed,
+                    AmountFmt = attributed.ToString("C", culture),
                     Type = "FixedExpense",
                     TypeLabel = "Gasto fijo",
+                    Percentage = pct,
                     Date = DateTime.Now,
                     DateFmt = "Recurrente"
                 });
             }
 
             items = items.OrderByDescending(i => i.Date).ToList();
-            decimal total = items.Where(i => i.Type != "FixedExpense").Sum(i => i.Amount)
-                          + fixedExpenses.Where(f => f.PersonID == person.ID).Sum(f => f.Amount);
+            decimal total = items.Sum(i => i.Amount);
 
             result.Add(new PersonAccountDto
             {

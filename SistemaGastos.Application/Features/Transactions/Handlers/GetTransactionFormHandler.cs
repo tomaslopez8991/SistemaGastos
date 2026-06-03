@@ -84,6 +84,7 @@ public class GetTransactionFormHandler(IApplicationDbContext context)
                 formDto.Description = transaction.Description;
                 formDto.FixedExpenseID = transaction.FixedExpenseID;
                 formDto.PersonID = transaction.PersonID;
+                formDto.PersonPercentage = transaction.PersonPercentage;
             }
         }
 

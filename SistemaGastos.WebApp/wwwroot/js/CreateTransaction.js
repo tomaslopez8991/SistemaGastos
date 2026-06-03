@@ -28,6 +28,17 @@
 
         // Le agregamos su primera fila de cuenta (Split)
         agregarFilaSplit($block.find('.splits-container'));
+
+        // Toggle % atribuido al seleccionar persona
+        $block.find('.tx-person').on('change', function () {
+            const $wrap = $(this).closest('.row').find('.tx-pct-wrapper');
+            if ($(this).val()) {
+                $wrap.show();
+            } else {
+                $wrap.hide();
+                $wrap.find('.tx-person-pct').val(100);
+            }
+        });
         actualizarMetricasUnificadas();
     }
 
@@ -125,12 +136,14 @@
 
                 // Mapeamos el DTO clonando la primera cuenta a la raíz para evadir al validador genérico
                 const personId = parseInt($block.find('.tx-person').val()) || null;
+                const personPct = personId ? (parseFloat($block.find('.tx-person-pct').val()) || 100) : null;
                 dataPayload.push({
                     Date: dateVal,
                     CategoryID: catId,
                     Description: descVal,
                     FixedExpenseID: null,
                     PersonID: personId,
+                    PersonPercentage: personPct,
                     AccountID: splits[0].AccountID,
                     Amount: splits[0].Amount,
                     Splits: splits
