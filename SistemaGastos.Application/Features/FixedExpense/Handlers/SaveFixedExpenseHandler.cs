@@ -23,7 +23,7 @@ public class SaveFixedExpenseHandler(IMediator mediator)
                 PaymentDay = request.Dto.PaymentDay,
                 LogoUrl = request.Dto.LogoUrl,
                 PersonID = request.Dto.PersonID,
-                PersonPercentage = request.Dto.PersonPercentage
+                PersonPercentage = request.Dto.PersonPercentage,
                 StartDate = request.Dto.StartDate
             };
 
@@ -44,7 +44,7 @@ public class SaveFixedExpenseHandler(IMediator mediator)
                 PaymentDay = request.Dto.PaymentDay,
                 LogoUrl = request.Dto.LogoUrl,
                 PersonID = request.Dto.PersonID,
-                PersonPercentage = request.Dto.PersonPercentage
+                PersonPercentage = request.Dto.PersonPercentage,
                 StartDate = request.Dto.StartDate
             };
 

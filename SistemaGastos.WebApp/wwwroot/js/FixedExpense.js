@@ -398,8 +398,6 @@
                             ? (parseFloat(form.find('#PersonPercentage').val()) || 100)
                             : null,
                         Active: true
-                        LogoUrl:   form.find('#LogoUrl').val()?.trim() || null,
-                        Active:    true
                     };
                 }
             }).then((result) => {
