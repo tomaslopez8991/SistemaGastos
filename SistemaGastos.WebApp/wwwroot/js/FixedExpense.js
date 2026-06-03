@@ -30,49 +30,45 @@
     };
 
     // =========================================================
-    // HELPER: calcula días hasta el próximo vencimiento
-    // usando expense.paymentDay (día del mes en que se cobra)
+    // HELPER: calcula días desde hoy hasta el vencimiento
+    // del gasto en el MES SELECCIONADO (no siempre el actual)
     // =========================================================
-    function calcDaysUntilDue(expense) {
-        // Si el backend ya lo manda y no es undefined/null, usarlo directamente
-        if (expense.daysUntilDue !== undefined && expense.daysUntilDue !== null) {
-            return expense.daysUntilDue;
-        }
-
+    function calcDaysUntilDue(expense, targetYear, targetMonth) {
         const paymentDay = expense.paymentDay;
         if (!paymentDay) return null;
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Fecha de vencimiento en el mes actual
-        let due = new Date(today.getFullYear(), today.getMonth(), paymentDay);
+        // Fecha de vencimiento en el mes objetivo
+        const due = new Date(targetYear, targetMonth - 1, paymentDay);
 
-        // Si ese día ya pasó este mes, saltar al mes siguiente
-        if (due < today) {
-            due = new Date(today.getFullYear(), today.getMonth() + 1, paymentDay);
-        }
-
-        const diffMs = due.getTime() - today.getTime();
-        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-        return diffDays;
+        return Math.round((due - today) / 86400000);
     }
 
     // =========================================================
     // BADGE de estado
     // =========================================================
     function getStatusBadge(expense) {
+        const selectedMonthStart = new Date(activeYear, activeMonth - 1, 1);
+        const startDate = expense.startDate ? new Date(expense.startDate) : null;
+        const notStartedYet = startDate !== null && startDate > selectedMonthStart;
+
         if (!expense.active) {
             return '<span class="badge text-bg-secondary"><i class="fas fa-pause me-1"></i>En pausa</span>';
+        }
+        if (notStartedYet) {
+            const from = startDate.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+            return `<span class="badge text-bg-secondary"><i class="fas fa-clock me-1"></i>Desde ${from}</span>`;
         }
         if (expense.alreadyPaidThisMonth) {
             return '<span class="badge text-bg-success"><i class="fas fa-check-circle me-1"></i>Al día</span>';
         }
 
-        const days = calcDaysUntilDue(expense);
+        const days = calcDaysUntilDue(expense, activeYear, activeMonth);
 
         if (days === null) return '<span class="badge text-bg-secondary">—</span>';
-        if (days < 0) return '<span class="badge text-bg-danger"><i class="fas fa-circle-exclamation me-1"></i>Vencido</span>';
+        if (days < 0) return `<span class="badge text-bg-danger"><i class="fas fa-circle-exclamation me-1"></i>Venció hace ${Math.abs(days)}d</span>`;
         if (days === 0) return '<span class="badge text-bg-danger"><i class="fas fa-circle-exclamation me-1"></i>Vence hoy</span>';
         if (days <= 3) return `<span class="badge text-bg-warning"><i class="fas fa-clock me-1"></i>${days}d restantes</span>`;
         return `<span class="badge text-bg-light text-dark border">${days} días</span>`;
@@ -129,13 +125,21 @@
             const isPaid = !!expense.alreadyPaidThisMonth;
             const paidMonthName = expense.paidMonthName || '';
             const isActive = !!expense.active;
-            const days = calcDaysUntilDue(expense);
+
+            // Si el gasto tiene una fecha de inicio posterior al mes seleccionado,
+            // se trata como "aún no activo" (igual que pausado) para ese mes
+            const selectedMonthStart = new Date(activeYear, activeMonth - 1, 1);
+            const startDate = expense.startDate ? new Date(expense.startDate) : null;
+            const notStartedYet = startDate !== null && startDate > selectedMonthStart;
+            const effectivelyActive = isActive && !notStartedYet;
+
+            const days = effectivelyActive ? calcDaysUntilDue(expense, activeYear, activeMonth) : null;
 
             // Clases de estado para la card
             let cardStateClass = '';
             if (isPaid) {
                 cardStateClass = 'fe-card-paid';
-            } else if (!isActive) {
+            } else if (!effectivelyActive) {
                 cardStateClass = 'fe-card-paused';
             } else if (days !== null && days < 0) {
                 cardStateClass = 'fe-card-overdue';
@@ -147,7 +151,7 @@
             let logoBg = 'bg-primary-subtle';
             let logoIcon = 'text-primary';
             if (isPaid) { logoBg = 'bg-success-subtle'; logoIcon = 'text-success'; }
-            else if (!isActive) { logoBg = 'bg-secondary-subtle'; logoIcon = 'text-secondary'; }
+            else if (!effectivelyActive) { logoBg = 'bg-secondary-subtle'; logoIcon = 'text-secondary'; }
             else if (days !== null && days < 0) { logoBg = 'bg-danger-subtle'; logoIcon = 'text-danger'; }
             else if (days !== null && days <= 3) { logoBg = 'bg-warning-subtle'; logoIcon = 'text-warning-emphasis'; }
 
@@ -159,10 +163,13 @@
 
             // Texto de estado debajo de cuenta/día
             let daysHtml = '';
-            if (!isActive) {
+            if (!effectivelyActive) {
+                const pauseLabel = notStartedYet
+                    ? `Activo desde ${startDate.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })}`
+                    : 'Gasto en pausa';
                 daysHtml = `<div class="d-flex align-items-center gap-2 text-secondary">
                                 <i class="fas fa-pause-circle" style="width:16px;"></i>
-                                <span>Gasto en pausa</span>
+                                <span>${pauseLabel}</span>
                             </div>`;
             } else if (isPaid) {
                 // vacío: la info de pago va en el footer strip
@@ -185,7 +192,7 @@
             let actionsHtml = '';
             if (isPaid) {
                 // Footer strip reemplaza los botones
-            } else if (isActive) {
+            } else if (effectivelyActive) {
                 actionsHtml = `
                     <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="payExpense(${expense.id})">
                         <i class="fas fa-check me-1"></i>Pagar
@@ -193,18 +200,28 @@
                     <button class="btn btn-outline-primary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
                         <i class="fas fa-pen"></i>
                     </button>
-                    <button class="btn btn-outline-warning btn-sm" onclick="toggleActive(${expense.id}, true)" title="Pausar">
+                    <button class="btn btn-outline-warning btn-sm" onclick="toggleActive(${expense.id}, true, ${activeYear}, ${activeMonth})" title="Pausar">
                         <i class="fas fa-pause"></i>
                     </button>
                     <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
                         <i class="fas fa-trash"></i>
                     </button>
                 `;
-            } else {
-                // Pausado: Reanudar como acción principal
+            } else if (notStartedYet) {
+                // Aún no comenzó: solo editar y eliminar (no tiene sentido reanudar/pausar)
                 actionsHtml = `
-                    <button class="btn btn-primary btn-sm flex-fill fw-bold" onclick="toggleActive(${expense.id}, false)" title="Reanudar gasto">
-                        <i class="fas fa-play me-1"></i>Reanudar
+                    <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="editExpense(${expense.id})" title="Editar">
+                        <i class="fas fa-pen me-1"></i>Editar
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+            } else {
+                // Pausado manualmente: ofrecer reanudar desde este mes
+                actionsHtml = `
+                    <button class="btn btn-primary btn-sm flex-fill fw-bold" onclick="toggleActive(${expense.id}, false, ${activeYear}, ${activeMonth})" title="Reanudar desde ${activeMonth}/${activeYear}">
+                        <i class="fas fa-play me-1"></i>Reanudar desde este mes
                     </button>
                     <button class="btn btn-outline-secondary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
                         <i class="fas fa-pen"></i>
@@ -327,12 +344,17 @@
         });
     };
 
-    window.toggleActive = function (id, currentActive) {
+    // currentActive = true → pausando; false → reanudando
+    // Al reanudar se envía el año/mes seleccionado para activar desde ese mes
+    window.toggleActive = function (id, currentActive, year, month) {
+        const body = currentActive
+            ? { ID: id }                          // pausar: sin fecha
+            : { ID: id, Year: year, Month: month }; // reanudar desde el mes seleccionado
         $.ajax({
             url: urls.toggle,
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify(id),
+            data: JSON.stringify(body),
             headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
             success: (response) => {
                 if (response.success) notifyDashboardChanged();

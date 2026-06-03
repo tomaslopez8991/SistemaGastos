@@ -28,23 +28,30 @@
         loadIncomes(activeYear, activeMonth);
     };
 
-    // ── Días hasta cobro ────────────────────────────────────────
-    function calcDaysUntilReceipt(income) {
+    // ── Días desde hoy hasta el cobro en el MES SELECCIONADO ───
+    function calcDaysUntilReceipt(income, targetYear, targetMonth) {
         const day = income.receiptDay;
         if (!day) return null;
         const today = new Date(); today.setHours(0,0,0,0);
-        let due = new Date(today.getFullYear(), today.getMonth(), day);
-        if (due < today) due = new Date(today.getFullYear(), today.getMonth() + 1, day);
+        const due = new Date(targetYear, targetMonth - 1, day);
         return Math.round((due - today) / 86400000);
     }
 
     // ── Badge de estado ─────────────────────────────────────────
     function getStatusBadge(income) {
+        const selectedMonthStart = new Date(activeYear, activeMonth - 1, 1);
+        const startDate = income.startDate ? new Date(income.startDate) : null;
+        const notStartedYet = startDate !== null && startDate > selectedMonthStart;
+
         if (!income.active)
             return '<span class="badge text-bg-secondary"><i class="fas fa-pause me-1"></i>En pausa</span>';
+        if (notStartedYet) {
+            const from = startDate.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+            return `<span class="badge text-bg-secondary"><i class="fas fa-clock me-1"></i>Desde ${from}</span>`;
+        }
         if (income.alreadyReceivedThisMonth)
             return '<span class="badge text-bg-success"><i class="fas fa-check-circle me-1"></i>Cobrado</span>';
-        const days = calcDaysUntilReceipt(income);
+        const days = calcDaysUntilReceipt(income, activeYear, activeMonth);
         if (days === null) return '<span class="badge text-bg-secondary">—</span>';
         if (days === 0)  return '<span class="badge text-bg-success"><i class="fas fa-circle-check me-1"></i>Cobrar hoy</span>';
         if (days <= 3)   return `<span class="badge text-bg-warning"><i class="fas fa-clock me-1"></i>${days}d para cobrar</span>`;
@@ -97,13 +104,19 @@
         incomes.forEach(income => {
             const isReceived = !!income.alreadyReceivedThisMonth;
             const isActive   = !!income.active;
-            const days       = calcDaysUntilReceipt(income);
+
+            const selectedMonthStart = new Date(activeYear, activeMonth - 1, 1);
+            const startDate = income.startDate ? new Date(income.startDate) : null;
+            const notStartedYet = startDate !== null && startDate > selectedMonthStart;
+            const effectivelyActive = isActive && !notStartedYet;
+
+            const days = effectivelyActive ? calcDaysUntilReceipt(income, activeYear, activeMonth) : null;
 
             let cardClass = '';
-            if (isReceived)    cardClass = 'fi-card-received';
-            else if (!isActive) cardClass = 'fe-card-paused';
-            else if (days !== null && days === 0) cardClass = 'fi-card-today';
-            else if (days !== null && days <= 3)  cardClass = 'fe-card-urgent';
+            if (isReceived)            cardClass = 'fi-card-received';
+            else if (!effectivelyActive) cardClass = 'fe-card-paused';
+            else if (days === 0)       cardClass = 'fi-card-today';
+            else if (days !== null && days <= 3) cardClass = 'fe-card-urgent';
 
             const logoHtml = income.logoUrl
                 ? `<img src="${income.logoUrl}" alt="${income.name}" class="rounded" style="width:40px;height:40px;object-fit:cover;">`
@@ -120,11 +133,17 @@
                 : '';
 
             let daysHtml = '';
-            if (!isActive) {
-                daysHtml = `<div class="d-flex align-items-center gap-2 text-secondary"><i class="fas fa-pause-circle" style="width:16px;"></i><span>Ingreso en pausa</span></div>`;
+            if (!effectivelyActive) {
+                const pauseLabel = notStartedYet
+                    ? `Activo desde ${startDate.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })}`
+                    : 'Ingreso en pausa';
+                daysHtml = `<div class="d-flex align-items-center gap-2 text-secondary"><i class="fas fa-pause-circle" style="width:16px;"></i><span>${pauseLabel}</span></div>`;
             } else if (!isReceived && days !== null) {
-                let cls = 'text-body-secondary', icon = 'fa-calendar-day', text = `Cobra en ${days} día${days !== 1 ? 's' : ''}`;
-                if (days === 0) { cls = 'text-success fw-semibold'; icon = 'fa-circle-check'; text = 'Cobrar hoy'; }
+                let cls = 'text-body-secondary', icon = 'fa-calendar-day', text = days < 0
+                    ? `Venció hace ${Math.abs(days)} día${Math.abs(days) !== 1 ? 's' : ''}`
+                    : `Cobra en ${days} día${days !== 1 ? 's' : ''}`;
+                if (days < 0) { cls = 'text-danger fw-semibold'; icon = 'fa-circle-exclamation'; }
+                else if (days === 0) { cls = 'text-success fw-semibold'; icon = 'fa-circle-check'; text = 'Cobrar hoy'; }
                 else if (days <= 3) { cls = 'text-warning-emphasis fw-semibold'; icon = 'fa-clock'; }
                 daysHtml = `<div class="d-flex align-items-center gap-2 ${cls}"><i class="fas ${icon}" style="width:16px;"></i><span>${text}</span></div>`;
             }
@@ -135,7 +154,7 @@
                     <i class="fas fa-circle-check"></i>
                     <span>Cobrado en ${income.receivedMonthName || 'este mes'}</span>
                 </div>`;
-            } else if (isActive) {
+            } else if (effectivelyActive) {
                 actionsHtml = `
                     <div class="d-flex gap-2 mt-auto">
                         <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="receiveIncome(${income.id})">
@@ -144,18 +163,26 @@
                         <button class="btn btn-outline-primary btn-sm" onclick="editIncome(${income.id})" title="Editar">
                             <i class="fas fa-pen"></i>
                         </button>
-                        <button class="btn btn-outline-warning btn-sm" onclick="toggleIncome(${income.id})" title="Pausar">
+                        <button class="btn btn-outline-warning btn-sm" onclick="toggleIncome(${income.id}, true, ${activeYear}, ${activeMonth})" title="Pausar">
                             <i class="fas fa-pause"></i>
                         </button>
                         <button class="btn btn-outline-danger btn-sm" onclick="deleteIncome(${income.id})" title="Eliminar">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>`;
+            } else if (notStartedYet) {
+                actionsHtml = `
+                    <div class="d-flex gap-2 mt-auto">
+                        <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="editIncome(${income.id})">
+                            <i class="fas fa-pen me-1"></i>Editar
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteIncome(${income.id})"><i class="fas fa-trash"></i></button>
+                    </div>`;
             } else {
                 actionsHtml = `
                     <div class="d-flex gap-2 mt-auto">
-                        <button class="btn btn-primary btn-sm flex-fill fw-bold" onclick="toggleIncome(${income.id})">
-                            <i class="fas fa-play me-1"></i>Reanudar
+                        <button class="btn btn-primary btn-sm flex-fill fw-bold" onclick="toggleIncome(${income.id}, false, ${activeYear}, ${activeMonth})">
+                            <i class="fas fa-play me-1"></i>Reanudar desde este mes
                         </button>
                         <button class="btn btn-outline-secondary btn-sm" onclick="editIncome(${income.id})"><i class="fas fa-pen"></i></button>
                         <button class="btn btn-outline-danger btn-sm" onclick="deleteIncome(${income.id})"><i class="fas fa-trash"></i></button>
@@ -253,12 +280,16 @@
         });
     };
 
-    window.toggleIncome = function (id) {
+    // currentActive = true → pausando; false → reanudando desde el mes seleccionado
+    window.toggleIncome = function (id, currentActive, year, month) {
+        const body = currentActive
+            ? { ID: id }
+            : { ID: id, Year: year, Month: month };
         $.ajax({
             url: urls.toggle,
             type: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify(id),
+            data: JSON.stringify(body),
             headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
             success: response => { if (response.success) notifyChanged(); }
         });

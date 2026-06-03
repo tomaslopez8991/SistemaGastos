@@ -55,10 +55,13 @@ public class FixedIncomeController(IMediator mediator, ICurrentUserService curre
 
     [HttpPost("ToggleActive")]
     [ValidateAntiForgeryToken]
-    public async Task<ActionResult<Response<bool>>> ToggleActive([FromBody] int id)
+    public async Task<ActionResult<Response<bool>>> ToggleActive([FromBody] ToggleActiveRequest request)
     {
         int userID = currentUser.UserId ?? 0;
-        var ok = await mediator.Send(new ToggleFixedIncomeActiveCommand(id, userID));
+        var activateFrom = (request.Year.HasValue && request.Month.HasValue)
+            ? new DateTime(request.Year.Value, request.Month.Value, 1)
+            : (DateTime?)null;
+        var ok = await mediator.Send(new ToggleFixedIncomeActiveCommand(request.ID, userID, activateFrom));
         return ok
             ? Ok(Response<bool>.Ok(true, "Estado actualizado"))
             : Ok(Response<bool>.Fail("No se pudo actualizar"));

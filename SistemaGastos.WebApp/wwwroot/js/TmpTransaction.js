@@ -3,12 +3,14 @@
     if ($container.length === 0) return;
 
     const urls = {
-        list: $container.data('url-list'),
-        form: $container.data('url-form'),
-        create: $container.data('url-create'),
-        delete: $container.data('url-delete'),
-        balances: $container.data('url-balances'),
-        confirm: $container.data('url-confirm')
+        list:       $container.data('url-list'),
+        form:       $container.data('url-form'),
+        create:     $container.data('url-create'),
+        delete:     $container.data('url-delete'),
+        balances:   $container.data('url-balances'),
+        confirm:    $container.data('url-confirm'),
+        fixedList:  $container.data('url-fixed-list'),
+        incomeList: $container.data('url-income-list')
     };
 
     const $carousel = $('#monthCarousel');
@@ -27,8 +29,109 @@
     function init() {
         loadBalances();
         setupCarouselNavigation();
+        setupBreakdownCards();
 
         window.reloadCashflowBalances = loadBalances;
+    }
+
+    // ── Cards clickeables: detalle de ingresos y gastos ──────
+    function setupBreakdownCards() {
+        $(document).off('click', '.tmp-dash-card.clickable').on('click', '.tmp-dash-card.clickable', function () {
+            const type = $(this).data('breakdown');
+            if (!activeMonthKey) return;
+            const [year, month] = activeMonthKey.split('-').map(Number);
+            openBreakdownModal(type, year, month);
+        });
+    }
+
+    function openBreakdownModal(type, year, month) {
+        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+        const isIncome = type === 'income';
+        const title = isIncome ? 'Detalle de Ingresos' : 'Detalle de Gastos';
+        const monthName = new Date(year, month - 1, 1)
+            .toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+
+        // Llamadas paralelas: movimientos planificados + fijos/recurrentes
+        const callPlanned = $.get(urls.list, { year, month });
+        const callFixed   = isIncome
+            ? $.get(urls.incomeList, { year, month })
+            : $.get(urls.fixedList,  { year, month });
+
+        $.when(callPlanned, callFixed).done(function (r1, r2) {
+            const planned = (r1[0]?.data || []).filter(t => isIncome ? t.isIngreso : !t.isIngreso);
+            const fixed   = (r2[0]?.data || []).filter(f => f.active);
+
+            const rowsPlanned = planned.length
+                ? planned.map(t => `
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-subtle">
+                        <div>
+                            <span class="fw-semibold small text-body-emphasis">${t.description}</span>
+                            <br><small class="text-body-secondary">${t.categoryName || ''}</small>
+                        </div>
+                        <span class="fw-bold ${isIncome ? 'text-success' : 'text-danger'} small">${t.amountFormatted}</span>
+                    </div>`).join('')
+                : `<p class="text-body-secondary small mb-0">Sin movimientos planificados</p>`;
+
+            const rowsFixed = fixed.length
+                ? fixed.map(f => {
+                    const amount = fmt.format(f.amount);
+                    const label  = isIncome ? f.name : f.name;
+                    const day    = isIncome ? f.receiptDay : f.paymentDay;
+                    return `
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-subtle">
+                        <div>
+                            <span class="fw-semibold small text-body-emphasis">${label}</span>
+                            <br><small class="text-body-secondary">
+                                <i class="fas fa-calendar-day me-1"></i>Día ${day}
+                                &nbsp;·&nbsp;${f.categoryName || ''}
+                                ${f.currency === 'USD' ? '&nbsp;<span class="badge bg-info-subtle text-info-emphasis">USD</span>' : ''}
+                            </small>
+                        </div>
+                        <span class="fw-bold ${isIncome ? 'text-success' : 'text-danger'} small">${f.amountFormatted || amount}</span>
+                    </div>`;
+                }).join('')
+                : `<p class="text-body-secondary small mb-0">Sin ${isIncome ? 'ingresos' : 'gastos'} fijos activos</p>`;
+
+            const totalPlanned = planned.reduce((s, t) => s + (t.amount || 0), 0);
+            const totalFixed   = fixed.reduce((s, f) => s + (f.amount || 0), 0);
+            const grandTotal   = totalPlanned + totalFixed;
+
+            const html = `
+                <div class="text-start">
+                    <p class="text-body-secondary small mb-3">
+                        <i class="fas fa-calendar me-1"></i>${monthName}
+                    </p>
+
+                    <h6 class="fw-bold mb-2 text-body-emphasis">
+                        <i class="fa-solid fa-calendar-day me-2 ${isIncome ? 'text-success' : 'text-danger'}"></i>
+                        Planificados
+                    </h6>
+                    <div class="mb-3">${rowsPlanned}</div>
+
+                    <h6 class="fw-bold mb-2 text-body-emphasis">
+                        <i class="fa-solid fa-repeat me-2 ${isIncome ? 'text-success' : 'text-warning'}"></i>
+                        ${isIncome ? 'Ingresos fijos' : 'Gastos fijos'}
+                    </h6>
+                    <div class="mb-3">${rowsFixed}</div>
+
+                    <div class="d-flex justify-content-between align-items-center
+                                mt-3 pt-3 border-top fw-bold">
+                        <span>Total</span>
+                        <span class="${isIncome ? 'text-success' : 'text-danger'} fs-5">${fmt.format(grandTotal)}</span>
+                    </div>
+                </div>`;
+
+            Swal.fire({
+                title,
+                html,
+                width: '520px',
+                confirmButtonText: 'Cerrar',
+                confirmButtonColor: isIncome ? '#198754' : '#dc3545',
+                showCancelButton: false
+            });
+        }).fail(() => {
+            Swal.fire('Error', 'No se pudo cargar el detalle', 'error');
+        });
     }
 
     // CARGA DE BALANCES Y RENDERIZADO DEL CARRUSEL
@@ -199,34 +302,8 @@
             .removeClass('text-success-emphasis text-danger-emphasis text-success text-danger')
             .addClass(data.balance >= 0 ? 'text-success-emphasis' : 'text-danger-emphasis');
 
-        $('#dash-income').text(data.incomeFmt);
-        $('#dash-expense').text(data.expenseFmt);
-
-        const now = new Date();
-        const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const nextKey = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
-        const nextData = monthsData.find(m => m.key === nextKey);
-
-        if (nextData && (nextData.installmentsFmt || nextData.pendingInstallments)) {
-            $('#dash-installments').text(nextData.installmentsFmt || culture.format(nextData.pendingInstallments));
-        } else if (data.installmentsFmt) {
-            $('#dash-installments').text(data.installmentsFmt);
-        } else if (data.BalanceBreakdown && data.BalanceBreakdown.CreditCardInstallments !== undefined) {
-            $('#dash-installments').text(culture.format(data.BalanceBreakdown.CreditCardInstallments));
-        } else {
-            $('#dash-installments').text('$ 0,00');
-        }
-
-        if (data.BalanceBreakdown && data.BalanceBreakdown.FixedExpenses !== undefined) {
-            $('#dash-fixed-subtotal').text(culture.format(data.BalanceBreakdown.FixedExpenses));
-        }
-
-        const hasTotalPayment = (nextData && nextData.hasCreditCardPayment) || data.hasCreditCardPayment;
-        if (hasTotalPayment) {
-            $('#tc-payment-note').show();
-        } else {
-            $('#tc-payment-note').hide();
-        }
+        $('#dash-income').text(data.incomeFmt || culture.format(data.income));
+        $('#dash-expense').text(data.expenseFmt || culture.format(data.expense));
 
         // Card "A cobrar" — actualizar valor del mes seleccionado
         const $personsCard = $('#dash-persons-card');

@@ -16,10 +16,21 @@ public class ToggleFixedExpenseActiveHandler(IApplicationDbContext context)
         if (expense == null)
             throw new Exception("Gasto fijo no encontrado");
 
-        expense.Active = !expense.Active;
+        if (expense.Active)
+        {
+            // PAUSAR: solo desactivar, sin tocar StartDate
+            expense.Active = false;
+        }
+        else
+        {
+            // REANUDAR: activar y ajustar StartDate al mes indicado
+            expense.Active = true;
+            expense.StartDate = request.ActivateFromDate.HasValue
+                ? new DateTime(request.ActivateFromDate.Value.Year, request.ActivateFromDate.Value.Month, 1)
+                : null;
+        }
 
         await context.SaveChangesAsync(cancellationToken);
-
         return true;
     }
 }
