@@ -226,6 +226,73 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                 }
             }
 
+            // Añadir las cuotas calculadas a los gastos
+            gastos += pendingInstallments;
+
+            // ────────────────────────────────────────────────────────────
+            // E. PERSONAS: atribuciones como ingreso del mes
+            //    Lógica: si Juan debe el 50% de Netflix ($500), esos $250
+            //    son un ingreso efectivo ese mes (él te los reintegrará).
+            // ────────────────────────────────────────────────────────────
+            decimal personsReceivable = 0m;
+
+            // E1. Gastos fijos con persona atribuida
+            foreach (var fe in fixedExpensesOfMonth.Where(f => f.PersonID != null))
+            {
+                var pct = fe.PersonPercentage ?? 100m;
+                personsReceivable += fe.Amount * pct / 100m;
+            }
+
+            // E2. Transacciones TC con persona atribuida (solo meses futuros, mirror del loop C/D)
+            if (!hasCreditCardPayment && m >= mesDespuesDelPago)
+            {
+                foreach (var cardTx in cardTransactions.Where(t => t.PersonID != null))
+                {
+                    if (cardTx.TransactionDate == null) continue;
+
+                    var compraMesP = new DateTime(cardTx.TransactionDate.Year, cardTx.TransactionDate.Month, 1);
+                    var vencimientoP = compraMesP.AddMonths(1);
+
+                    decimal montoArsP = cardTx.Amount;
+                    if (cardTx.Account.Currency == "USD")
+                        montoArsP *= cotizacionDolar;
+
+                    decimal pctP = cardTx.PersonPercentage ?? 100m;
+                    bool esFijoP = cardTx.Fixed;
+                    bool esCuotasP = cardTx.Installments > 1;
+                    bool esVariableP = !esFijoP && !esCuotasP;
+
+                    if (esVariableP)
+                    {
+                        if (SameMonth(m, vencimientoP))
+                            personsReceivable += montoArsP * pctP / 100m;
+                        continue;
+                    }
+
+                    if (esFijoP && !esCuotasP)
+                    {
+                        personsReceivable += montoArsP * pctP / 100m;
+                        continue;
+                    }
+
+                    if (esCuotasP)
+                    {
+                        int totalCuotasP = (int)cardTx.Installments!;
+                        int cuotaBaseP = (int)cardTx.ActualInstallment!;
+                        int offsetP = MonthDiff(vencimientoP, m);
+                        if (offsetP < 0) continue;
+                        int cuotaEnMesP = cuotaBaseP + offsetP;
+                        if (cuotaEnMesP > totalCuotasP) continue;
+                        personsReceivable += (montoArsP / totalCuotasP) * pctP / 100m;
+                    }
+                }
+            }
+
+            // Las atribuciones a personas son ingresos efectivos del mes
+            ingresos += personsReceivable;
+
+            // ────────────────────────────────────────────────────────────
+            // F. CALCULAR BALANCE ACUMULADO
             // ────────────────────────────────────────────────────────────
             // E. BALANCE ACUMULADO
             // gastos = manuales + fijos (sin TC); TC separado en pendingInstallments
@@ -234,6 +301,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
             acumulado += neto;
 
             // ────────────────────────────────────────────────────────────
+            // G. CONSTRUIR DTO CON FORMATO
             // F. CONSTRUIR DTO
             // ────────────────────────────────────────────────────────────
             var culture = new CultureInfo("es-AR");
@@ -253,6 +321,9 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                 FixedExpensesFmt = gastosFixosDelMes.ToString("C", culture),
                 PendingInstallments = pendingInstallments,
                 InstallmentsFmt = pendingInstallments.ToString("C", culture),
+                HasCreditCardPayment = hasCreditCardPayment,
+                PersonsReceivable = personsReceivable,
+                PersonsReceivableFmt = personsReceivable.ToString("C", culture)
                 Balance = acumulado,
                 BalanceFmt = acumulado.ToString("C", culture),
                 HasCreditCardPayment = hasCreditCardPayment

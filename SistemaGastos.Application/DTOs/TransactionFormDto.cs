@@ -10,10 +10,13 @@ public class TransactionFormDto
     public int CategoryID { get; set; }
     public string Description { get; set; }
     public int? FixedExpenseID { get; set; }
+    public int? PersonID { get; set; }
+    public decimal? PersonPercentage { get; set; }
 
     public List<AccountDto> Accounts { get; set; }
     public List<CategoryDropdownDto> Categories { get; set; }
     public List<FixedExpenseDropdownDto> FixedExpenses { get; set; }
+    public List<PersonDropdownDto> Persons { get; set; } = new();
 }
 
 public class FixedExpenseDropdownDto

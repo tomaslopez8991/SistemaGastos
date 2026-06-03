@@ -111,6 +111,8 @@ public class TransactionController(IMediator mediator, ICurrentUserService curre
                 CategoryID = request.CategoryID,
                 Description = request.Description,
                 FixedExpenseID = request.FixedExpenseID,
+                PersonID = request.PersonID,
+                PersonPercentage = request.PersonPercentage,
                 Splits = request.Splits
             };
 
@@ -131,6 +133,8 @@ public class TransactionController(IMediator mediator, ICurrentUserService curre
             CategoryID = request.CategoryID,
             Description = request.Description,
             FixedExpenseID = request.FixedExpenseID,
+            PersonID = request.PersonID,
+            PersonPercentage = request.PersonPercentage,
             Splits = request.Splits
         };
 
@@ -172,6 +176,8 @@ public class TransactionController(IMediator mediator, ICurrentUserService curre
                         CategoryID = req.CategoryID,
                         Description = req.Description,
                         FixedExpenseID = req.FixedExpenseID,
+                        PersonID = req.PersonID,
+                        PersonPercentage = req.PersonPercentage,
                         Splits = req.Splits
                     };
 
@@ -263,6 +269,8 @@ public class SaveTransactionRequest
     public int CategoryID { get; set; }
     public string Description { get; set; }
     public int? FixedExpenseID { get; set; }
+    public int? PersonID { get; set; }
+    public decimal? PersonPercentage { get; set; }
     public List<TransactionSplitDto> Splits { get; set; } = new();
 }
 
@@ -274,5 +282,7 @@ public class CreateTransactionRequest
     public int CategoryID { get; set; }
     public string Description { get; set; }
     public int? FixedExpenseID { get; set; }
+    public int? PersonID { get; set; }
+    public decimal? PersonPercentage { get; set; }
     public List<TransactionSplitDto> Splits { get; set; } = new List<TransactionSplitDto>();
 }

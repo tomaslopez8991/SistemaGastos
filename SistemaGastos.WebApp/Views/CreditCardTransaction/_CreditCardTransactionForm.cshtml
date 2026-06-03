@@ -95,6 +95,38 @@
             <span class="cc-fixed-subtitle">Se cobra todos los meses automáticamente</span>
         </label>
     </div>
+
+    @* ── Solicitado por ────────────────────────────────────────── *@
+    @if (ViewBag.Persons != null && ((IEnumerable<SistemaGastos.Application.DTOs.PersonDropdownDto>)ViewBag.Persons).Any())
+    {
+        <div class="mt-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-8">
+                    <label asp-for="PersonID" class="cc-label">
+                        <i class="fa-solid fa-user me-1"></i>Solicitado por
+                    </label>
+                    <select asp-for="PersonID" class="form-select" id="selectPersonCC">
+                        <option value="">— Propio (sin atribución) —</option>
+                        @foreach (var p in (IEnumerable<SistemaGastos.Application.DTOs.PersonDropdownDto>)ViewBag.Persons)
+                        {
+                            <option value="@p.ID">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-4" id="pctWrapperCC"
+                     style="@(Model.PersonID.HasValue ? "" : "display:none;")">
+                    <label class="cc-label">% Atribuido</label>
+                    <div class="input-group input-group-sm">
+                        <input type="number" min="1" max="100" step="1" class="form-control text-end fw-semibold"
+                               id="inputPersonPercentageCC" name="PersonPercentage"
+                               value="@(Model.PersonPercentage ?? 100)" />
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+            </div>
+            <small class="text-muted d-block mt-1">Asigná este gasto (o un % del mismo) a otra persona.</small>
+        </div>
+    }
 </form>
 
 <script>
@@ -122,5 +154,19 @@
         if ($('#chkFixedEdit').is(':checked')) {
             $('#section-installments').hide();
         }
+
+        // Mostrar/ocultar % atribuido según persona seleccionada
+        var $selPerson = $('#selectPersonCC');
+        var $pctWrapper = $('#pctWrapperCC');
+        function togglePct() {
+            if ($selPerson.val()) {
+                $pctWrapper.show();
+            } else {
+                $pctWrapper.hide();
+                $('#inputPersonPercentageCC').val(100);
+            }
+        }
+        $selPerson.on('change', togglePct);
+        togglePct(); // estado inicial
     })();
 </script>

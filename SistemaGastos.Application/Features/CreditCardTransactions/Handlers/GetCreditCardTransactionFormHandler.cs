@@ -36,6 +36,13 @@ public class GetCreditCardTransactionFormHandler(IApplicationDbContext context)
         if (request.Id.HasValue)
             transaction = await context.CreditCardTransaction.FindAsync([request.Id.Value], cancellationToken);
 
-        return new CreditCardFormDto(creditCards, accounts, categories, transaction);
+        var persons = await context.Person
+            .AsNoTracking()
+            .Where(p => p.UserID == request.UserId && p.Active)
+            .OrderBy(p => p.Name)
+            .Select(p => new PersonDropdownDto { ID = p.ID, Name = p.Name })
+            .ToListAsync(cancellationToken);
+
+        return new CreditCardFormDto(creditCards, accounts, categories, transaction, persons);
     }
 }

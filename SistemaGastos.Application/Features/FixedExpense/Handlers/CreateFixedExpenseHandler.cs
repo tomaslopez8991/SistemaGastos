@@ -19,6 +19,9 @@ public class CreateFixedExpenseHandler(IApplicationDbContext context)
             CategoryID = request.CategoryID,
             PaymentDay = request.PaymentDay,
             LogoUrl = request.LogoUrl,
+            Active = true,
+            PersonID = request.PersonID,
+            PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null
             StartDate = request.StartDate,
             Active = true
         };

@@ -68,6 +68,8 @@ public class UpdateTransactionHandler(IApplicationDbContext context)
                     transaction.CategoryID = request.CategoryID;
                     transaction.Description = request.Description;
                     transaction.FixedExpenseID = request.FixedExpenseID;
+                    transaction.PersonID = request.PersonID;
+                    transaction.PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null;
 
                     isFirstSplit = false;
                 }
@@ -80,7 +82,9 @@ public class UpdateTransactionHandler(IApplicationDbContext context)
                         AccountID = split.AccountID,
                         CategoryID = request.CategoryID,
                         Description = request.Description,
-                        FixedExpenseID = request.FixedExpenseID
+                        FixedExpenseID = request.FixedExpenseID,
+                        PersonID = request.PersonID,
+                        PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null
                     };
 
                     await context.Transaction.AddAsync(newTransaction, cancellationToken);

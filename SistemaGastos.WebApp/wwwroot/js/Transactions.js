@@ -298,6 +298,17 @@
             $('#modalEditContent').html(html);
             const modal = new bootstrap.Modal(document.getElementById('modalEditTransaction'));
             modal.show();
+
+            // Toggle % atribuido al cambiar persona
+            $(document).off('change', '#Edit_Transaction_PersonID').on('change', '#Edit_Transaction_PersonID', function () {
+                const $wrap = $('#pctWrapperEdit');
+                if ($(this).val()) {
+                    $wrap.show();
+                } else {
+                    $wrap.hide();
+                    $('#Edit_Transaction_PersonPct').val(100);
+                }
+            });
         }).fail(function (xhr) {
             console.error('Error cargando formulario:', xhr);
             Swal.fire('Error', 'No se pudo cargar el formulario de edición', 'error');
@@ -470,6 +481,10 @@
             CategoryID: parseInt($('#Edit_Transaction_CategoryID').val()),
             Description: $('#Edit_Transaction_Description').val(),
             FixedExpenseID: parseInt($('#Edit_Transaction_FixedExpenseID').val()) || null,
+            PersonID: parseInt($('#Edit_Transaction_PersonID').val()) || null,
+            PersonPercentage: parseInt($('#Edit_Transaction_PersonID').val())
+                ? (parseFloat($('#Edit_Transaction_PersonPct').val()) || 100)
+                : null,
             AccountID: splits[0].AccountID,
             Amount: splits[0].Amount,
             Splits: splits

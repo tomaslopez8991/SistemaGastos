@@ -27,4 +27,6 @@ public class MonthlyBalanceDto
     public string BalanceFmt { get; set; }
 
     public bool HasCreditCardPayment { get; set; }
+    public decimal PersonsReceivable { get; set; }
+    public string PersonsReceivableFmt { get; set; } = string.Empty;
 }

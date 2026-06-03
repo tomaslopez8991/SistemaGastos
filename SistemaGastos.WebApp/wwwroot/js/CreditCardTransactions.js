@@ -474,6 +474,8 @@
             data.CategoryID = parseInt(data.CategoryID) || 0;
             data.ActualInstallment = parseInt(data.ActualInstallment) || null;
             data.Installments = parseInt(data.Installments) || null;
+            data.PersonID = parseInt(data.PersonID) || null;
+            data.PersonPercentage = data.PersonID ? (parseFloat(data.PersonPercentage) || 100) : null;
             const monto = parseFloat(data.Amount) || 0;
             data.Amount = monto;
 
