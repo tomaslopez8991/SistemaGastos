@@ -29,4 +29,6 @@ public class MonthlyBalanceDto
     public bool HasCreditCardPayment { get; set; }
     public decimal PersonsReceivable { get; set; }
     public string PersonsReceivableFmt { get; set; } = string.Empty;
+    /// <summary>Cotización dólar MEP usada para calcular este mes.</summary>
+    public decimal DolarRate { get; set; }
 }

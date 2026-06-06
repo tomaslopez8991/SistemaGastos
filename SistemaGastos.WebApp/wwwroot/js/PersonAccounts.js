@@ -8,14 +8,18 @@
     const container = document.getElementById('planning-container');
     if (!container) return;
 
-    const URL_ACCOUNTS  = container.dataset.urlPersonAccounts;
-    const URL_LIST      = container.dataset.urlPersonList;
-    const URL_SAVE      = container.dataset.urlPersonSave;
-    const URL_DELETE    = container.dataset.urlPersonDelete;
-    const antiForgery   = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    const URL_ACCOUNTS         = container.dataset.urlPersonAccounts;
+    const URL_LIST             = container.dataset.urlPersonList;
+    const URL_SAVE             = container.dataset.urlPersonSave;
+    const URL_DELETE           = container.dataset.urlPersonDelete;
+    const URL_PAYMENT_ACCOUNTS = container.dataset.urlPersonPaymentAccounts;
+    const URL_REGISTER_PAYMENT = container.dataset.urlPersonRegisterPayment;
+    const antiForgery          = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
     // ── Estado ───────────────────────────────────────────────────
     let accountsLoaded = false;
+    let activeYear  = new Date().getFullYear();
+    let activeMonth = new Date().getMonth() + 1;
 
     // ── Helpers ─────────────────────────────────────────────────
     function escHtml(str) {
@@ -33,6 +37,14 @@
         }
     }
 
+    // ── Función pública: permite recargar desde TmpTransaction.js ─
+    window.cargarCuentas = function(year, month) {
+        activeYear  = parseInt(year)  || activeYear;
+        activeMonth = parseInt(month) || activeMonth;
+        accountsLoaded = false;
+        loadAccounts();
+    };
+
     // ── Cargar cuentas ───────────────────────────────────────────
     async function loadAccounts() {
         const grid = document.getElementById('person-accounts-grid');
@@ -43,11 +55,12 @@
             <span class="ms-2 small">Calculando cuentas...</span></div>`;
 
         try {
-            const res = await fetch(URL_ACCOUNTS);
+            const res = await fetch(`${URL_ACCOUNTS}?year=${activeYear}&month=${activeMonth}`);
             const json = await res.json();
             const accounts = json.data || [];
 
             updateDashboardCard(accounts);
+            updateCuentasBadge(accounts);
 
             if (accounts.length === 0) {
                 grid.innerHTML = `
@@ -60,6 +73,14 @@
             }
 
             grid.innerHTML = accounts.map(a => buildCard(a)).join('');
+
+            grid.querySelectorAll('.btn-collect-pa').forEach(btn => {
+                btn.addEventListener('click', () => collectFromPerson(
+                    parseInt(btn.dataset.personId),
+                    btn.dataset.personName,
+                    parseFloat(btn.dataset.totalOwed)
+                ));
+            });
 
             grid.querySelectorAll('.btn-expand-pa').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -79,20 +100,18 @@
         }
     }
 
-    // ── Card de resumen "A cobrar" en el dashboard mensual ───────
-    function updateDashboardCard(accounts) {
-        const card = document.getElementById('dash-persons-card');
-        const val  = document.getElementById('dash-persons-receivable');
-        if (!card || !val) return;
-
-        const total = accounts.reduce((s, a) => s + a.totalOwed, 0);
-        if (total > 0) {
-            val.textContent = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(total);
-            card.style.display = '';
-        } else {
-            card.style.display = 'none';
+    // ── Badge tab Cuentas ────────────────────────────────────────
+    function updateCuentasBadge(accounts) {
+        const withDebt = accounts.filter(a => a.totalOwed > 0).length;
+        const $b = document.getElementById('badge-cuentas');
+        if ($b) {
+            if (withDebt > 0) { $b.textContent = withDebt; $b.style.display = ''; }
+            else $b.style.display = 'none';
         }
     }
+
+    // ── Card "A cobrar" eliminada — función conservada como no-op ─
+    function updateDashboardCard(_accounts) { /* card removida */ }
 
     // ── Construir card de persona ────────────────────────────────
     function buildCard(account) {
@@ -155,10 +174,18 @@
                 </button>
               </div>
               <div class="d-flex justify-content-between align-items-center p-3 rounded bg-body-tertiary">
-                <span class="small text-muted">Saldo adeudado</span>
-                <span class="fw-bold fs-5 ${color}">
-                  <i class="fa-solid ${icon} me-1 small"></i>${account.totalOwedFmt}
-                </span>
+                <div>
+                    <div class="small text-muted">Saldo adeudado</div>
+                    <span class="fw-bold fs-5 ${color}">
+                      <i class="fa-solid ${icon} me-1 small"></i>${account.totalOwedFmt}
+                    </span>
+                </div>
+                ${isPos ? `<button class="btn btn-success btn-sm fw-bold btn-collect-pa"
+                    data-person-id="${account.personID}"
+                    data-person-name="${escHtml(account.personName)}"
+                    data-total-owed="${account.totalOwed}">
+                    <i class="fas fa-hand-holding-dollar me-1"></i>Cobrar
+                  </button>` : ''}
               </div>
             </div>
             <div class="collapse" id="${id}">
@@ -170,21 +197,100 @@
         </div>`;
     }
 
+    // ── Cobrar a persona ─────────────────────────────────────────
+    async function collectFromPerson(personId, personName, totalOwed) {
+        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+
+        // Cargar cuentas disponibles
+        let accounts = [];
+        try {
+            const res = await fetch(URL_PAYMENT_ACCOUNTS);
+            const json = await res.json();
+            accounts = json.data || [];
+        } catch { /* silencioso */ }
+
+        if (!accounts.length) {
+            Swal.fire('Sin cuentas', 'No hay cuentas disponibles para acreditar el cobro.', 'warning');
+            return;
+        }
+
+        const accountOptions = accounts.map(a =>
+            `<option value="${a.id}">${a.name} (${a.currency})</option>`
+        ).join('');
+
+        const { value: formValues, isConfirmed } = await Swal.fire({
+            title: `Cobrar a ${personName}`,
+            html: `
+                <div class="text-start">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Monto a cobrar</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input id="swal-collect-amount" type="number" step="0.01"
+                                class="form-control text-end fw-bold"
+                                value="${totalOwed.toFixed(2)}" min="0.01" />
+                        </div>
+                        <small class="text-muted">Total adeudado: <strong>${fmt.format(totalOwed)}</strong></small>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Acreditar en cuenta</label>
+                        <select id="swal-collect-account" class="form-select">
+                            ${accountOptions}
+                        </select>
+                    </div>
+                </div>`,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check me-1"></i>Confirmar cobro',
+            confirmButtonColor: '#198754',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => ({
+                amount:    parseFloat(document.getElementById('swal-collect-amount').value) || 0,
+                accountId: parseInt(document.getElementById('swal-collect-account').value) || 0
+            })
+        });
+
+        if (!isConfirmed || !formValues || formValues.amount <= 0) return;
+
+        try {
+            const res = await fetch(URL_REGISTER_PAYMENT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': antiForgery()
+                },
+                body: JSON.stringify({
+                    personID:  personId,
+                    accountID: formValues.accountId,
+                    amount:    formValues.amount
+                })
+            });
+            const json = await res.json();
+            if (json.success) {
+                Swal.fire({ title: 'Cobro registrado', icon: 'success', timer: 1500, showConfirmButton: false });
+                accountsLoaded = false;
+                loadAccounts();
+                if (window.reloadCashflowBalances) window.reloadCashflowBalances();
+            } else {
+                Swal.fire('Error', json.message || 'No se pudo registrar el cobro', 'error');
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Error de comunicación', 'error');
+        }
+    }
+
     // ── TmpTransaction.js publica el mes seleccionado vía evento.
     //    Cuando el tab Cuentas se abre por primera vez, cargamos las cuentas.
     // ── Tab switch ───────────────────────────────────────────────
     const cuentasTab = document.getElementById('cuentas-tab');
     if (cuentasTab) {
-        cuentasTab.addEventListener('shown.bs.tab', () => {
-            if (!accountsLoaded) loadAccounts();
-        });
+        // Recargar siempre al abrir el tab (el mes puede haber cambiado)
+        cuentasTab.addEventListener('shown.bs.tab', () => loadAccounts());
     }
 
     // ── La card del dashboard se actualiza cuando se cargan los balances.
     //    TmpTransaction.js dispara 'balances:loaded' con el mes activo.
     //    Si ese evento no existe, cargamos las cuentas al inicio.
     // ─────────────────────────────────────────────────────────────
-    // Cargar inmediatamente para que la card A cobrar esté disponible
-    // desde el primer momento (independiente del tab Cuentas)
+    // Carga inicial (para el badge del tab y el cálculo inicial)
     loadAccounts();
 })();

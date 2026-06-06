@@ -3477,6 +3477,57 @@ input.gridjs-input {
     opacity: .75;
 }
 
+/* ── Breakdown proyectado inline ────────────── */
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    font-size: 13px;
+}
+
+.breakdown-row:last-child { border-bottom: none; }
+
+.breakdown-row-label {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.breakdown-row-amount {
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 13px;
+}
+
+.breakdown-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 20px;
+    font-weight: 600;
+    margin-top: 2px;
+    width: fit-content;
+}
+
+@media (min-width: 992px) {
+    .border-end-lg {
+        border-right: 1px solid var(--bs-border-color) !important;
+    }
+    .breakdown-col-income {
+        border-right: 1px solid var(--bs-border-color);
+    }
+}
+
+#breakdownModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
 /* ── Tabs ───────────────────────────────────── */
 .tmp-tabs-header {
     padding: 12px 16px 0;

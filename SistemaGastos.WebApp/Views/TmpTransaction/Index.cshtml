@@ -33,6 +33,8 @@
      data-url-person-list="@Url.Action("GetList", "Person")"
      data-url-person-save="@Url.Action("Save", "Person")"
      data-url-person-delete="@Url.Action("Delete", "Person")"
+     data-url-person-payment-accounts="@Url.Action("GetPaymentAccounts", "Person")"
+     data-url-person-register-payment="@Url.Action("RegisterPayment", "Person")"
      data-intro="Bienvenido al módulo de Cashflow Pro. Aquí proyectás tu liquidez futura y administrás tus gastos recurrentes en un solo lugar."
      data-step="1">
 
@@ -116,17 +118,6 @@
             </div>
         </div>
         <div class="col-md-3 col-lg">
-            @* Nueva card: A cobrar de personas (visible solo si hay atribuciones) *@
-            <div class="tmp-dash-card persons-receivable" id="dash-persons-card" style="display:none;">
-                <div>
-                    <div class="tmp-dash-label">A cobrar (personas)</div>
-                    <div class="tmp-dash-value" id="dash-persons-receivable">$ —</div>
-                    <div class="tmp-dash-sub">Ingresos atribuidos</div>
-                </div>
-                <i class="fa-solid fa-people-group tmp-dash-icon"></i>
-            </div>
-        </div>
-        <div class="col-md-3 col-lg">
             <div class="tmp-dash-card balance">
                 <div>
                     <div class="tmp-dash-label">Saldo proyectado</div>
@@ -148,6 +139,7 @@
                             data-bs-target="#planificados"
                             type="button" role="tab">
                         <i class="fa-solid fa-calendar-day me-2 text-primary"></i>Movimientos
+                        <span class="badge rounded-pill ms-1 bg-primary bg-opacity-25 text-primary" id="badge-movimientos" style="display:none;">0</span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -177,6 +169,7 @@
                             data-bs-target="#presupuestos"
                             type="button" role="tab">
                         <i class="fa-solid fa-chart-pie me-2 text-info"></i>Presupuestos
+                        <span class="badge rounded-pill ms-1 bg-info bg-opacity-25 text-info" id="badge-presupuestos" style="display:none;">0</span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -186,6 +179,7 @@
                             data-bs-target="#cuentas"
                             type="button" role="tab">
                         <i class="fa-solid fa-people-group me-2 text-success"></i>Cuentas
+                        <span class="badge rounded-pill ms-1 bg-success bg-opacity-25 text-success" id="badge-cuentas" style="display:none;">0</span>
                     </button>
                 </li>
             </ul>
@@ -254,10 +248,63 @@
         </div>
     </div>
 
-    @* Collapse del breakdown (referenciado desde JS) *@
-    <div class="collapse" id="balanceBreakdownCollapse">
-        <div class="tx-table-card mb-4 p-4" id="breakdownBody">
-            <div class="row g-3"></div>
+    @* ── Modal Bootstrap: desglose proyectado ────────────────── *@
+    <div class="modal fade" id="breakdownModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-table-list text-primary me-1"></i>
+                        <h5 class="modal-title fw-bold mb-0">
+                            Desglose proyectado
+                            <span class="text-body-secondary fw-normal small ms-2" id="breakdown-month-label"></span>
+                        </h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="row g-0">
+                        @* Columna ingresos *@
+                        <div class="col-12 col-lg-6 p-4 breakdown-col-income">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                      style="width:32px;height:32px;">
+                                    <i class="fa-solid fa-arrow-trend-up text-success small"></i>
+                                </span>
+                                <h6 class="fw-bold mb-0 text-success-emphasis">Ingresos</h6>
+                            </div>
+                            <div id="breakdown-income-list">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-success"></div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                                <span class="small text-body-secondary text-uppercase fw-semibold">Total ingresos</span>
+                                <span class="text-success fs-6 fw-bold" id="breakdown-income-total">$ —</span>
+                            </div>
+                        </div>
+                        @* Columna gastos *@
+                        <div class="col-12 col-lg-6 p-4 breakdown-col-expense">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                      style="width:32px;height:32px;">
+                                    <i class="fa-solid fa-arrow-trend-down text-danger small"></i>
+                                </span>
+                                <h6 class="fw-bold mb-0 text-danger-emphasis">Gastos</h6>
+                            </div>
+                            <div id="breakdown-expense-list">
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-danger"></div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                                <span class="small text-body-secondary text-uppercase fw-semibold">Total gastos</span>
+                                <span class="text-danger fs-6 fw-bold" id="breakdown-expense-total">$ —</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

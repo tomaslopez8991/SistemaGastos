@@ -1,17 +1,19 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.Persons.Commands;
 using SistemaGastos.Application.Features.Persons.Queries;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Application.Wrappers;
+using SistemaGastos.Domain.Enums;
 
 namespace SistemaGastos.Controllers;
 
 [Authorize]
 [Route("Person")]
-public class PersonController(IMediator mediator, ICurrentUserService currentUser) : Controller
+public class PersonController(IMediator mediator, ICurrentUserService currentUser, IApplicationDbContext context) : Controller
 {
     [HttpGet]
     public IActionResult Index() => View();
@@ -57,10 +59,14 @@ public class PersonController(IMediator mediator, ICurrentUserService currentUse
     }
 
     [HttpGet("GetAccounts")]
-    public async Task<ActionResult<Response<List<PersonAccountDto>>>> GetAccounts()
+    public async Task<ActionResult<Response<List<PersonAccountDto>>>> GetAccounts(int? year, int? month)
     {
         var userID = currentUser.UserId ?? 0;
-        var accounts = await mediator.Send(new GetPersonAccountsQuery(userID));
+        var now = DateTime.Now;
+        var accounts = await mediator.Send(new GetPersonAccountsQuery(
+            userID,
+            year ?? now.Year,
+            month ?? now.Month));
         return Ok(Response<List<PersonAccountDto>>.Ok(accounts));
     }
 
@@ -71,4 +77,34 @@ public class PersonController(IMediator mediator, ICurrentUserService currentUse
         var persons = await mediator.Send(new GetPersonsQuery(userID));
         return Ok(Response<List<PersonDto>>.Ok(persons));
     }
+
+    /// <summary>Cuentas disponibles para acreditar un cobro (excluye TC).</summary>
+    [HttpGet("GetPaymentAccounts")]
+    public async Task<ActionResult<Response<List<object>>>> GetPaymentAccounts()
+    {
+        var userID = currentUser.UserId ?? 0;
+        var accounts = await context.Account
+            .Where(a => a.UserID == userID && a.Type != AccountType.TarjetaCredito)
+            .Select(a => new { id = a.ID, name = a.Name, currency = a.Currency, balance = a.Balance })
+            .ToListAsync();
+        return Ok(Response<object>.Ok(accounts));
+    }
+
+    [HttpPost("RegisterPayment")]
+    [ValidateAntiForgeryToken]
+    public async Task<ActionResult<Response<bool>>> RegisterPayment([FromBody] PersonPaymentRequest req)
+    {
+        var userID = currentUser.UserId ?? 0;
+        var ok = await mediator.Send(new RegisterPersonPaymentCommand(req.PersonID, userID, req.AccountID, req.Amount));
+        return ok
+            ? Ok(Response<bool>.Ok(true, "Cobro registrado correctamente"))
+            : Ok(Response<bool>.Fail("No se pudo registrar el cobro"));
+    }
+}
+
+public class PersonPaymentRequest
+{
+    public int PersonID { get; set; }
+    public int AccountID { get; set; }
+    public decimal Amount { get; set; }
 }
