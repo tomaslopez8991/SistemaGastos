@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new FixedIncomeConfiguration());
+        modelBuilder.ApplyConfiguration(new DebtPlanSettingsConfiguration());
     }
 
     public DbSet<Account> Account { get; set; }
@@ -25,4 +26,5 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FixedExpenseHistory> FixedExpenseHistory { get; set; }
     public DbSet<Person> Person { get; set; }
     public DbSet<FixedIncome> FixedIncome { get; set; }
+    public DbSet<DebtPlanSettings> DebtPlanSettings { get; set; }
 }

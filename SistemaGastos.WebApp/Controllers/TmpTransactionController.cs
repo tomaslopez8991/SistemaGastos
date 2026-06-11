@@ -149,6 +149,30 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
 
         return Ok(Response<bool>.Fail("No se pudo confirmar la transacción"));
     }
+
+    // GET: /TmpTransaction/PlanMetas
+    [HttpGet]
+    public IActionResult PlanMetas() => View();
+
+    // GET: /TmpTransaction/GetDebtPlanData
+    [HttpGet]
+    [Route("GetDebtPlanData")]
+    public async Task<ActionResult<Response<DebtPlanDataDto>>> GetDebtPlanData()
+    {
+        var userID = currentUserService.UserId ?? 0;
+        var data = await mediator.Send(new GetDebtPlanDataQuery(userID));
+        return Ok(Response<DebtPlanDataDto>.Ok(data));
+    }
+
+    // POST: /TmpTransaction/SaveDebtPlanSettings
+    [HttpPost]
+    [Route("SaveDebtPlanSettings")]
+    public async Task<ActionResult<Response<bool>>> SaveDebtPlanSettings([FromBody] DebtPlanSettingsDto settings)
+    {
+        var userID = currentUserService.UserId ?? 0;
+        var ok = await mediator.Send(new SaveDebtPlanSettingsCommand(userID, settings));
+        return Ok(Response<bool>.Ok(ok));
+    }
 }
 
 // DTO para recibir el request del frontend
