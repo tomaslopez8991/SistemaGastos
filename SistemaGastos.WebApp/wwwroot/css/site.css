@@ -3776,5 +3776,164 @@ input.gridjs-input {
 }
 
 /* ============================================
+   PLAN DE METAS FINANCIERAS
+   ============================================ */
+
+/* ── Summary cards ── */
+.dp-summary-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 1.1rem 1.2rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: box-shadow 0.2s ease;
+}
+.dp-summary-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.dp-summary-card-highlight {
+    border-color: rgba(25, 135, 84, 0.35);
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.08);
+}
+.dp-summary-icon {
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+    opacity: 0.7;
+}
+.dp-summary-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+.dp-summary-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.dp-summary-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+}
+
+/* ── Lista de gastos fijos ── */
+.dp-expenses-list {
+    max-height: 220px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.dp-expenses-list::-webkit-scrollbar { width: 4px; }
+.dp-expenses-list::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 4px; }
+
+.dp-expense-item {
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+.dp-expense-item:hover {
+    background: var(--hover-bg);
+}
+.dp-expense-item input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* ── Quick pills ── */
+.dp-quick-pill {
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    font-size: 12px;
+}
+.dp-quick-pill:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+}
+
+/* ── Tabla semáforo ── */
+.dp-row-safe td { background-color: rgba(25, 135, 84, 0.04) !important; }
+.dp-row-warning td { background-color: rgba(255, 193, 7, 0.07) !important; }
+.dp-row-danger td { background-color: rgba(220, 53, 69, 0.06) !important; }
+
+[data-bs-theme="light"] .dp-row-safe td { background-color: rgba(25, 135, 84, 0.05) !important; }
+[data-bs-theme="light"] .dp-row-warning td { background-color: rgba(255, 193, 7, 0.08) !important; }
+[data-bs-theme="light"] .dp-row-danger td { background-color: rgba(220, 53, 69, 0.06) !important; }
+
+/* ── Slider personalizado ── */
+#dp-extra-slider {
+    accent-color: #198754;
+}
+
+/* ── Indicador de guardado automático ── */
+.dp-save-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+.dp-save-indicator.show { opacity: 1; }
+.dp-save-indicator.saved { color: #198754; }
+.dp-save-indicator.error { color: #dc3545; }
+
+/* ── Sincronización hover gráfico ↔ tabla ↔ barra de salud ── */
+#dp-table-body tr.dp-row-hover td {
+    background-color: rgba(13, 110, 253, 0.12) !important;
+}
+#dp-table-body tr {
+    transition: background-color 0.15s ease;
+    cursor: pointer;
+}
+
+/* ── Barra de "Salud del plan" (12 segmentos mensuales) ── */
+.dp-progress-segments {
+    display: flex;
+    gap: 4px;
+    height: 12px;
+}
+.dp-progress-segment {
+    flex: 1;
+    border-radius: 3px;
+    background: var(--border-glass);
+    cursor: pointer;
+    transition: transform 0.15s ease, filter 0.15s ease;
+    transform-origin: center;
+}
+.dp-progress-segment.safe { background-color: #198754; }
+.dp-progress-segment.warning { background-color: #ffc107; }
+.dp-progress-segment.danger { background-color: #dc3545; }
+.dp-progress-segment.dp-row-hover,
+.dp-progress-segment:hover {
+    transform: scaleY(1.5);
+    filter: brightness(1.15);
+}
+
+/* ── Animación de actualización de valores ── */
+@keyframes dp-value-pulse {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.07); }
+    100% { transform: scale(1); }
+}
+.dp-value-pulse {
+    display: inline-block;
+    animation: dp-value-pulse 0.35s ease;
+}
+
+/* ── Responsivo ── */
+@media (max-width: 576px) {
+    .dp-summary-value { font-size: 1.1rem; }
+    .dp-save-indicator #dp-save-text { display: none; }
+}
+
+/* ============================================
    FIN DEL STYLESHEET
    ============================================ */

@@ -20,6 +20,7 @@ public interface IApplicationDbContext
     DbSet<TodoTask> TodoTask { get; set; }
     DbSet<Budget> Budget { get; set; }
     DbSet<Person> Person { get; set; }
+    DbSet<DebtPlanSettings> DebtPlanSettings { get; set; }
 
     // Métodos esenciales
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
