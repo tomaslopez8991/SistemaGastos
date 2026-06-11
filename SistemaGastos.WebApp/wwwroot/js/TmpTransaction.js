@@ -22,6 +22,7 @@
     let currentGrid = null;
     let monthsData = [];
     let activeMonthKey = null;
+    let activeDolarRate = 0; // cotización MEP del mes activo
 
     // INICIO
     init();
@@ -34,105 +35,167 @@
         window.reloadCashflowBalances = loadBalances;
     }
 
-    // ── Cards clickeables: detalle de ingresos y gastos ──────
+    // ── Breakdown: abre modal Bootstrap con desglose ─────────────
     function setupBreakdownCards() {
         $(document).off('click', '.tmp-dash-card.clickable').on('click', '.tmp-dash-card.clickable', function () {
-            const type = $(this).data('breakdown');
             if (!activeMonthKey) return;
             const [year, month] = activeMonthKey.split('-').map(Number);
-            openBreakdownModal(type, year, month);
+            openBreakdownModal(year, month);
         });
     }
 
-    function openBreakdownModal(type, year, month) {
-        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
-        const isIncome = type === 'income';
-        const title = isIncome ? 'Detalle de Ingresos' : 'Detalle de Gastos';
-        const monthName = new Date(year, month - 1, 1)
+    function openBreakdownModal(year, month) {
+        const monthLabel = new Date(year, month - 1, 1)
             .toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+        $('#breakdown-month-label').text(monthLabel);
 
-        // Llamadas paralelas: movimientos planificados + fijos/recurrentes
-        const callPlanned = $.get(urls.list, { year, month });
-        const callFixed   = isIncome
-            ? $.get(urls.incomeList, { year, month })
-            : $.get(urls.fixedList,  { year, month });
+        // Mostrar spinners mientras carga
+        $('#breakdown-income-list, #breakdown-expense-list').html(
+            '<div class="text-center py-3"><div class="spinner-border spinner-border-sm"></div></div>');
+        $('#breakdown-income-total, #breakdown-expense-total').text('$ —');
 
-        $.when(callPlanned, callFixed).done(function (r1, r2) {
-            const planned = (r1[0]?.data || []).filter(t => isIncome ? t.isIngreso : !t.isIngreso);
-            const fixed   = (r2[0]?.data || []).filter(f => f.active);
+        const modal = new bootstrap.Modal(document.getElementById('breakdownModal'));
+        modal.show();
 
-            const rowsPlanned = planned.length
-                ? planned.map(t => `
-                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-subtle">
-                        <div>
-                            <span class="fw-semibold small text-body-emphasis">${t.description}</span>
-                            <br><small class="text-body-secondary">${t.categoryName || ''}</small>
-                        </div>
-                        <span class="fw-bold ${isIncome ? 'text-success' : 'text-danger'} small">${t.amountFormatted}</span>
-                    </div>`).join('')
-                : `<p class="text-body-secondary small mb-0">Sin movimientos planificados</p>`;
-
-            const rowsFixed = fixed.length
-                ? fixed.map(f => {
-                    const amount = fmt.format(f.amount);
-                    const label  = isIncome ? f.name : f.name;
-                    const day    = isIncome ? f.receiptDay : f.paymentDay;
-                    return `
-                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom border-subtle">
-                        <div>
-                            <span class="fw-semibold small text-body-emphasis">${label}</span>
-                            <br><small class="text-body-secondary">
-                                <i class="fas fa-calendar-day me-1"></i>Día ${day}
-                                &nbsp;·&nbsp;${f.categoryName || ''}
-                                ${f.currency === 'USD' ? '&nbsp;<span class="badge bg-info-subtle text-info-emphasis">USD</span>' : ''}
-                            </small>
-                        </div>
-                        <span class="fw-bold ${isIncome ? 'text-success' : 'text-danger'} small">${f.amountFormatted || amount}</span>
-                    </div>`;
-                }).join('')
-                : `<p class="text-body-secondary small mb-0">Sin ${isIncome ? 'ingresos' : 'gastos'} fijos activos</p>`;
-
-            const totalPlanned = planned.reduce((s, t) => s + (t.amount || 0), 0);
-            const totalFixed   = fixed.reduce((s, f) => s + (f.amount || 0), 0);
-            const grandTotal   = totalPlanned + totalFixed;
-
-            const html = `
-                <div class="text-start">
-                    <p class="text-body-secondary small mb-3">
-                        <i class="fas fa-calendar me-1"></i>${monthName}
-                    </p>
-
-                    <h6 class="fw-bold mb-2 text-body-emphasis">
-                        <i class="fa-solid fa-calendar-day me-2 ${isIncome ? 'text-success' : 'text-danger'}"></i>
-                        Planificados
-                    </h6>
-                    <div class="mb-3">${rowsPlanned}</div>
-
-                    <h6 class="fw-bold mb-2 text-body-emphasis">
-                        <i class="fa-solid fa-repeat me-2 ${isIncome ? 'text-success' : 'text-warning'}"></i>
-                        ${isIncome ? 'Ingresos fijos' : 'Gastos fijos'}
-                    </h6>
-                    <div class="mb-3">${rowsFixed}</div>
-
-                    <div class="d-flex justify-content-between align-items-center
-                                mt-3 pt-3 border-top fw-bold">
-                        <span>Total</span>
-                        <span class="${isIncome ? 'text-success' : 'text-danger'} fs-5">${fmt.format(grandTotal)}</span>
-                    </div>
-                </div>`;
-
-            Swal.fire({
-                title,
-                html,
-                width: '520px',
-                confirmButtonText: 'Cerrar',
-                confirmButtonColor: isIncome ? '#198754' : '#dc3545',
-                showCancelButton: false
-            });
-        }).fail(() => {
-            Swal.fire('Error', 'No se pudo cargar el detalle', 'error');
-        });
+        loadBreakdown(year, month);
     }
+
+    function loadBreakdown(year, month) {
+        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+
+        // 5 llamadas paralelas: movimientos, gastos fijos, ingresos fijos, personas, cuentas
+        const callPlanned  = $.get(urls.list,       { year, month });
+        const callFixed    = $.get(urls.fixedList,  { year, month });
+        const callIncomes  = $.get(urls.incomeList, { year, month });
+        const callPersons  = $.get($container.data('url-person-accounts'), { year, month });
+        const callAccounts = $.get($container.data('url-person-payment-accounts'));
+
+        // Cotización y datos de TC del mes activo
+        const monthData    = monthsData.find(m => m.key === `${year}-${String(month).padStart(2, '0')}`);
+        const dolarRate    = activeDolarRate || (monthData?.dolarRate ?? 0);
+        const pendingTC    = monthData?.pendingInstallments ?? 0;
+        const pendingTCFmt = monthData?.installmentsFmt ?? fmt.format(pendingTC);
+
+        const toArs = (amount, currency) =>
+            currency === 'USD' && dolarRate > 0 ? amount * dolarRate : amount;
+
+        const fmtAmount = (amount, currency) => {
+            if (currency === 'USD' && dolarRate > 0) {
+                const arsEq = amount * dolarRate;
+                return `USD ${amount.toLocaleString('es-AR', { minimumFractionDigits: 2 })} <span class="text-body-secondary small">(≈ ${fmt.format(arsEq)})</span>`;
+            }
+            return fmt.format(amount);
+        };
+
+        const makeRow = (label, sublabel, amount, currency, badgeText, badgeColor, colorClass) => {
+            const amtHtml = fmtAmount(amount, currency);
+            const badge = badgeText ? `<span class="breakdown-badge ${badgeColor}">${badgeText}</span>` : '';
+            return `<div class="breakdown-row">
+                <div class="breakdown-row-label">
+                    <span class="text-body-emphasis">${label}</span>
+                    ${badge}
+                    ${sublabel ? `<span class="text-body-secondary" style="font-size:11px;">${sublabel}</span>` : ''}
+                </div>
+                <span class="breakdown-row-amount ${colorClass}">${amtHtml}</span>
+            </div>`;
+        };
+
+        const emptySec = (msg) => `<p class="text-body-secondary small py-2 mb-0">${msg}</p>`;
+
+        // Filtro para "efectivamente activo" en el mes seleccionado
+        const selectedStart = new Date(year, month - 1, 1);
+        const isEffectivelyActive = (item) => {
+            if (!item.active) return false;
+            if (item.startDate) {
+                const sd = new Date(item.startDate);
+                if (sd > selectedStart) return false;
+            }
+            return true;
+        };
+
+        $.when(callPlanned, callFixed, callIncomes, callPersons, callAccounts).done(function (r1, r2, r3, r4, r5) {
+            // ── INGRESOS ──────────────────────────────────────────────
+            const plannedIncome = (r1[0]?.data || []).filter(t => t.isIngreso);
+            const fixedIncomes  = (r3[0]?.data || []).filter(f =>
+                isEffectivelyActive(f) && !f.alreadyReceivedThisMonth);
+            const personAccts   = (r4[0]?.data || []).filter(a => a.totalOwed > 0);
+            // Cuentas con saldo positivo (liquidez disponible como punto de partida)
+            const accounts      = (r5[0]?.data || []).filter(a => a.balance > 0);
+
+            let incomeRows = '', incomeTotal = 0;
+
+            if (accounts.length) {
+                incomeRows += `<div class="breakdown-badge bg-primary bg-opacity-10 text-primary mb-2">Saldo en cuentas</div>`;
+                accounts.forEach(a => {
+                    const arsVal = toArs(a.balance, a.currency);
+                    incomeTotal += arsVal;
+                    incomeRows += makeRow(a.name, `Cuenta · ${a.currency}`, a.balance, a.currency, null, '', 'text-success');
+                });
+            }
+            if (plannedIncome.length) {
+                incomeRows += `<div class="breakdown-badge bg-success bg-opacity-10 text-success ${accounts.length ? 'mt-2 ' : ''}mb-2">Planificados</div>`;
+                plannedIncome.forEach(t => {
+                    incomeTotal += toArs(t.amount, t.currency);
+                    incomeRows += makeRow(t.description, t.categoryName, t.amount, t.currency, null, '', 'text-success');
+                });
+            }
+            if (fixedIncomes.length) {
+                incomeRows += `<div class="breakdown-badge bg-success bg-opacity-10 text-success mt-2 mb-2">Ingresos fijos</div>`;
+                fixedIncomes.forEach(f => {
+                    incomeTotal += toArs(f.amount, f.currency);
+                    incomeRows += makeRow(f.name, `Día ${f.receiptDay} · ${f.categoryName || ''}`, f.amount, f.currency, null, '', 'text-success');
+                });
+            }
+            if (personAccts.length) {
+                incomeRows += `<div class="breakdown-badge bg-warning bg-opacity-10 text-warning-emphasis mt-2 mb-2">A cobrar (personas)</div>`;
+                personAccts.forEach(a => {
+                    incomeTotal += a.totalOwed;
+                    incomeRows += makeRow(a.personName, `${a.items.length} movimiento(s)`, a.totalOwed, 'ARS', null, '', 'text-success');
+                });
+            }
+
+            if (!incomeRows) incomeRows = emptySec('Sin ingresos proyectados para este mes.');
+            $('#breakdown-income-list').html(incomeRows);
+            $('#breakdown-income-total').text(fmt.format(incomeTotal));
+
+            // ── GASTOS ────────────────────────────────────────────────
+            const plannedExpense = (r1[0]?.data || []).filter(t => !t.isIngreso);
+            const fixedExpenses  = (r2[0]?.data || []).filter(f =>
+                isEffectivelyActive(f) && !f.alreadyPaidThisMonth);
+
+            let expenseRows = '', expenseTotal = 0;
+
+            if (plannedExpense.length) {
+                expenseRows += `<div class="breakdown-badge bg-danger bg-opacity-10 text-danger mb-2">Planificados</div>`;
+                plannedExpense.forEach(t => {
+                    const a = toArs(t.amount, t.currency);
+                    expenseTotal += a;
+                    expenseRows += makeRow(t.description, t.categoryName, t.amount, t.currency, null, '', 'text-danger');
+                });
+            }
+            if (fixedExpenses.length) {
+                expenseRows += `<div class="breakdown-badge bg-warning bg-opacity-10 text-warning mt-2 mb-2">Gastos fijos</div>`;
+                fixedExpenses.forEach(f => {
+                    const a = toArs(f.amount, f.currency);
+                    expenseTotal += a;
+                    expenseRows += makeRow(f.name, `Día ${f.paymentDay} · ${f.categoryName || ''}`, f.amount, f.currency, null, '', 'text-danger');
+                });
+            }
+            if (pendingTC > 0) {
+                expenseRows += `<div class="breakdown-badge bg-warning bg-opacity-10 text-warning mt-2 mb-2">Cuotas TC estimadas</div>`;
+                expenseRows += makeRow('Tarjetas de crédito', 'Cuotas proyectadas para el mes', pendingTC, 'ARS', null, '', 'text-danger');
+                expenseTotal += pendingTC;
+            }
+
+            if (!expenseRows) expenseRows = emptySec('Sin gastos proyectados para este mes.');
+            $('#breakdown-expense-list').html(expenseRows);
+            $('#breakdown-expense-total').text(fmt.format(expenseTotal));
+
+        }).fail(() => {
+            $('#breakdown-income-list, #breakdown-expense-list').html(
+                `<div class="alert alert-danger small py-2 mb-0">Error al cargar el detalle.</div>`);
+        });
+    } // end loadBreakdown
 
     // CARGA DE BALANCES Y RENDERIZADO DEL CARRUSEL
     function loadBalances() {
@@ -173,6 +236,11 @@
             if (typeof window.cargarIngresosFijos === 'function') {
                 const [year, month] = activeMonthKey.split('-');
                 window.cargarIngresosFijos(year, month);
+            }
+
+            if (typeof window.cargarCuentas === 'function') {
+                const [year, month] = activeMonthKey.split('-');
+                window.cargarCuentas(year, month);
             }
 
         }).fail(function (xhr) {
@@ -233,6 +301,11 @@
         if (typeof window.cargarIngresosFijos === 'function') {
             const [year, month] = key.split('-');
             window.cargarIngresosFijos(year, month);
+        }
+
+        if (typeof window.cargarCuentas === 'function') {
+            const [year, month] = key.split('-');
+            window.cargarCuentas(year, month);
         }
     }
 
@@ -296,6 +369,9 @@
         const data = monthsData.find(m => m.key === activeMonthKey);
         if (!data) return;
 
+        // Guardar el dolar rate del mes activo para usarlo en el modal de detalle
+        if (data.dolarRate && data.dolarRate > 0) activeDolarRate = data.dolarRate;
+
         const culture = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 
         $('#dash-balance').text(data.balanceFmt || culture.format(data.balance))
@@ -305,15 +381,7 @@
         $('#dash-income').text(data.incomeFmt || culture.format(data.income));
         $('#dash-expense').text(data.expenseFmt || culture.format(data.expense));
 
-        // Card "A cobrar" — actualizar valor del mes seleccionado
-        const $personsCard = $('#dash-persons-card');
-        const $personsVal  = $('#dash-persons-receivable');
-        if (data.personsReceivable > 0) {
-            $personsVal.text(data.personsReceivableFmt || culture.format(data.personsReceivable));
-            $personsCard.show();
-        } else {
-            $personsCard.hide();
-        }
+        // (card "A cobrar personas" eliminada por requerimiento del usuario)
 
         $('#month-dashboard').fadeIn();
 
@@ -333,7 +401,11 @@
             currentGrid.updateConfig({
                 server: {
                     url: `${urls.list}?year=${year}&month=${month}`,
-                    then: response => mapGridData(response.data || response)
+                    then: response => {
+                        const rows = mapGridData(response.data || response);
+                        updateMovimientosBadge(rows.length);
+                        return rows;
+                    }
                 }
             }).forceRender();
             return;
@@ -410,9 +482,15 @@
         }).render(wrapper);
     }
 
+    function updateMovimientosBadge(count) {
+        const $b = $('#badge-movimientos');
+        if (count > 0) { $b.text(count).show(); } else { $b.hide(); }
+    }
+
     // MAPEAR DATOS PARA LA GRILLA
     function mapGridData(responseData) {
         if (!Array.isArray(responseData)) return [];
+        updateMovimientosBadge(responseData.length);
 
         return responseData.map(t => [
             t.id,

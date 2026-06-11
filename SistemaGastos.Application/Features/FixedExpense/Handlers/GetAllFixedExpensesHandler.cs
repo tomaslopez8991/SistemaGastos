@@ -7,12 +7,13 @@ using System.Globalization;
 
 namespace SistemaGastos.Application.Features.FixedExpense.Handlers;
 
-public class GetAllFixedExpensesHandler(IApplicationDbContext context)
+public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarService dolarService)
     : IRequestHandler<GetAllFixedExpensesQuery, List<FixedExpenseDto>>
 {
     public async Task<List<FixedExpenseDto>> Handle(GetAllFixedExpensesQuery request, CancellationToken cancellationToken)
     {
         var culture = new CultureInfo("es-AR");
+        decimal dolarRate = await dolarService.GetDolarBolsaAsync();
 
         var fixedExpenses = await context.FixedExpense
             .AsNoTracking()
@@ -49,12 +50,19 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context)
         if (!string.IsNullOrEmpty(monthName))
             monthName = char.ToUpper(monthName[0]) + monthName[1..];
 
-        return fixedExpenses.Select(f => new FixedExpenseDto
+        return fixedExpenses.Select(f =>
         {
+            decimal amountArs = f.Currency == "USD" ? f.Amount * dolarRate : f.Amount;
+            string amountFmt = f.Currency == "USD"
+                ? $"USD {f.Amount:N2} (≈ {amountArs.ToString("C", culture)})"
+                : f.Amount.ToString("C", culture);
+
+            return new FixedExpenseDto
+            {
             ID = f.ID,
             Name = f.Name ?? string.Empty,
             Amount = f.Amount,
-            AmountFormatted = f.Amount.ToString("C", culture),
+            AmountFormatted = amountFmt,
             Currency = f.Currency,
             PaymentDay = f.PaymentDay,
             CategoryID = f.CategoryID,
@@ -67,6 +75,7 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context)
             LastGeneratedDate = f.LastGeneratedDate,
             AlreadyPaidThisMonth = paidIds.Contains(f.ID),
             PaidMonthName = paidIds.Contains(f.ID) ? monthName : null
+            };
         }).ToList();
     }
 }

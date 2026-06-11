@@ -53,6 +53,7 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
                 UserID = userID,
                 Description = request.Description,
                 Amount = request.Amount,
+                Currency = request.Currency ?? "ARS",
                 CategoryID = request.CategoryID,
                 AccountID = request.AccountID,
                 DateTransaction = request.DateTransaction
@@ -72,6 +73,7 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
             UserID = userID,
             Description = request.Description,
             Amount = request.Amount,
+            Currency = request.Currency ?? "ARS",
             CategoryID = request.CategoryID,
             AccountID = request.AccountID,
             DateTransaction = request.DateTransaction,
@@ -155,6 +157,7 @@ public class CreateTmpTransactionRequest
     public long ID { get; set; }
     public string Description { get; set; }
     public decimal Amount { get; set; }
+    public string Currency { get; set; } = "ARS";
     public int CategoryID { get; set; }
     public int? AccountID { get; set; }
     public DateTime? DateTransaction { get; set; }

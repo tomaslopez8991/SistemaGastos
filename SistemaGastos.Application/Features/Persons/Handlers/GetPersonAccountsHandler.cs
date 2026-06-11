@@ -14,6 +14,12 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
     {
         var culture = new CultureInfo("es-AR");
 
+        // Mes de referencia: usa el solicitado o el mes actual
+        var now = DateTime.Now;
+        int refYear  = request.Year  > 0 ? request.Year  : now.Year;
+        int refMonth = request.Month > 0 ? request.Month : now.Month;
+        var viewingDate = new DateTime(refYear, refMonth, 1);
+
         var persons = await context.Person
             .Where(p => p.UserID == request.UserID && p.Active)
             .OrderBy(p => p.Name)
@@ -25,7 +31,8 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
         var transactions = await context.Transaction
             .Include(t => t.Category)
-            .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value))
+            .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value)
+                     && t.Account.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
         var cardTransactions = await context.CreditCardTransaction
@@ -47,14 +54,17 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
             {
                 var pct = t.PersonPercentage ?? 100m;
                 var attributed = t.Amount * pct / 100m;
+                bool isPayment = t.Category?.Type == "Ingreso";
+
                 items.Add(new PersonAccountItemDto
                 {
                     Description = t.Description,
                     OriginalAmount = t.Amount,
-                    Amount = attributed,
-                    AmountFmt = attributed.ToString("C", culture),
-                    Type = "Transaction",
-                    TypeLabel = "Transacción",
+                    // Cobros (Ingreso) restan la deuda; gastos la suman
+                    Amount = isPayment ? -attributed : attributed,
+                    AmountFmt = (isPayment ? "-" : "") + attributed.ToString("C", culture),
+                    Type = isPayment ? "Payment" : "Transaction",
+                    TypeLabel = isPayment ? "Cobro recibido" : "Transacción",
                     Percentage = pct,
                     Date = t.Date,
                     DateFmt = t.Date.ToString("dd/MM/yyyy")
@@ -64,7 +74,36 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
             foreach (var cc in cardTransactions.Where(t => t.PersonID == person.ID))
             {
                 var pct = cc.PersonPercentage ?? 100m;
-                var attributed = cc.Amount * pct / 100m;
+                int totalInstallments = cc.Installments ?? 1;
+
+                decimal effectiveAmount;
+                string typeLabel;
+
+                if (totalInstallments > 1)
+                {
+                    // Usar los meses transcurridos solo para saber en qué cuota estamos
+                    // y si el item ya fue consumido. El monto NO cambia.
+                    var purchaseDate = new DateTime(cc.TransactionDate.Year, cc.TransactionDate.Month, 1);
+                    int elapsedMonths = (viewingDate.Year - purchaseDate.Year) * 12
+                                      + (viewingDate.Month - purchaseDate.Month) + 1;
+
+                    // Compra todavía no vence en este mes
+                    if (elapsedMonths <= 0) continue;
+
+                    // Todas las cuotas ya vencieron → quitar de la grilla
+                    if (elapsedMonths > totalInstallments) continue;
+
+                    int currentInstallment = Math.Min(elapsedMonths, totalInstallments);
+                    effectiveAmount = cc.Amount; // monto original sin modificar
+                    typeLabel = $"TC ({currentInstallment}/{totalInstallments} cuotas)";
+                }
+                else
+                {
+                    effectiveAmount = cc.Amount;
+                    typeLabel = "Tarjeta de crédito";
+                }
+
+                var attributed = effectiveAmount * pct / 100m;
                 items.Add(new PersonAccountItemDto
                 {
                     Description = cc.Description,
@@ -72,9 +111,7 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
                     Amount = attributed,
                     AmountFmt = attributed.ToString("C", culture),
                     Type = "CreditCard",
-                    TypeLabel = cc.Installments > 1
-                        ? $"TC ({cc.ActualInstallment}/{cc.Installments} cuotas)"
-                        : "Tarjeta de crédito",
+                    TypeLabel = typeLabel,
                     Percentage = pct,
                     Date = cc.TransactionDate,
                     DateFmt = cc.TransactionDate.ToString("dd/MM/yyyy")

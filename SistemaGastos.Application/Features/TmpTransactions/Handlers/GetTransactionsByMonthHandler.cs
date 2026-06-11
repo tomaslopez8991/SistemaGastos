@@ -30,20 +30,28 @@ public class GetTransactionsByMonthHandler(IApplicationDbContext context)
                         && t.DateTransaction.Value.Month == request.Month)
             .ToListAsync(cancellationToken);
 
+        var culture = new System.Globalization.CultureInfo("es-AR");
+
         return transactions
             .OrderByDescending(t => t.Category.Type == "Ingreso" ? t.Amount : -t.Amount)
-            .Select(t => new TmpTransactionDto
+            .Select(t =>
             {
-                ID = t.ID,
-                Description = t.Description,
-                Amount = t.Amount,
-                CategoryID = t.CategoryID,
-                CategoryType = t.Category.Type,
-                AmountFormatted = (t.Category.Type == "Ingreso" ? "+ " : "- ") +
-                                  t.Amount.ToString("C", new System.Globalization.CultureInfo("es-AR")),
-                IsIngreso = t.Category.Type == "Ingreso",
+                var sign = t.Category.Type == "Ingreso" ? "+ " : "- ";
+                var amountFmt = t.Currency == "USD"
+                    ? $"{sign}USD {t.Amount:N2}"
+                    : sign + t.Amount.ToString("C", culture);
 
-                //IsPaid = t.FixedExpenseID != null && paidFixedExpenseIds.Contains(t.FixedExpenseID)
+                return new TmpTransactionDto
+                {
+                    ID = t.ID,
+                    Description = t.Description,
+                    Amount = t.Amount,
+                    Currency = t.Currency,
+                    CategoryID = t.CategoryID,
+                    CategoryType = t.Category.Type,
+                    AmountFormatted = amountFmt,
+                    IsIngreso = t.Category.Type == "Ingreso",
+                };
             })
             .ToList();
     }

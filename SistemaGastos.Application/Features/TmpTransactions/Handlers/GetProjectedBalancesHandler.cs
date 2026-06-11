@@ -325,7 +325,8 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                 PersonsReceivable = personsReceivable,
                 PersonsReceivableFmt = personsReceivable.ToString("C", culture),
                 Balance = acumulado,
-                BalanceFmt = acumulado.ToString("C", culture)
+                BalanceFmt = acumulado.ToString("C", culture),
+                DolarRate = cotizacionDolar
             });
         }
 
