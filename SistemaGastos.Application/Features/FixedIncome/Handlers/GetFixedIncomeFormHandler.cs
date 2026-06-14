@@ -49,7 +49,9 @@ public class GetFixedIncomeFormHandler(IApplicationDbContext context, IDolarServ
                     AccountID = existing.AccountID,
                     LogoUrl = existing.LogoUrl,
                     Active = existing.Active,
-                    StartDate = existing.StartDate
+                    StartDate = existing.StartDate,
+                    DistributionEndDay = existing.DistributionEndDay,
+                    ExcludedDays = existing.ExcludedDays
                 };
             }
         }

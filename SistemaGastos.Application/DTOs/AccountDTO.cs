@@ -13,6 +13,7 @@ public record AccountDto
     public AccountType Type { get; init; }
     public int? ClosingDay {  get; init; }
     public int? DueDay { get; init; }
+    public int? DueMonthOffset { get; init; }
 }
 
 public record CreateAccountDto(
@@ -23,7 +24,8 @@ public record CreateAccountDto(
     string? Cbu,
     AccountType Type,
     int? ClosingDay,
-    int? DueDay
+    int? DueDay,
+    int? DueMonthOffset
 );
 
 public record UpdateAccountDto(
@@ -35,7 +37,8 @@ public record UpdateAccountDto(
     string? Cbu,
     AccountType Type,
     int? ClosingDay,
-    int? DueDay
+    int? DueDay,
+    int? DueMonthOffset
 );
 
 public record AccountTotalDto(string Currency, decimal Total);

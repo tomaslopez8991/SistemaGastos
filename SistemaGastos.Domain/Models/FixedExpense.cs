@@ -24,6 +24,11 @@ namespace SistemaGastos.Domain.Models
         public int? PersonID { get; set; }
         public decimal? PersonPercentage { get; set; }
 
+        /// <summary>Día del mes (1-31) hasta el cual se reparte el monto. Null = sin distribución.</summary>
+        public int? DistributionEndDay { get; set; }
+        /// <summary>Días del mes (separados por coma) sin movimiento dentro del rango de distribución.</summary>
+        public string? ExcludedDays { get; set; }
+
         public virtual Login User { get; set; } = null!;
         public virtual Account Account { get; set; } = null!;
         public virtual Category Category { get; set; } = null!;

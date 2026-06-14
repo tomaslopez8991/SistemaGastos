@@ -8,7 +8,7 @@
         create:     $container.data('url-create'),
         delete:     $container.data('url-delete'),
         balances:   $container.data('url-balances'),
-        confirm:    $container.data('url-confirm'),
+        confirmDay: $container.data('url-confirm-day'),
         fixedList:  $container.data('url-fixed-list'),
         incomeList: $container.data('url-income-list')
     };
@@ -437,6 +437,7 @@
                     formatter: (cell, row) => {
                         const id = row.cells[4].data;
                         const isPaid = row.cells[5]?.data;
+                        const day = row.cells[6]?.data;
 
                         if (isPaid) {
                             return gridjs.html(`<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa-solid fa-check-double me-1"></i> Pagado</span>`);
@@ -444,7 +445,7 @@
 
                         return gridjs.html(`
                         <div class="d-flex justify-content-center gap-2">
-                            <button class="btn btn-sm btn-success btn-confirmar" data-id="${id}" title="Confirmar">
+                            <button class="btn btn-sm btn-success btn-confirmar" data-id="${id}" data-day="${day}" title="Confirmar">
                                 <i class="fa-solid fa-check"></i>
                             </button>
                             <button class="btn btn-sm btn-primary btn-editar" data-id="${id}" title="Editar">
@@ -458,7 +459,9 @@
                     }
                 },
                 { id: 'id', name: 'ID', hidden: true },
-                { id: 'isPaid', name: 'IsPaid', hidden: true }
+                { id: 'isPaid', name: 'IsPaid', hidden: true },
+                { id: 'day', name: 'Day', hidden: true },
+                { id: 'isDistributed', name: 'IsDistributed', hidden: true }
             ],
             rowAttributes: (row) => {
                 if (row && row.cells[5]?.data === true) {
@@ -498,7 +501,9 @@
             `<span class="fw-bold ${t.isIngreso ? 'text-success' : 'text-danger'}">${t.amountFormatted}</span>`,
             null,
             t.id,
-            t.isPaid
+            t.isPaid,
+            t.day,
+            t.isDistributed
         ]);
     }
 
@@ -512,7 +517,7 @@
     });
 
     $(document).off('click', '.btn-confirmar').on('click', '.btn-confirmar', function () {
-        confirmarTransaccion($(this).data('id'));
+        confirmarTransaccion($(this).data('id'), $(this).data('day'));
     });
 
     $(document).off('click', '.btn-eliminar-individual').on('click', '.btn-eliminar-individual', function () {
@@ -532,11 +537,11 @@
         $('.btn-borrar-masivo').prop('disabled', $('.row-checkbox:checked').length === 0);
     });
 
-    // CONFIRMAR TRANSACCIÓN
-    function confirmarTransaccion(id) {
+    // CONFIRMAR TRANSACCIÓN (día a día)
+    function confirmarTransaccion(id, day) {
         Swal.fire({
-            title: '¿Confirmar transacción?',
-            text: "Se actualizará el saldo de la cuenta.",
+            title: '¿Confirmar movimiento?',
+            text: "Se registrará como transacción real y se actualizará el saldo de la cuenta.",
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Sí, confirmar',
@@ -544,10 +549,10 @@
         }).then((res) => {
             if (res.isConfirmed) {
                 $.ajax({
-                    url: urls.confirm,
+                    url: urls.confirmDay,
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify(id),
+                    data: JSON.stringify({ ID: id, Day: day }),
                     headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                     success: (response) => {
                         if (response.success) {
@@ -607,6 +612,8 @@
     function abrirModal(id = null) {
         let url = urls.form;
         if (id) url += '?id=' + id;
+
+        let distributionPanel = null;
 
         $.get(url, function (html) {
             Swal.fire({
@@ -689,6 +696,34 @@
                         $selMeses.find('option').prop('selected', false);
                         $selMeses.trigger('change');
                     });
+
+                    // ── Panel de distribución diaria ────────────────────
+                    const $checkDist = $(popup).find('#checkDistribuir');
+                    const initialEndDay = parseInt($checkDist.data('initial-end-day')) || null;
+                    const initialExcludedDays = ($checkDist.data('initial-excluded') ?? '')
+                        .toString()
+                        .split(',')
+                        .map(s => parseInt(s))
+                        .filter(n => !isNaN(n));
+
+                    function getStartDay() {
+                        const val = $(popup).find('#Transaction_DateTransaction').val();
+                        if (!val) return null;
+                        const day = parseInt(val.split('-')[2]);
+                        return isNaN(day) ? null : day;
+                    }
+
+                    distributionPanel = DistributionPanel.init($(popup), {
+                        checkboxSelector: '#checkDistribuir',
+                        panelSelector: '#panel-distribucion',
+                        endDayInputSelector: '#Distribution_EndDay',
+                        gridSelector: '#distribucion-dias-grid',
+                        getStartDay,
+                        initialEndDay,
+                        initialExcludedDays
+                    });
+
+                    $(popup).find('#Transaction_DateTransaction').on('change', () => distributionPanel.refresh());
                 },
 
                 preConfirm: () => {
@@ -701,6 +736,10 @@
                             .map(o => o.value)
                         : [];
 
+                    const dist = distributionPanel
+                        ? distributionPanel.getValues()
+                        : { distributionEndDay: null, excludedDays: null };
+
                     return {
                         ID: parseInt(form.find('#Transaction_ID').val()) || 0,
                         Description: form.find('#Transaction_Description').val()?.trim(),
@@ -712,7 +751,9 @@
                             ? null
                             : (form.find('#Transaction_DateTransaction').val() || null),
                         EsRecurrente: esRecurrente,
-                        MesesSeleccionados: mesesSeleccionados
+                        MesesSeleccionados: mesesSeleccionados,
+                        DistributionEndDay: dist.distributionEndDay,
+                        ExcludedDays: dist.excludedDays
                     };
                 }
             }).then((res) => {

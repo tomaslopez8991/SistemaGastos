@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.TmpTransactions.Queries;
+using SistemaGastos.Application.Helpers;
 using SistemaGastos.Application.Interfaces;
 
 namespace SistemaGastos.Application.Features.TmpTransactions.Handlers;
@@ -31,27 +32,43 @@ public class GetTransactionsByMonthHandler(IApplicationDbContext context)
             .ToListAsync(cancellationToken);
 
         var culture = new System.Globalization.CultureInfo("es-AR");
+        var daysInMonth = DateTime.DaysInMonth(request.Year, request.Month);
 
         return transactions
             .OrderByDescending(t => t.Category.Type == "Ingreso" ? t.Amount : -t.Amount)
-            .Select(t =>
+            .SelectMany(t =>
             {
-                var sign = t.Category.Type == "Ingreso" ? "+ " : "- ";
-                var amountFmt = t.Currency == "USD"
-                    ? $"{sign}USD {t.Amount:N2}"
-                    : sign + t.Amount.ToString("C", culture);
+                var excluded = DistributionHelper.ParseExcludedDays(t.ExcludedDays);
+                var dist = DistributionHelper.Distribute(t.Amount, t.DateTransaction!.Value.Day, t.DistributionEndDay, excluded, daysInMonth)
+                    .OrderBy(kv => kv.Key)
+                    .ToList();
 
-                return new TmpTransactionDto
+                var sign = t.Category.Type == "Ingreso" ? "+ " : "- ";
+
+                return dist.Select((kv, idx) =>
                 {
-                    ID = t.ID,
-                    Description = t.Description,
-                    Amount = t.Amount,
-                    Currency = t.Currency,
-                    CategoryID = t.CategoryID,
-                    CategoryType = t.Category.Type,
-                    AmountFormatted = amountFmt,
-                    IsIngreso = t.Category.Type == "Ingreso",
-                };
+                    var amount = kv.Value;
+                    var amountFmt = t.Currency == "USD"
+                        ? $"{sign}USD {amount:N2}"
+                        : sign + amount.ToString("C", culture);
+                    var description = dist.Count > 1 ? $"{t.Description} (día {idx + 1}/{dist.Count})" : t.Description;
+
+                    return new TmpTransactionDto
+                    {
+                        ID = t.ID,
+                        Description = description,
+                        Amount = amount,
+                        Currency = t.Currency,
+                        CategoryID = t.CategoryID,
+                        CategoryType = t.Category.Type,
+                        AmountFormatted = amountFmt,
+                        IsIngreso = t.Category.Type == "Ingreso",
+                        Day = kv.Key,
+                        IsDistributed = dist.Count > 1,
+                        DistributionEndDay = t.DistributionEndDay,
+                        ExcludedDays = t.ExcludedDays
+                    };
+                });
             })
             .ToList();
     }

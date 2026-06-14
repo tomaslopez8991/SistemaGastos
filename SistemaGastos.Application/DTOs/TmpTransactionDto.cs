@@ -17,4 +17,12 @@ public class TmpTransactionDto
     public string AmountFormatted { get; set; }
     public bool IsIngreso { get; set; }
     public bool IsPaid { get; set; }
+    /// <summary>Día del mes (1-31) hasta el cual se reparte el monto. Null = sin distribución.</summary>
+    public int? DistributionEndDay { get; set; }
+    /// <summary>Días del mes (separados por coma) sin movimiento dentro del rango de distribución.</summary>
+    public string? ExcludedDays { get; set; }
+    /// <summary>Día del mes que representa esta fila (para ConfirmDay).</summary>
+    public int Day { get; set; }
+    /// <summary>Indica si este ítem fue repartido en varios días.</summary>
+    public bool IsDistributed { get; set; }
 }

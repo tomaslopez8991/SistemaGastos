@@ -1,14 +1,17 @@
-﻿using FluentValidation;
+using FluentValidation;
 using SistemaGastos.Application.Features.TmpTransactions.Commands;
 
 namespace SistemaGastos.Application.Features.TmpTransactions.Validators;
 
-public class ConfirmTmpTransactionValidator : AbstractValidator<ConfirmTmpTransactionCommand>
+public class ConfirmTmpTransactionDayValidator : AbstractValidator<ConfirmTmpTransactionDayCommand>
 {
-    public ConfirmTmpTransactionValidator()
+    public ConfirmTmpTransactionDayValidator()
     {
         RuleFor(x => x.ID)
             .GreaterThan(0).WithMessage("ID de transacción inválido");
+
+        RuleFor(x => x.Day)
+            .InclusiveBetween(1, 31).WithMessage("Día inválido");
 
         RuleFor(x => x.UserID)
             .GreaterThan(0).WithMessage("Usuario inválido");

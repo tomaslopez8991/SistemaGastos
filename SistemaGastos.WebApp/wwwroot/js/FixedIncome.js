@@ -323,6 +323,8 @@
 
     function openModal(id = null) {
         const url = id ? `${urls.form}/${id}` : `${urls.form}/`;
+        let distributionPanel = null;
+
         $.get(url, function (html) {
             Swal.fire({
                 title: id ? 'Editar ingreso fijo' : 'Nuevo ingreso fijo',
@@ -332,8 +334,39 @@
                 confirmButtonText: 'Guardar',
                 cancelButtonText: 'Cancelar',
                 confirmButtonColor: '#198754',
+                didOpen: () => {
+                    const popup = Swal.getPopup();
+                    const $checkDist = $(popup).find('#checkDistribuirFI');
+                    const initialEndDay = parseInt($checkDist.data('initial-end-day')) || null;
+                    const initialExcludedDays = ($checkDist.data('initial-excluded') ?? '')
+                        .toString()
+                        .split(',')
+                        .map(s => parseInt(s))
+                        .filter(n => !isNaN(n));
+
+                    function getStartDay() {
+                        const day = parseInt($(popup).find('#FI_ReceiptDay').val());
+                        return isNaN(day) ? null : day;
+                    }
+
+                    distributionPanel = DistributionPanel.init($(popup), {
+                        checkboxSelector: '#checkDistribuirFI',
+                        panelSelector: '#panel-distribucion-fi',
+                        endDayInputSelector: '#DistributionEndDayFI',
+                        gridSelector: '#distribucion-dias-grid-fi',
+                        getStartDay,
+                        initialEndDay,
+                        initialExcludedDays
+                    });
+
+                    $(popup).find('#FI_ReceiptDay').on('input', () => distributionPanel.refresh());
+                },
                 preConfirm: () => {
                     const form = $('#incomeForm');
+                    const dist = distributionPanel
+                        ? distributionPanel.getValues()
+                        : { distributionEndDay: null, excludedDays: null };
+
                     return {
                         ID:          parseInt(form.find('#FI_ID').val()) || 0,
                         Name:        form.find('#FI_Name').val()?.trim(),
@@ -344,7 +377,9 @@
                         AccountID:   parseInt(form.find('#FI_AccountID').val()) || 0,
                         LogoUrl:     form.find('#FI_LogoUrl').val()?.trim() || null,
                         StartDate:   form.find('#FI_StartDate').val() || null,
-                        Active:      true
+                        Active:      true,
+                        DistributionEndDay: dist.distributionEndDay,
+                        ExcludedDays: dist.excludedDays
                     };
                 }
             }).then(result => {

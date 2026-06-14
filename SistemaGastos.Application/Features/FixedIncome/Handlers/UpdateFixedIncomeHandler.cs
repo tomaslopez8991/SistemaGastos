@@ -23,6 +23,8 @@ public class UpdateFixedIncomeHandler(IApplicationDbContext context)
         income.ReceiptDay = request.ReceiptDay;
         income.LogoUrl = request.LogoUrl;
         income.StartDate = request.StartDate;
+        income.DistributionEndDay = request.DistributionEndDay;
+        income.ExcludedDays = request.ExcludedDays;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

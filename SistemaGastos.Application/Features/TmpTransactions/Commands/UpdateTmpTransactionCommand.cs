@@ -12,4 +12,6 @@ public record UpdateTmpTransactionCommand : IRequest<bool>
     public int CategoryID { get; init; }
     public int? AccountID { get; init; }
     public DateTime? DateTransaction { get; init; }
+    public int? DistributionEndDay { get; init; }
+    public string? ExcludedDays { get; init; }
 }

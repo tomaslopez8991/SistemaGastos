@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaGastos.Data;
 
@@ -11,9 +12,11 @@ using SistemaGastos.Data;
 namespace SistemaGastos.Infraestructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611185848_AddDistributionFields")]
+    partial class AddDistributionFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,9 +44,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("DueDay")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DueMonthOffset")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -183,64 +183,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.ToTable("CreditCardTransaction");
                 });
 
-            modelBuilder.Entity("SistemaGastos.Domain.Models.DebtPlanSettings", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<decimal>("ExtraMonthlyIncome")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("GoalType")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("maxNegative");
-
-                    b.Property<decimal>("GoalValue")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("RemovedFixedExpenseIds")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<decimal>("ScenarioMax")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("ScenarioMin")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("ScenarioNormal")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("ScenariosMode")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("UserID")
-                        .IsUnique();
-
-                    b.ToTable("DebtPlanSettings", (string)null);
-                });
-
             modelBuilder.Entity("SistemaGastos.Domain.Models.FixedExpense", b =>
                 {
                     b.Property<int>("ID")
@@ -263,7 +205,9 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("ARS");
 
                     b.Property<int?>("DistributionEndDay")
                         .HasColumnType("int");
@@ -275,11 +219,13 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("LogoUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("PaymentDay")
                         .HasColumnType("int");
@@ -289,7 +235,6 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.Property<decimal?>("PersonPercentage")
                         .HasColumnType("decimal(18,2)");
-
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime2");
 
@@ -359,7 +304,6 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(3)
                         .HasColumnType("nvarchar(3)")
                         .HasDefaultValue("ARS");
@@ -399,7 +343,63 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("FixedIncome", (string)null);
+                    b.ToTable("FixedIncome");
+                });
+
+            modelBuilder.Entity("SistemaGastos.Domain.Models.DebtPlanSettings", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<decimal>("ExtraMonthlyIncome")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("GoalType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("maxNegative");
+
+                    b.Property<decimal>("GoalValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("RemovedFixedExpenseIds")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("ScenarioMax")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ScenarioMin")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ScenarioNormal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("ScenariosMode")
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("UserID")
+                        .IsUnique();
+
+                    b.ToTable("DebtPlanSettings");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.Login", b =>
@@ -487,7 +487,9 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.Property<string>("Currency")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("ARS");
 
                     b.Property<DateTime?>("DateTransaction")
                         .HasColumnType("datetime2");
@@ -583,14 +585,14 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int?>("FixedExpenseID")
                         .HasColumnType("int");
 
-                    b.Property<int?>("FixedIncomeID")
-                        .HasColumnType("int");
-
                     b.Property<int?>("PersonID")
                         .HasColumnType("int");
 
                     b.Property<decimal?>("PersonPercentage")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("FixedIncomeID")
+                        .HasColumnType("int");
 
                     b.HasKey("ID");
 
@@ -600,12 +602,13 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.HasIndex("FixedExpenseID");
 
-                    b.HasIndex("FixedIncomeID");
-
                     b.HasIndex("PersonID");
+                    b.HasIndex("FixedIncomeID");
 
                     b.ToTable("Transaction");
                 });
+
+            // ── Relaciones ────────────────────────────────────────────────
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.Account", b =>
                 {
@@ -668,29 +671,18 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("Person");
                 });
 
-            modelBuilder.Entity("SistemaGastos.Domain.Models.DebtPlanSettings", b =>
-                {
-                    b.HasOne("SistemaGastos.Domain.Models.Login", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("SistemaGastos.Domain.Models.FixedExpense", b =>
                 {
                     b.HasOne("SistemaGastos.Domain.Models.Account", "Account")
                         .WithMany("FixedExpenses")
                         .HasForeignKey("AccountID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SistemaGastos.Domain.Models.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryID")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
@@ -750,7 +742,7 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("SistemaGastos.Domain.Models.Person", b =>
+            modelBuilder.Entity("SistemaGastos.Domain.Models.DebtPlanSettings", b =>
                 {
                     b.HasOne("SistemaGastos.Domain.Models.Login", "User")
                         .WithMany()
@@ -817,13 +809,13 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .WithMany()
                         .HasForeignKey("FixedExpenseID");
 
-                    b.HasOne("SistemaGastos.Domain.Models.FixedIncome", "FixedIncome")
-                        .WithMany()
-                        .HasForeignKey("FixedIncomeID");
-
                     b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
                         .WithMany("Transactions")
                         .HasForeignKey("PersonID");
+                    b.HasOne("SistemaGastos.Domain.Models.FixedIncome", "FixedIncome")
+                        .WithMany()
+                        .HasForeignKey("FixedIncomeID")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Account");
 
@@ -831,9 +823,8 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.Navigation("FixedExpense");
 
-                    b.Navigation("FixedIncome");
-
                     b.Navigation("Person");
+                    b.Navigation("FixedIncome");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.Account", b =>

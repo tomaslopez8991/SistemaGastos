@@ -42,6 +42,8 @@ public class UpdateFixedExpenseHandler(IApplicationDbContext context)
         expense.PersonID = request.PersonID;
         expense.PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null;
         expense.StartDate = request.StartDate;
+        expense.DistributionEndDay = request.DistributionEndDay;
+        expense.ExcludedDays = request.ExcludedDays;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

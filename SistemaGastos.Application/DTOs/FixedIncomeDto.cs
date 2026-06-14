@@ -18,6 +18,8 @@ public class FixedIncomeDto
     public DateTime? LastGeneratedDate { get; set; }
     public bool AlreadyReceivedThisMonth { get; set; }
     public string? ReceivedMonthName { get; set; }
+    public int? DistributionEndDay { get; set; }
+    public string? ExcludedDays { get; set; }
 }
 
 public class FixedIncomeFormDto

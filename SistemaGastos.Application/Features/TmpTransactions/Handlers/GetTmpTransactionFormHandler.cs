@@ -99,7 +99,9 @@ public class GetTmpTransactionFormHandler(IApplicationDbContext context, IDolarS
                     CategoryID = transaction.CategoryID,
                     AccountID = transaction.AccountID,
                     DateTransaction = transaction.DateTransaction,
-                    EsRecurrente = (bool)transaction.EsRecurrente
+                    EsRecurrente = (bool)transaction.EsRecurrente,
+                    DistributionEndDay = transaction.DistributionEndDay,
+                    ExcludedDays = transaction.ExcludedDays
                 };
             }
         }

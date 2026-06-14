@@ -13,4 +13,6 @@ public record CreateFixedIncomeCommand : IRequest<int>
     public int ReceiptDay { get; init; }
     public string? LogoUrl { get; init; }
     public DateTime? StartDate { get; init; }
+    public int? DistributionEndDay { get; init; }
+    public string? ExcludedDays { get; init; }
 }

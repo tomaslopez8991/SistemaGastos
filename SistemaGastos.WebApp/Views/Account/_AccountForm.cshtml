@@ -65,6 +65,17 @@
                 <small class="text-muted" style="font-size: 0.7em;">Día límite de pago.</small>
             </div>
         </div>
+        <div class="row mt-2">
+            <div class="col-12">
+                <label for="DueMonthOffset" class="form-label fw-bold small">El vencimiento cae en...</label>
+                <select id="DueMonthOffset" name="DueMonthOffset" class="form-select">
+                    <option value="0" selected="@(Model.DueMonthOffset == 0)">El mismo mes del cierre</option>
+                    <option value="1" selected="@(Model.DueMonthOffset is null or 1)">El mes siguiente al cierre</option>
+                    <option value="2" selected="@(Model.DueMonthOffset == 2)">Dos meses después del cierre</option>
+                </select>
+                <small class="text-muted" style="font-size: 0.7em;">Ej: cierre día 25, vencimiento día 10 del mes siguiente.</small>
+            </div>
+        </div>
     </div>
 
 </form>

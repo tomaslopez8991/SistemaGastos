@@ -22,7 +22,9 @@ public class CreateFixedExpenseHandler(IApplicationDbContext context)
             Active = true,
             PersonID = request.PersonID,
             PersonPercentage = request.PersonID.HasValue ? (request.PersonPercentage ?? 100m) : null,
-            StartDate = request.StartDate
+            StartDate = request.StartDate,
+            DistributionEndDay = request.DistributionEndDay,
+            ExcludedDays = request.ExcludedDays
         };
 
         await context.FixedExpense.AddAsync(expense, cancellationToken);

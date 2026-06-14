@@ -21,4 +21,6 @@ public class FixedExpenseDto
     public int? PersonID { get; set; }
     public decimal? PersonPercentage { get; set; }
     public string? PersonName { get; set; }
+    public int? DistributionEndDay { get; set; }
+    public string? ExcludedDays { get; set; }
 }

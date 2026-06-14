@@ -11,7 +11,8 @@
      data-url-create="@Url.Action("Create", "TmpTransaction")"
      data-url-delete="@Url.Action("Delete", "TmpTransaction")"
      data-url-balances="@Url.Action("GetBalances", "TmpTransaction")"
-     data-url-confirm="@Url.Action("Confirm", "TmpTransaction")"
+     data-url-daily-balances="@Url.Action("GetDailyBalances", "TmpTransaction")"
+     data-url-confirm-day="@Url.Action("ConfirmDay", "TmpTransaction")"
      data-url-fixed-list="@Url.Action("GetList", "FixedExpense")"
      data-url-fixed-form="@Url.Action("GetForm", "FixedExpense")"
      data-url-fixed-save="@Url.Action("Save", "FixedExpense")"
@@ -47,6 +48,10 @@
             <p class="text-muted mb-0" style="font-size:13px;">Línea de tiempo de liquidez y compromisos mensuales</p>
         </div>
         <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-primary d-flex align-items-center gap-2"
+                    id="btnOpenCalendar" data-bs-toggle="modal" data-bs-target="#calendarModal">
+                <i class="fa-solid fa-calendar-days"></i>Calendario
+            </button>
             <a href="@Url.Action("PlanMetas", "TmpTransaction")" class="btn btn-outline-success d-flex align-items-center gap-2">
                 <i class="fa-solid fa-bullseye"></i>Plan de Metas
             </a>
@@ -313,13 +318,38 @@
         </div>
     </div>
 
+    @* ── Modal Bootstrap: calendario de saldos diarios ───────── *@
+    <div class="modal fade" id="calendarModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold mb-0">
+                        <i class="fa-solid fa-calendar-days text-primary me-2"></i>Calendario de saldos
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="cf-calendar-legend d-flex flex-wrap gap-3 mb-3">
+                        <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-income"></span>Ingreso</span>
+                        <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-expense"></span>Gasto fijo / planificado</span>
+                        <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-tc"></span>Tarjeta de crédito</span>
+                        <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-personas"></span>Personas (a cobrar)</span>
+                    </div>
+                    <div id="financialCalendar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/DistributionPanel.js" asp-append-version="true"></script>
     <script src="~/js/TmpTransaction.js" asp-append-version="true"></script>
     <script src="~/js/FixedExpense.js" asp-append-version="true"></script>
     <script src="~/js/FixedIncome.js" asp-append-version="true"></script>
     <script src="~/js/Budget.js" asp-append-version="true"></script>
     <script src="~/js/PersonAccounts.js" asp-append-version="true"></script>
+    <script src="~/js/CashflowCalendar.js" asp-append-version="true"></script>
 }
