@@ -395,6 +395,8 @@
 
     function openModal(id = null) {
         const url = id ? `${urls.form}?id=${id}` : urls.form;
+        let distributionPanel = null;
+
         $.get(url, function (html) {
             Swal.fire({
                 title: id ? 'Editar suscripción' : 'Nueva suscripción',
@@ -403,8 +405,39 @@
                 showCancelButton: true,
                 confirmButtonText: 'Guardar',
                 cancelButtonText: 'Cancelar',
+                didOpen: () => {
+                    const popup = Swal.getPopup();
+                    const $checkDist = $(popup).find('#checkDistribuirFE');
+                    const initialEndDay = parseInt($checkDist.data('initial-end-day')) || null;
+                    const initialExcludedDays = ($checkDist.data('initial-excluded') ?? '')
+                        .toString()
+                        .split(',')
+                        .map(s => parseInt(s))
+                        .filter(n => !isNaN(n));
+
+                    function getStartDay() {
+                        const day = parseInt($(popup).find('#PaymentDay').val());
+                        return isNaN(day) ? null : day;
+                    }
+
+                    distributionPanel = DistributionPanel.init($(popup), {
+                        checkboxSelector: '#checkDistribuirFE',
+                        panelSelector: '#panel-distribucion-fe',
+                        endDayInputSelector: '#DistributionEndDayFE',
+                        gridSelector: '#distribucion-dias-grid-fe',
+                        getStartDay,
+                        initialEndDay,
+                        initialExcludedDays
+                    });
+
+                    $(popup).find('#PaymentDay').on('input', () => distributionPanel.refresh());
+                },
                 preConfirm: () => {
                     const form = $('#expenseForm');
+                    const dist = distributionPanel
+                        ? distributionPanel.getValues()
+                        : { distributionEndDay: null, excludedDays: null };
+
                     return {
                         ID:        parseInt(form.find('#ID').val()) || 0,
                         Name:      form.find('#Name').val()?.trim(),
@@ -419,7 +452,9 @@
                         PersonPercentage: (parseInt(form.find('#PersonID').val()) || null)
                             ? (parseFloat(form.find('#PersonPercentage').val()) || 100)
                             : null,
-                        Active: true
+                        Active: true,
+                        DistributionEndDay: dist.distributionEndDay,
+                        ExcludedDays: dist.excludedDays
                     };
                 }
             }).then((result) => {

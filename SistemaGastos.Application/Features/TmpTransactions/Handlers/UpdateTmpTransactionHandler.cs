@@ -22,6 +22,8 @@ public class UpdateTmpTransactionHandler(IApplicationDbContext context)
         existing.CategoryID = request.CategoryID;
         existing.AccountID = (int)request.AccountID;
         existing.DateTransaction = request.DateTransaction;
+        existing.DistributionEndDay = request.DistributionEndDay;
+        existing.ExcludedDays = request.ExcludedDays;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

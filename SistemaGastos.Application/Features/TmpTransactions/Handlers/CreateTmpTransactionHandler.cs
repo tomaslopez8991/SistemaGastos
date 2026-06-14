@@ -27,6 +27,8 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
                 if (parts.Length != 2) continue;
                 if (!int.TryParse(parts[0], out int y) || !int.TryParse(parts[1], out int m)) continue;
 
+                var day = Math.Min(request.DateTransaction!.Value.Day, DateTime.DaysInMonth(y, m));
+
                 toInsert.Add(new TmpTransactionEntity
                 {
                     Description = request.Description,
@@ -35,8 +37,10 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
                     CategoryID = request.CategoryID,
                     AccountID = (int)request.AccountID,
                     UserID = request.UserID,
-                    DateTransaction = new DateTime(y, m, 1),
-                    EsRecurrente = false
+                    DateTransaction = new DateTime(y, m, day),
+                    EsRecurrente = false,
+                    DistributionEndDay = request.DistributionEndDay,
+                    ExcludedDays = request.ExcludedDays
                 });
             }
         }
@@ -51,11 +55,10 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
                 CategoryID = request.CategoryID,
                 AccountID = (int)request.AccountID,
                 UserID = request.UserID,
-                DateTransaction = new DateTime(
-                    request.DateTransaction.Value.Year,
-                    request.DateTransaction.Value.Month,
-                    1),
-                EsRecurrente = false
+                DateTransaction = request.DateTransaction!.Value,
+                EsRecurrente = false,
+                DistributionEndDay = request.DistributionEndDay,
+                ExcludedDays = request.ExcludedDays
             });
         }
 

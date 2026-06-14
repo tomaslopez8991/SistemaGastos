@@ -18,6 +18,10 @@ namespace SistemaGastos.Domain.Models
         public bool? EsRecurrente { get; set; }
         /// <summary>"ARS" o "USD". El Amount se almacena en la moneda original.</summary>
         public string Currency { get; set; } = "ARS";
+        /// <summary>Día del mes (1-31) hasta el cual se reparte el monto. Null = sin distribución.</summary>
+        public int? DistributionEndDay { get; set; }
+        /// <summary>Días del mes (separados por coma) sin movimiento dentro del rango de distribución.</summary>
+        public string? ExcludedDays { get; set; }
         [NotMapped]
         public List<string>? MesesSeleccionados { get; set; }
 

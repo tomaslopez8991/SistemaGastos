@@ -17,4 +17,6 @@ public record UpdateFixedExpenseCommand : IRequest<bool>
     public int? PersonID { get; init; }
     public decimal? PersonPercentage { get; init; }
     public DateTime? StartDate { get; init; }
+    public int? DistributionEndDay { get; init; }
+    public string? ExcludedDays { get; init; }
 }

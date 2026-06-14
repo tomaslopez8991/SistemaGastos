@@ -21,7 +21,9 @@ public class CreateFixedIncomeHandler(IApplicationDbContext context)
             ReceiptDay = request.ReceiptDay,
             LogoUrl = request.LogoUrl,
             StartDate = request.StartDate,
-            Active = true
+            Active = true,
+            DistributionEndDay = request.DistributionEndDay,
+            ExcludedDays = request.ExcludedDays
         };
 
         await context.FixedIncome.AddAsync(income, cancellationToken);

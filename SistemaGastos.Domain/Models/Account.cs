@@ -28,6 +28,9 @@ namespace SistemaGastos.Domain.Models
         public int? ClosingDay { get; set; }
         public int? DueDay { get; set; }
 
+        /// <summary>Meses entre el cierre del resumen y su vencimiento (0 = mismo mes, 1 = mes siguiente, etc). Default: 1.</summary>
+        public int? DueMonthOffset { get; set; }
+
         public ICollection<CreditCardTransaction> CreditCardTransactions { get; set; } = new List<CreditCardTransaction>();
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
         public ICollection<FixedExpense> FixedExpenses { get; set; } = new List<FixedExpense>();

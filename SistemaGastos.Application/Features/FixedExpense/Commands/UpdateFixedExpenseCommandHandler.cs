@@ -36,6 +36,8 @@ public class UpdateFixedExpenseCommandHandler(IApplicationDbContext context)
         expense.AccountID = request.AccountID;
         expense.CategoryID = (int)request.CategoryID;
         expense.LastGeneratedDate = DateTime.UtcNow;
+        expense.DistributionEndDay = request.DistributionEndDay;
+        expense.ExcludedDays = request.ExcludedDays;
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

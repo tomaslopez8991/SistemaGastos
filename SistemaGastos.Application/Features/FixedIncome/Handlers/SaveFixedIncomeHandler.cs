@@ -21,7 +21,9 @@ public class SaveFixedIncomeHandler(IMediator mediator)
                 CategoryID = request.Dto.CategoryID,
                 ReceiptDay = request.Dto.ReceiptDay,
                 LogoUrl = request.Dto.LogoUrl,
-                StartDate = request.Dto.StartDate
+                StartDate = request.Dto.StartDate,
+                DistributionEndDay = request.Dto.DistributionEndDay,
+                ExcludedDays = request.Dto.ExcludedDays
             };
             var ok = await mediator.Send(update, cancellationToken);
             return ok ? request.Dto.ID : 0;
@@ -38,7 +40,9 @@ public class SaveFixedIncomeHandler(IMediator mediator)
                 CategoryID = request.Dto.CategoryID,
                 ReceiptDay = request.Dto.ReceiptDay,
                 LogoUrl = request.Dto.LogoUrl,
-                StartDate = request.Dto.StartDate
+                StartDate = request.Dto.StartDate,
+                DistributionEndDay = request.Dto.DistributionEndDay,
+                ExcludedDays = request.Dto.ExcludedDays
             };
             return await mediator.Send(create, cancellationToken);
         }

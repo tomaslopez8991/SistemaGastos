@@ -56,7 +56,9 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
                 Currency = request.Currency ?? "ARS",
                 CategoryID = request.CategoryID,
                 AccountID = request.AccountID,
-                DateTransaction = request.DateTransaction
+                DateTransaction = request.DateTransaction,
+                DistributionEndDay = request.DistributionEndDay,
+                ExcludedDays = request.ExcludedDays
             };
 
             var success = await mediator.Send(updateCommand);
@@ -78,7 +80,9 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
             AccountID = request.AccountID,
             DateTransaction = request.DateTransaction,
             EsRecurrente = request.EsRecurrente,
-            MesesSeleccionados = request.MesesSeleccionados ?? new List<string>()
+            MesesSeleccionados = request.MesesSeleccionados ?? new List<string>(),
+            DistributionEndDay = request.DistributionEndDay,
+            ExcludedDays = request.ExcludedDays
         };
 
         var created = await mediator.Send(createCommand);
@@ -135,19 +139,28 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
         return Ok(Response<List<MonthlyBalanceDto>>.Ok(balances));
     }
 
-    // POST: /TmpTransaction/Confirm
-    [HttpPost]
-    [Route("Confirm")]
-    public async Task<ActionResult<Response<bool>>> Confirm([FromBody] long id)
+    // GET: /TmpTransaction/GetDailyBalances?year=2026&month=6
+    [HttpGet]
+    [Route("GetDailyBalances")]
+    public async Task<ActionResult<Response<DailyCalendarDto>>> GetDailyBalances(int year, int month)
     {
         var userID = currentUserService.UserId ?? 0;
-        var command = new ConfirmTmpTransactionCommand(id, userID);
-        var success = await mediator.Send(command);
+        var data = await mediator.Send(new GetDailyBalancesQuery(userID, year, month));
+        return Ok(Response<DailyCalendarDto>.Ok(data));
+    }
+
+    // POST: /TmpTransaction/ConfirmDay
+    [HttpPost]
+    [Route("ConfirmDay")]
+    public async Task<ActionResult<Response<bool>>> ConfirmDay([FromBody] ConfirmDayRequest request)
+    {
+        var userID = currentUserService.UserId ?? 0;
+        var success = await mediator.Send(new ConfirmTmpTransactionDayCommand(request.ID, request.Day, userID));
 
         if (success)
-            return Ok(Response<bool>.Ok(true, "Transacción confirmada y registrada correctamente"));
+            return Ok(Response<bool>.Ok(true, "Movimiento confirmado y registrado correctamente"));
 
-        return Ok(Response<bool>.Fail("No se pudo confirmar la transacción"));
+        return Ok(Response<bool>.Fail("No se pudo confirmar el movimiento"));
     }
 
     // GET: /TmpTransaction/PlanMetas
@@ -187,4 +200,12 @@ public class CreateTmpTransactionRequest
     public DateTime? DateTransaction { get; set; }
     public bool EsRecurrente { get; set; }
     public List<string> MesesSeleccionados { get; set; }
+    public int? DistributionEndDay { get; set; }
+    public string? ExcludedDays { get; set; }
+}
+
+public class ConfirmDayRequest
+{
+    public long ID { get; set; }
+    public int Day { get; set; }
 }

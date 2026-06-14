@@ -217,6 +217,16 @@
     // ==========================================
     // ABM Modal (Crear / Editar)
     // ==========================================
+    // El <select> de Tipo usa los nombres del enum AccountType como value (para que
+    // asp-for marque la opción seleccionada al editar). Acá lo mapeamos al ID numérico
+    // que espera el backend (AccountType: Efectivo=1, Banco=2, BilleteraVirtual=3, TarjetaCredito=4, Crypto=5).
+    const accountTypeMap = { Efectivo: 1, Banco: 2, BilleteraVirtual: 3, TarjetaCredito: 4, Crypto: 5 };
+
+    function getTypeId(rawValue) {
+        if (rawValue in accountTypeMap) return accountTypeMap[rawValue];
+        return parseInt(rawValue) || 0;
+    }
+
     window.abrirModalCuenta = function (id = null) {
         let urlForm = '/Account/GetAccountForm';
         if (id) urlForm += '?id=' + id;
@@ -239,7 +249,7 @@
 
                     function toggleCardFields() {
                         // Cambiamos a buscar el ID NUMÉRICO (4 es TarjetaCredito)
-                        const tipoId = parseInt($ddlType.val()) || 0;
+                        const tipoId = getTypeId($ddlType.val());
                         if (tipoId === 4) {
                             $('#credit-card-fields').slideDown();
                         } else {
@@ -252,9 +262,10 @@
                 },
                 preConfirm: () => {
                     // PARSEAMOS A NÚMERO
-                    const typeId = parseInt($('#Type').val() || $('#ddlAccountType').val()) || 1;
+                    const typeId = getTypeId($('#Type').val() || $('#ddlAccountType').val()) || 1;
                     const closingInput = $('#ClosingDay').val();
                     const dueInput = $('#DueDay').val();
+                    const dueMonthOffsetInput = $('#DueMonthOffset').val();
 
                     var data = {
                         ID: parseInt($('#ID').val()) || 0,
@@ -263,7 +274,8 @@
                         Currency: $('#Currency').val(),
                         Balance: parseFloat($('#Balance').val()) || 0,
                         ClosingDay: closingInput ? parseInt(closingInput) : null,
-                        DueDay: dueInput ? parseInt(dueInput) : null
+                        DueDay: dueInput ? parseInt(dueInput) : null,
+                        DueMonthOffset: dueMonthOffsetInput !== undefined && dueMonthOffsetInput !== '' ? parseInt(dueMonthOffsetInput) : null
                     };
 
                     if (!data.Name || !data.Currency || !data.Type) {
@@ -284,6 +296,7 @@
                     } else {
                         data.ClosingDay = null;
                         data.DueDay = null;
+                        data.DueMonthOffset = null;
                     }
 
                     return { payload: data, isEdit: isEdit };

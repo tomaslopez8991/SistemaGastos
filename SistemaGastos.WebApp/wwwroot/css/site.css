@@ -3572,6 +3572,73 @@ input.gridjs-input {
     color: #a3cfbb;
 }
 
+/* ── Calendario de saldos diarios (FullCalendar) ───────────── */
+.cf-calendar-legend {
+    font-size: 12px;
+    color: var(--bs-secondary-color);
+}
+
+.cf-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cf-legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cf-evt-income {
+    background-color: var(--bs-success) !important;
+    border-color: var(--bs-success) !important;
+}
+
+.cf-evt-expense {
+    background-color: var(--bs-danger) !important;
+    border-color: var(--bs-danger) !important;
+}
+
+.cf-evt-tc {
+    background-color: var(--bs-info) !important;
+    border-color: var(--bs-info) !important;
+}
+
+.cf-evt-personas {
+    background-color: var(--bs-warning) !important;
+    border-color: var(--bs-warning) !important;
+    color: #000 !important;
+}
+
+#financialCalendar .fc-event {
+    font-size: 10px;
+    padding: 0 2px;
+    cursor: pointer;
+}
+
+#financialCalendar .fc-daygrid-day-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#financialCalendar .cf-day-balance {
+    font-size: 10px;
+    font-weight: 700;
+    padding-right: 4px;
+}
+
+[data-bs-theme="dark"] #financialCalendar {
+    --fc-border-color: var(--bs-border-color);
+    --fc-page-bg-color: var(--bs-body-bg);
+    --fc-neutral-bg-color: var(--bs-tertiary-bg);
+    --fc-list-event-hover-bg-color: var(--bs-tertiary-bg);
+    --fc-today-bg-color: rgba(var(--bs-primary-rgb), .15);
+}
+
 /* Grid.js overrides para #grid-wrapper de TmpTransaction */
 #grid-wrapper .gridjs-wrapper {
     border: none !important;
@@ -3739,6 +3806,62 @@ input.gridjs-input {
     color: var(--bs-secondary-color);
     margin-left: auto;
 }
+
+/* Panel de distribución diaria */
+.tmp-distribution-box {
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+.tmp-distribution-toggle {
+    padding: 14px 16px;
+}
+
+.tmp-distribution-panel {
+    border-top: 1px solid var(--bs-border-color);
+    padding: 14px 16px;
+    background: var(--bs-body-bg);
+}
+
+.tmp-days-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.tmp-days-grid-hint {
+    font-size: 12px;
+    color: var(--bs-secondary-color);
+}
+
+.day-chip {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid rgba(var(--bs-success-rgb), .35);
+    background: rgba(var(--bs-success-rgb), .12);
+    color: var(--bs-body-color);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s, opacity .12s;
+}
+
+    .day-chip:hover {
+        border-color: var(--bs-primary);
+    }
+
+    .day-chip.excluded {
+        background: transparent;
+        border-color: var(--bs-border-color);
+        color: var(--bs-secondary-color);
+        text-decoration: line-through;
+        opacity: .6;
+    }
 
 .tmp-months-empty {
     font-size: 13px;

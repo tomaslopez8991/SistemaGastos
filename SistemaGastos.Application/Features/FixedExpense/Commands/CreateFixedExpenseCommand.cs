@@ -16,4 +16,6 @@ public record CreateFixedExpenseCommand : IRequest<int>
     public int? PersonID { get; init; }
     public decimal? PersonPercentage { get; init; }
     public DateTime? StartDate { get; init; }
+    public int? DistributionEndDay { get; init; }
+    public string? ExcludedDays { get; init; }
 }
