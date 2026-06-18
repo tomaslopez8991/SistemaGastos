@@ -12,6 +12,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new FixedIncomeConfiguration());
         modelBuilder.ApplyConfiguration(new DebtPlanSettingsConfiguration());
+        modelBuilder.ApplyConfiguration(new AccountInterestSettingConfiguration());
+        modelBuilder.ApplyConfiguration(new AccountInterestDailyLogConfiguration());
+        modelBuilder.ApplyConfiguration(new AccountInterestMonthlyChargeConfiguration());
     }
 
     public DbSet<Account> Account { get; set; }
@@ -27,4 +30,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Person> Person { get; set; }
     public DbSet<FixedIncome> FixedIncome { get; set; }
     public DbSet<DebtPlanSettings> DebtPlanSettings { get; set; }
+    public DbSet<AccountInterestSetting> AccountInterestSetting { get; set; }
+    public DbSet<AccountInterestDailyLog> AccountInterestDailyLog { get; set; }
+    public DbSet<AccountInterestMonthlyCharge> AccountInterestMonthlyCharge { get; set; }
 }

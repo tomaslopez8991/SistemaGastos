@@ -7,7 +7,7 @@ using SistemaGastos.Application.DTOs;
 
 namespace SistemaGastos.Application.Features.Dashboard.Handlers;
 
-public class GetDashboardMetricsHandler(IApplicationDbContext context, IDolarService dolarService)
+public class GetDashboardMetricsHandler(IApplicationDbContext context, IDolarService dolarService, IAccountInterestService accountInterestService)
     : IRequestHandler<GetDashboardMetricsQuery, DashboardVM>
 {
     public async Task<DashboardVM> Handle(GetDashboardMetricsQuery request, CancellationToken cancellationToken)
@@ -61,6 +61,9 @@ public class GetDashboardMetricsHandler(IApplicationDbContext context, IDolarSer
             .AsNoTracking()
             .CountAsync(t => t.Login.ID == userId && !t.IsCompleted, cancellationToken);
 
+        // F2. Intereses acumulados (cuentas con cálculo de intereses habilitado)
+        var interesesAcumulados = await accountInterestService.GetTotalAccruedInterestAsync(userId, cancellationToken);
+
         // 4. Calcular Totales
         decimal deudaTotal = deudaArs + (deudaUsd * cotizacionDolar);
 
@@ -70,7 +73,8 @@ public class GetDashboardMetricsHandler(IApplicationDbContext context, IDolarSer
             SaldoTotal = saldo,
             GastosMes = gastos,
             DeudaTarjetas = deudaTotal,
-            TareasPendientes = tareas
+            TareasPendientes = tareas,
+            InteresesAcumulados = interesesAcumulados
         };
     }
 }

@@ -21,6 +21,9 @@ public interface IApplicationDbContext
     DbSet<Budget> Budget { get; set; }
     DbSet<Person> Person { get; set; }
     DbSet<DebtPlanSettings> DebtPlanSettings { get; set; }
+    DbSet<AccountInterestSetting> AccountInterestSetting { get; set; }
+    DbSet<AccountInterestDailyLog> AccountInterestDailyLog { get; set; }
+    DbSet<AccountInterestMonthlyCharge> AccountInterestMonthlyCharge { get; set; }
 
     // Métodos esenciales
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
