@@ -80,6 +80,8 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
+builder.Services.AddScoped<IAccountInterestService, SistemaGastos.Application.Features.AccountInterest.Services.AccountInterestService>();
+
 builder.Services.AddScoped<IEmailTemplateHelper, EmailTemplateHelper>();
 builder.Services.AddTransient<IARCAService, ARCAServiceStub>();
 builder.Services.Configure<FiscalConfigOptions>(builder.Configuration.GetSection("FiscalConfig"));
@@ -111,6 +113,10 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();
+
+    // Actualiza el log diario de intereses y genera el cobro mensual si corresponde
+    var accountInterestService = scope.ServiceProvider.GetRequiredService<IAccountInterestService>();
+    await accountInterestService.RunAccrualAsync();
 }
 
 // 6. CONFIGURACI�N DE PROXY (CR�TICO PARA HTTPS EN SOMEE)

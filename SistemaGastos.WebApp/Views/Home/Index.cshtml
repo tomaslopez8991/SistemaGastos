@@ -66,6 +66,33 @@
         </div>
     </div>
 
+    <!-- Intereses Acumulados -->
+    <div class="col-md-4"
+         data-intro="Intereses Acumulados: total de intereses devengados a la fecha por descubierto en las cuentas con cálculo de intereses habilitado. Se cobran automáticamente el día 7 de cada mes."
+         data-step="5b">
+        <div class="card card-glass-modern border-0 h-100">
+            <div class="gradient-overlay gradient-info"></div>
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="metric-badge bg-info bg-opacity-10">
+                        <i class="fa-solid fa-percent text-info fa-lg"></i>
+                    </div>
+                    <form asp-controller="Home" asp-action="RecalcularIntereses" method="post" class="m-0">
+                        <button type="submit" class="badge text-info bg-info bg-opacity-10 border border-info" style="cursor: pointer;">
+                            <i class="fa-solid fa-rotate me-1"></i>Recalcular
+                        </button>
+                    </form>
+                </div>
+                <div>
+                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Intereses Acumulados</p>
+                    <h2 class="fw-bold mb-0 text-info" style="font-size: 2rem; letter-spacing: -1px;">
+                        @Model.InteresesAcumulados.ToString("C")
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Consumos Tarjeta -->
     <div class="col-md-4">
         <div class="card card-glass-modern border-0 h-100"
