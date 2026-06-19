@@ -34,6 +34,8 @@ public class DailyBalanceDto
 
 public class DailyBalanceItemDto
 {
+    /// <summary>ID del registro origen (solo para SourceType = Planificado).</summary>
+    public long? SourceId { get; set; }
     public string Description { get; set; }
     /// <summary>Monto convertido a ARS.</summary>
     public decimal Amount { get; set; }
@@ -41,4 +43,8 @@ public class DailyBalanceItemDto
     public bool IsIncome { get; set; }
     /// <summary>Planificado, GastoFijo, IngresoFijo, TarjetaCredito, Personas.</summary>
     public string SourceType { get; set; }
+    /// <summary>Día del mes al que pertenece este ítem (para overrides por día).</summary>
+    public int Day { get; set; }
+    /// <summary>True si el TmpTransaction tiene distribución activa (dist.Count > 1).</summary>
+    public bool IsDistributed { get; set; }
 }

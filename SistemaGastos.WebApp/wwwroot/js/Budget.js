@@ -41,10 +41,12 @@
 
         $.get(urlList, function (html) {
             $('#budgets-grid').html(html);
-            // Contar cards de presupuesto y actualizar badge
-            const count = $(html).filter('.col-md-6, .col-lg-4, [class*="col-"]').length
-                       || $(html).find('[class*="budget"]').length
-                       || $('#budgets-grid .card').length;
+            const $parsed = $(html);
+            const count = parseInt(
+                $parsed.filter('[data-budget-count]').attr('data-budget-count')
+                ?? $parsed.find('[data-budget-count]').attr('data-budget-count')
+                ?? '0'
+            ) || 0;
             const $b = $('#badge-presupuestos');
             if (count > 0) { $b.text(count).show(); } else { $b.hide(); }
         }).fail(function () {

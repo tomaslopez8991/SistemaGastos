@@ -8,7 +8,8 @@
         save:    $container.data('url-income-save'),
         receive: $container.data('url-income-receive'),
         delete:  $container.data('url-income-delete'),
-        toggle:  $container.data('url-income-toggle')
+        toggle:  $container.data('url-income-toggle'),
+        pause:   $container.data('url-income-pause')
     };
 
     let incomesData = [];
@@ -45,6 +46,8 @@
 
         if (!income.active)
             return '<span class="badge text-bg-secondary"><i class="fas fa-pause me-1"></i>En pausa</span>';
+        if (income.isPausedThisMonth)
+            return '<span class="badge text-bg-warning text-dark"><i class="fas fa-calendar-minus me-1"></i>Pausado este mes</span>';
         if (notStartedYet) {
             const from = startDate.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
             return `<span class="badge text-bg-secondary"><i class="fas fa-clock me-1"></i>Desde ${from}</span>`;
@@ -79,7 +82,7 @@
     }
 
     function updateTabBadge() {
-        const pending = incomesData.filter(e => e.active && !e.alreadyReceivedThisMonth).length;
+        const pending = incomesData.filter(e => e.active && !e.alreadyReceivedThisMonth && !e.isPausedThisMonth).length;
         const $badge = $('#badge-pending-income');
         $badge.text(pending);
         $badge.toggleClass('tmp-badge-success', pending > 0)
@@ -104,16 +107,18 @@
         incomes.forEach(income => {
             const isReceived = !!income.alreadyReceivedThisMonth;
             const isActive   = !!income.active;
+            const isPausedThisMonth = !!income.isPausedThisMonth;
 
             const selectedMonthStart = new Date(activeYear, activeMonth - 1, 1);
             const startDate = income.startDate ? new Date(income.startDate) : null;
             const notStartedYet = startDate !== null && startDate > selectedMonthStart;
-            const effectivelyActive = isActive && !notStartedYet;
+            const effectivelyActive = isActive && !notStartedYet && !isPausedThisMonth;
 
             const days = effectivelyActive ? calcDaysUntilReceipt(income, activeYear, activeMonth) : null;
 
             let cardClass = '';
             if (isReceived)            cardClass = 'fi-card-received';
+            else if (isPausedThisMonth) cardClass = 'fe-card-month-paused';
             else if (!effectivelyActive) cardClass = 'fe-card-paused';
             else if (days === 0)       cardClass = 'fi-card-today';
             else if (days !== null && days <= 3) cardClass = 'fe-card-urgent';
@@ -133,7 +138,9 @@
                 : '';
 
             let daysHtml = '';
-            if (!effectivelyActive) {
+            if (isPausedThisMonth) {
+                daysHtml = `<div class="d-flex align-items-center gap-2 text-warning-emphasis"><i class="fas fa-calendar-minus" style="width:16px;"></i><span>No aplica este mes</span></div>`;
+            } else if (!effectivelyActive) {
                 const pauseLabel = notStartedYet
                     ? `Activo desde ${startDate.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' })}`
                     : 'Ingreso en pausa';
@@ -148,12 +155,31 @@
                 daysHtml = `<div class="d-flex align-items-center gap-2 ${cls}"><i class="fas ${icon}" style="width:16px;"></i><span>${text}</span></div>`;
             }
 
+            // Monto a mostrar: si está cobrado, usar el monto histórico de la Transaction
+            const displayAmount = isReceived && income.receivedAmountFormatted
+                ? income.receivedAmountFormatted
+                : (income.amountFormatted || fmt.format(income.amount));
+            const amountLabel = isReceived ? 'Monto cobrado' : 'Ingreso mensual';
+
             let actionsHtml = '';
             if (isReceived) {
                 actionsHtml = `<div class="fi-received-footer mt-3">
                     <i class="fas fa-circle-check"></i>
                     <span>Cobrado en ${income.receivedMonthName || 'este mes'}</span>
                 </div>`;
+            } else if (isPausedThisMonth) {
+                actionsHtml = `
+                    <div class="d-flex gap-2 mt-auto">
+                        <button class="btn btn-warning btn-sm flex-fill fw-bold" onclick="pauseIncome(${income.id})">
+                            <i class="fas fa-play me-1"></i>Reanudar este mes
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="editIncome(${income.id})" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteIncome(${income.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>`;
             } else if (effectivelyActive) {
                 actionsHtml = `
                     <div class="d-flex gap-2 mt-auto">
@@ -163,8 +189,8 @@
                         <button class="btn btn-outline-primary btn-sm" onclick="editIncome(${income.id})" title="Editar">
                             <i class="fas fa-pen"></i>
                         </button>
-                        <button class="btn btn-outline-warning btn-sm" onclick="toggleIncome(${income.id}, true, ${activeYear}, ${activeMonth})" title="Pausar">
-                            <i class="fas fa-pause"></i>
+                        <button class="btn btn-outline-warning btn-sm" onclick="pauseIncome(${income.id})" title="Pausar este mes">
+                            <i class="fas fa-calendar-minus"></i>
                         </button>
                         <button class="btn btn-outline-danger btn-sm" onclick="deleteIncome(${income.id})" title="Eliminar">
                             <i class="fas fa-trash"></i>
@@ -205,9 +231,9 @@
                             </div>
 
                             <div class="mb-3">
-                                <div class="text-body-secondary small mb-1">Ingreso mensual</div>
+                                <div class="text-body-secondary small mb-1">${amountLabel}</div>
                                 <h4 class="fw-bold mb-0 ${isReceived ? 'text-success' : !isActive ? 'text-secondary' : 'text-success-emphasis'}">
-                                    ${income.amountFormatted || fmt.format(income.amount)}
+                                    ${displayAmount}
                                 </h4>
                                 ${income.currency === 'USD'
                                     ? `<small class="badge bg-info-subtle text-info-emphasis">USD</small>`
@@ -295,6 +321,38 @@
         });
     };
 
+    window.pauseIncome = function (id) {
+        const income = incomesData.find(e => e.id === id);
+        if (!income) return;
+        const isPaused = !!income.isPausedThisMonth;
+        const monthName = new Date(activeYear, activeMonth - 1, 1)
+            .toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+        Swal.fire({
+            title: isPaused ? 'Reanudar este mes' : 'Pausar este mes',
+            html: isPaused
+                ? `<strong>${income.name}</strong> volverá a aparecer en la proyección de <em>${monthName}</em>.`
+                : `<strong>${income.name}</strong> no aparecerá en la proyección de <em>${monthName}</em>. Los demás meses no se ven afectados.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: isPaused ? 'Sí, reanudar' : 'Sí, pausar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: isPaused ? '#198754' : '#fd7e14'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            $.ajax({
+                url: urls.pause,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ ID: id, Year: activeYear, Month: activeMonth }),
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                success: response => {
+                    if (response.success) notifyChanged();
+                    else Swal.fire('Error', response.message, 'error');
+                }
+            });
+        });
+    };
+
     window.deleteIncome = function (id) {
         Swal.fire({
             title: '¿Eliminar ingreso?',
@@ -352,9 +410,9 @@
                     distributionPanel = DistributionPanel.init($(popup), {
                         checkboxSelector: '#checkDistribuirFI',
                         panelSelector: '#panel-distribucion-fi',
-                        endDayInputSelector: '#DistributionEndDayFI',
                         gridSelector: '#distribucion-dias-grid-fi',
                         getStartDay,
+                        getMonthYear: () => ({ year: activeYear, month: activeMonth }),
                         initialEndDay,
                         initialExcludedDays
                     });

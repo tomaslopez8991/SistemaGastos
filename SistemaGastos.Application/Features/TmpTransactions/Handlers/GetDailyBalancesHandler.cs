@@ -6,6 +6,7 @@ using SistemaGastos.Application.Helpers;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Enums;
 using System.Globalization;
+using System.Text.Json;
 
 namespace SistemaGastos.Application.Features.TmpTransactions.Handlers;
 
@@ -105,7 +106,7 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             var daysInMonth = DateTime.DaysInMonth(m.Year, m.Month);
             var itemsByDay = new Dictionary<int, List<DailyBalanceItemDto>>();
 
-            void AddItem(int day, string description, decimal amount, bool isIncome, string sourceType)
+            void AddItem(int day, string description, decimal amount, bool isIncome, string sourceType, long? sourceId = null, bool isDistributed = false)
             {
                 if (amount <= 0) return;
 
@@ -118,12 +119,22 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
                 list.Add(new DailyBalanceItemDto
                 {
+                    SourceId = sourceId,
                     Description = description,
                     Amount = amount,
                     AmountFmt = amount.ToString("C", culture),
                     IsIncome = isIncome,
-                    SourceType = sourceType
+                    SourceType = sourceType,
+                    Day = day,
+                    IsDistributed = isDistributed
                 });
+            }
+
+            static Dictionary<string, decimal> ParseDayOverrides(string? json)
+            {
+                if (string.IsNullOrEmpty(json)) return new();
+                try { return JsonSerializer.Deserialize<Dictionary<string, decimal>>(json) ?? new(); }
+                catch { return new(); }
             }
 
             // ────────────────────────────────────────────────────────────
@@ -142,10 +153,14 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 var dist = DistributionHelper.Distribute(amountArs, t.DateTransaction!.Value.Day, t.DistributionEndDay, excludedDays, daysInMonth)
                     .OrderBy(kv => kv.Key).ToList();
 
+                bool isDistributed = dist.Count > 1;
+                var overrides = ParseDayOverrides(t.DayAmountOverrides);
+
                 foreach (var (kv, idx) in dist.Select((kv, idx) => (kv, idx)))
                 {
-                    var desc = dist.Count > 1 ? $"{t.Description} (día {idx + 1}/{dist.Count})" : t.Description;
-                    AddItem(kv.Key, desc, kv.Value, isIncome, "Planificado");
+                    var dayAmount = overrides.TryGetValue(kv.Key.ToString(), out var ov) ? ov : kv.Value;
+                    var desc = isDistributed ? $"{t.Description} (día {idx + 1}/{dist.Count})" : t.Description;
+                    AddItem(kv.Key, desc, dayAmount, isIncome, "Planificado", t.ID, isDistributed);
                 }
             }
 
@@ -162,11 +177,13 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 .Select(p => p.ExpenseID)
                 .ToList();
 
+            var monthKey = $"{m.Year}-{m.Month:D2}";
             var fixedExpensesOfMonth = allFixedExpenses
                 .Where(f => f.PaymentDay > 0
                          && f.PaymentDay <= daysInMonth
                          && !paidThisMonthIds.Contains(f.ID)
-                         && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m))
+                         && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
+                         && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey)))
                 .ToList();
 
             foreach (var fe in fixedExpensesOfMonth)
@@ -202,7 +219,8 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 .Where(f => f.ReceiptDay > 0
                          && f.ReceiptDay <= daysInMonth
                          && !receivedThisMonthIds.Contains(f.ID)
-                         && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m))
+                         && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
+                         && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey)))
                 .ToList();
 
             foreach (var fi in fixedIncomesOfMonth)

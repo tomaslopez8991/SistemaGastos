@@ -18,9 +18,14 @@ public class FixedExpenseDto
     public DateTime? LastGeneratedDate { get; set; }
     public bool AlreadyPaidThisMonth { get; set; }
     public string? PaidMonthName { get; set; }
+    /// <summary>Monto real abonado en el mes (tomado de la Transaction generada al pagar).</summary>
+    public decimal? PaidAmount { get; set; }
+    public string? PaidAmountFormatted { get; set; }
     public int? PersonID { get; set; }
     public decimal? PersonPercentage { get; set; }
     public string? PersonName { get; set; }
     public int? DistributionEndDay { get; set; }
     public string? ExcludedDays { get; set; }
+    public bool IsPausedThisMonth { get; set; }
+    public string? PausedMonths { get; set; }
 }

@@ -83,6 +83,18 @@ public class FixedExpenseController(IMediator mediator, ICurrentUserService curr
         return Ok(Response<bool>.Fail("No se pudo actualizar el estado"));
     }
 
+    [HttpPost("TogglePause")]
+    [ValidateAntiForgeryToken]
+    public async Task<ActionResult<Response<bool>>> TogglePause([FromBody] TogglePauseRequest request)
+    {
+        int userID = currentUser.UserId ?? 0;
+        var command = new ToggleFixedExpensePauseCommand(request.ID, userID, request.Year, request.Month);
+        var result = await mediator.Send(command);
+        return Ok(result
+            ? Response<bool>.Ok(true, "Pausa actualizada")
+            : Response<bool>.Fail("No se pudo actualizar la pausa"));
+    }
+
     [HttpDelete("Delete/{id}")]
     [ValidateAntiForgeryToken]
     public async Task<ActionResult<Response<bool>>> Delete(int id)
@@ -108,4 +120,11 @@ public class ToggleActiveRequest
     public int? Year { get; set; }
     /// <summary>Mes desde el que se reanuda (solo aplica al reanudar).</summary>
     public int? Month { get; set; }
+}
+
+public class TogglePauseRequest
+{
+    public int ID { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
 }

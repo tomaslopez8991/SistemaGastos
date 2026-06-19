@@ -29,12 +29,15 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
         var personIds = persons.Select(p => p.ID).ToList();
 
+        // Solo transacciones del mes seleccionado — cobros y gastos impactan únicamente en su mes
         var transactions = await context.Transaction
             .Include(t => t.Category)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value)
-                     && t.Account.UserID == request.UserID)
+                     && t.Account.UserID == request.UserID
+                     && t.Date.Year == refYear && t.Date.Month == refMonth)
             .ToListAsync(cancellationToken);
 
+        // CC sin filtro de fecha: las cuotas se calculan por mes en el loop
         var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value))
@@ -99,6 +102,8 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
                 }
                 else
                 {
+                    // Sin cuotas: solo aparece en el mes de la transacción
+                    if (cc.TransactionDate.Year != refYear || cc.TransactionDate.Month != refMonth) continue;
                     effectiveAmount = cc.Amount;
                     typeLabel = "Tarjeta de crédito";
                 }

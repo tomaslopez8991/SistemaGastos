@@ -23,26 +23,45 @@ public class GetAllFixedIncomesHandler(IApplicationDbContext context, IDolarServ
             .OrderBy(f => f.ReceiptDay)
             .ToListAsync(cancellationToken);
 
-        // Ingresos ya cobrados este mes/año (vía Transaction.FixedIncomeID)
-        var receivedIds = await context.Transaction
+        // Ingresos ya cobrados este mes/año → guardamos el monto real cobrado
+        var receivedTransactions = await context.Transaction
             .AsNoTracking()
             .Where(t => t.FixedIncomeID != null
                      && t.Date.Year == request.Year
                      && t.Date.Month == request.Month)
-            .Select(t => t.FixedIncomeID!.Value)
+            .Select(t => new { IncomeID = t.FixedIncomeID!.Value, t.Amount, Currency = "ARS" })
             .ToListAsync(cancellationToken);
 
-        var receivedSet = receivedIds.ToHashSet();
+        var receivedSet = receivedTransactions.Select(t => t.IncomeID).ToHashSet();
+        var receivedAmounts = receivedTransactions
+            .ToDictionary(t => t.IncomeID, t => (Amount: t.Amount, Currency: t.Currency));
 
         var monthName = new DateTimeFormatInfo { MonthNames = CultureInfo.GetCultureInfo("es-AR").DateTimeFormat.MonthNames }
             .GetMonthName(request.Month);
         if (!string.IsNullOrEmpty(monthName))
             monthName = char.ToUpper(monthName[0]) + monthName[1..];
 
+        var currentMonthKey = $"{request.Year}-{request.Month:D2}";
+
         return incomes.Select(f =>
         {
-            // Monto en ARS para mostrar
             decimal amountArs = f.Currency == "USD" ? f.Amount * dolarRate : f.Amount;
+
+            bool isPaused = !string.IsNullOrEmpty(f.PausedMonths) &&
+                f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(currentMonthKey);
+
+            bool isReceived = receivedSet.Contains(f.ID);
+            decimal? receivedAmount = null;
+            string? receivedAmountFmt = null;
+
+            if (isReceived && receivedAmounts.TryGetValue(f.ID, out var received))
+            {
+                receivedAmount = received.Amount;
+                decimal receivedArs = received.Currency == "USD" ? received.Amount * dolarRate : received.Amount;
+                receivedAmountFmt = received.Currency == "USD"
+                    ? $"USD {received.Amount:N2} ≈ {receivedArs.ToString("C", culture)}"
+                    : receivedArs.ToString("C", culture);
+            }
 
             return new FixedIncomeDto
             {
@@ -62,8 +81,12 @@ public class GetAllFixedIncomesHandler(IApplicationDbContext context, IDolarServ
                 Active = f.Active,
                 StartDate = f.StartDate,
                 LastGeneratedDate = f.LastGeneratedDate,
-                AlreadyReceivedThisMonth = receivedSet.Contains(f.ID),
-                ReceivedMonthName = receivedSet.Contains(f.ID) ? monthName : null
+                AlreadyReceivedThisMonth = isReceived,
+                ReceivedMonthName = isReceived ? monthName : null,
+                ReceivedAmount = receivedAmount,
+                ReceivedAmountFormatted = receivedAmountFmt,
+                IsPausedThisMonth = isPaused,
+                PausedMonths = f.PausedMonths
             };
         }).ToList();
     }

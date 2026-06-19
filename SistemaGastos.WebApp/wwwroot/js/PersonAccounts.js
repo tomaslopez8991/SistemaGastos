@@ -102,10 +102,10 @@
 
     // ── Badge tab Cuentas ────────────────────────────────────────
     function updateCuentasBadge(accounts) {
-        const withDebt = accounts.filter(a => a.totalOwed > 0).length;
+        const total = accounts.length;
         const $b = document.getElementById('badge-cuentas');
         if ($b) {
-            if (withDebt > 0) { $b.textContent = withDebt; $b.style.display = ''; }
+            if (total > 0) { $b.textContent = total; $b.style.display = ''; }
             else $b.style.display = 'none';
         }
     }

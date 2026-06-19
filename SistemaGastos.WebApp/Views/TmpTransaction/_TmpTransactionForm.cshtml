@@ -122,15 +122,8 @@
 
         @* Panel de días — se muestra al activar el toggle *@
         <div id="panel-distribucion" class="tmp-distribution-panel" style="display:none;">
-            <label class="tmp-label" for="Distribution_EndDay">Repartir hasta el día</label>
-            <input type="number"
-                   id="Distribution_EndDay"
-                   class="form-control"
-                   style="max-width:120px;"
-                   min="1" max="31"
-                   value="@Model.Transaction.DistributionEndDay" />
             <div class="tmp-days-grid" id="distribucion-dias-grid"></div>
-            <div class="tmp-days-grid-hint mt-2">Hacé clic en un día para excluirlo del reparto.</div>
+            <div class="tmp-days-grid-hint mt-2">Hacé clic en un día para incluirlo o excluirlo del reparto.</div>
         </div>
     </div>
 

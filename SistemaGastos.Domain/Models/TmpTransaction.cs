@@ -22,6 +22,8 @@ namespace SistemaGastos.Domain.Models
         public int? DistributionEndDay { get; set; }
         /// <summary>Días del mes (separados por coma) sin movimiento dentro del rango de distribución.</summary>
         public string? ExcludedDays { get; set; }
+        /// <summary>JSON: overrides de monto por día {"15":500.00,"20":750.00}. Sobreescribe el monto auto-calculado del día.</summary>
+        public string? DayAmountOverrides { get; set; }
         [NotMapped]
         public List<string>? MesesSeleccionados { get; set; }
 
