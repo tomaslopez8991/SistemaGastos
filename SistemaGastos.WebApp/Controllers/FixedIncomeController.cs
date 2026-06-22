@@ -47,10 +47,10 @@ public class FixedIncomeController(IMediator mediator, ICurrentUserService curre
 
     [HttpPost("ReceiveNow")]
     [ValidateAntiForgeryToken]
-    public async Task<ActionResult<Response<ReceiptResultDto>>> ReceiveNow([FromBody] int id)
+    public async Task<ActionResult<Response<ReceiptResultDto>>> ReceiveNow([FromBody] ReceiveNowRequest req)
     {
         int userID = currentUser.UserId ?? 0;
-        var result = await mediator.Send(new ProcessFixedIncomeReceiptCommand(id, userID));
+        var result = await mediator.Send(new ProcessFixedIncomeReceiptCommand(req.Id, userID, req.Amount));
         return Ok(Response<ReceiptResultDto>.Ok(result, result.Message));
     }
 
@@ -89,4 +89,10 @@ public class FixedIncomeController(IMediator mediator, ICurrentUserService curre
             ? Ok(Response<bool>.Ok(true, "Ingreso eliminado correctamente"))
             : Ok(Response<bool>.Fail("No se pudo eliminar el ingreso"));
     }
+}
+
+public class ReceiveNowRequest
+{
+    public int Id { get; set; }
+    public decimal? Amount { get; set; }
 }

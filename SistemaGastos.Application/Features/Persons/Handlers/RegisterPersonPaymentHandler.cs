@@ -41,6 +41,17 @@ public class RegisterPersonPaymentHandler(IApplicationDbContext context)
         // Acreditar en la cuenta
         account.Balance += request.Amount;
 
+        // Marcar el mes actual como cobrado en la persona
+        var currentMonthKey = $"{DateTime.Now.Year}-{DateTime.Now.Month:D2}";
+        var existingMonths = string.IsNullOrEmpty(person.CollectedMonths)
+            ? new List<string>()
+            : person.CollectedMonths.Split(',').Select(s => s.Trim()).ToList();
+        if (!existingMonths.Contains(currentMonthKey))
+        {
+            existingMonths.Add(currentMonthKey);
+            person.CollectedMonths = string.Join(',', existingMonths);
+        }
+
         await context.Transaction.AddAsync(payment, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
         return true;

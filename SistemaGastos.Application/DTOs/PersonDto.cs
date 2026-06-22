@@ -5,6 +5,9 @@ public class PersonDto
     public int ID { get; set; }
     public string Name { get; set; } = string.Empty;
     public bool Active { get; set; } = true;
+    public int? CollectionDay { get; set; }
+    public decimal? DiscountAmount { get; set; }
+    public string? CollectionFrom { get; set; }
 }
 
 public class PersonAccountItemDto
@@ -26,5 +29,12 @@ public class PersonAccountDto
     public string PersonName { get; set; } = string.Empty;
     public decimal TotalOwed { get; set; }
     public string TotalOwedFmt { get; set; } = string.Empty;
+    public decimal DiscountAmount { get; set; }
+    public string DiscountAmountFmt { get; set; } = string.Empty;
+    public decimal NetOwed { get; set; }
+    public string NetOwedFmt { get; set; } = string.Empty;
+    public int? CollectionDay { get; set; }
+    public string? CollectionFrom { get; set; }
+    public bool IsCollectedThisMonth { get; set; }
     public List<PersonAccountItemDto> Items { get; set; } = new();
 }

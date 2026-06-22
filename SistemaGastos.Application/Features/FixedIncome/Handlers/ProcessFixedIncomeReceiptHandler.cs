@@ -22,12 +22,19 @@ public class ProcessFixedIncomeReceiptHandler(IApplicationDbContext context, IDo
 
         var receiptDate = DateTime.UtcNow;
 
-        // Convertir a ARS si es USD
-        decimal amountArs = income.Amount;
-        if (income.Currency == "USD")
+        decimal amountArs;
+        if (request.AmountOverride.HasValue)
         {
-            decimal rate = await dolarService.GetDolarBolsaAsync();
-            amountArs = income.Amount * rate;
+            amountArs = request.AmountOverride.Value;
+        }
+        else
+        {
+            amountArs = income.Amount;
+            if (income.Currency == "USD")
+            {
+                decimal rate = await dolarService.GetDolarBolsaAsync();
+                amountArs = income.Amount * rate;
+            }
         }
 
         // Crear transacción de ingreso y sumar al saldo

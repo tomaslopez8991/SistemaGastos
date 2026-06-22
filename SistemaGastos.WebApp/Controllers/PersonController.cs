@@ -34,7 +34,7 @@ public class PersonController(IMediator mediator, ICurrentUserService currentUse
             return Ok(Response<int>.Fail("El nombre es requerido"));
 
         var userID = currentUser.UserId ?? 0;
-        var id = await mediator.Send(new SavePersonCommand(userID, dto.ID, dto.Name));
+        var id = await mediator.Send(new SavePersonCommand(userID, dto.ID, dto.Name, dto.CollectionDay, dto.DiscountAmount, dto.CollectionFrom));
 
         if (id > 0)
         {

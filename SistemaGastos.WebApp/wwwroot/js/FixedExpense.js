@@ -274,42 +274,42 @@
             html += `
                 <div class="col-md-6 col-lg-4">
                     <div class="card border-0 shadow-sm h-100 expense-card ${cardStateClass}">
-                        <div class="card-body d-flex flex-column">
+                        <div class="card-body d-flex flex-column" style="gap:.75rem;">
 
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    ${logoHtml}
-                                    <div>
-                                        <h6 class="mb-0 fw-bold text-body-emphasis">${expense.name}</h6>
-                                        <small class="text-body-secondary">${expense.categoryName}</small>
-                                    </div>
+                            <div class="d-flex align-items-center gap-3">
+                                ${logoHtml}
+                                <div class="flex-fill" style="min-width:0;">
+                                    <div class="fw-semibold text-truncate text-body-emphasis">${expense.name}</div>
+                                    <div class="small text-muted text-truncate">${expense.categoryName}</div>
                                 </div>
-                                ${getStatusBadge(expense)}
+                                <div class="flex-shrink-0">${getStatusBadge(expense)}</div>
                             </div>
 
-                            <div class="mb-3">
-                                <div class="text-body-secondary small mb-1">${amountLabel}</div>
-                                <h4 class="fw-bold mb-0 ${isPaid ? 'text-success' : !isActive ? 'text-secondary' : 'text-primary-emphasis'}">
-                                    ${displayAmount}
-                                </h4>
+                            <div>
+                                <div class="small text-muted mb-1">${amountLabel}</div>
+                                <div class="fw-bold fs-5 ${isPaid ? 'text-success' : !isActive ? 'text-secondary' : 'text-primary-emphasis'}">${displayAmount}</div>
                             </div>
 
-                            <div class="mb-3 small text-body-secondary">
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <i class="fas fa-calendar-day" style="width:16px;"></i>
+                            <div class="small text-muted d-flex flex-column gap-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-calendar-day" style="width:14px;flex-shrink:0;"></i>
                                     <span>Día ${expense.paymentDay}</span>
                                 </div>
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <i class="fas fa-wallet" style="width:16px;"></i>
-                                    <span>${expense.accountName}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-wallet" style="width:14px;flex-shrink:0;"></i>
+                                    <span class="text-truncate">${expense.accountName}</span>
                                 </div>
-                                ${daysHtml}
                             </div>
 
-                            ${isPaid
-                                ? paidFooter
-                                : `<div class="d-flex gap-2 mt-auto">${actionsHtml}</div>`
-                            }
+                            <div class="small" style="min-height:1.4rem;">${daysHtml}</div>
+
+                            <div class="mt-auto">
+                                ${isPaid
+                                    ? `<div class="fe-paid-footer"><i class="fas fa-circle-check"></i><span>Pagado en ${paidMonthName || 'este mes'}</span></div>`
+                                    : `<div class="d-flex gap-2">${actionsHtml}</div>`
+                                }
+                            </div>
+
                         </div>
                     </div>
                 </div>

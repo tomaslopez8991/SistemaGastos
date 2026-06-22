@@ -17,16 +17,22 @@ public class SavePersonHandler(IApplicationDbContext context)
                 .FirstOrDefaultAsync(p => p.ID == request.ID && p.UserID == request.UserID, cancellationToken);
             if (existing == null) return 0;
 
-            existing.Name = request.Name.Trim();
+            existing.Name           = request.Name.Trim();
+            existing.CollectionDay  = request.CollectionDay;
+            existing.DiscountAmount = request.DiscountAmount;
+            existing.CollectionFrom = request.CollectionFrom;
             await context.SaveChangesAsync(cancellationToken);
             return existing.ID;
         }
 
         var person = new Person
         {
-            UserID = request.UserID,
-            Name = request.Name.Trim(),
-            Active = true
+            UserID          = request.UserID,
+            Name            = request.Name.Trim(),
+            Active          = true,
+            CollectionDay   = request.CollectionDay,
+            DiscountAmount  = request.DiscountAmount,
+            CollectionFrom  = request.CollectionFrom
         };
         context.Person.Add(person);
         await context.SaveChangesAsync(cancellationToken);

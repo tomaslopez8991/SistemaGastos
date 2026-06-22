@@ -163,13 +163,13 @@
 
             let actionsHtml = '';
             if (isReceived) {
-                actionsHtml = `<div class="fi-received-footer mt-3">
+                actionsHtml = `<div class="fi-received-footer">
                     <i class="fas fa-circle-check"></i>
                     <span>Cobrado en ${income.receivedMonthName || 'este mes'}</span>
                 </div>`;
             } else if (isPausedThisMonth) {
                 actionsHtml = `
-                    <div class="d-flex gap-2 mt-auto">
+                    <div class="d-flex gap-2">
                         <button class="btn btn-warning btn-sm flex-fill fw-bold" onclick="pauseIncome(${income.id})">
                             <i class="fas fa-play me-1"></i>Reanudar este mes
                         </button>
@@ -182,7 +182,7 @@
                     </div>`;
             } else if (effectivelyActive) {
                 actionsHtml = `
-                    <div class="d-flex gap-2 mt-auto">
+                    <div class="d-flex gap-2">
                         <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="receiveIncome(${income.id})">
                             <i class="fas fa-check me-1"></i>Cobrar
                         </button>
@@ -198,7 +198,7 @@
                     </div>`;
             } else if (notStartedYet) {
                 actionsHtml = `
-                    <div class="d-flex gap-2 mt-auto">
+                    <div class="d-flex gap-2">
                         <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="editIncome(${income.id})">
                             <i class="fas fa-pen me-1"></i>Editar
                         </button>
@@ -206,7 +206,7 @@
                     </div>`;
             } else {
                 actionsHtml = `
-                    <div class="d-flex gap-2 mt-auto">
+                    <div class="d-flex gap-2">
                         <button class="btn btn-primary btn-sm flex-fill fw-bold" onclick="toggleIncome(${income.id}, false, ${activeYear}, ${activeMonth})">
                             <i class="fas fa-play me-1"></i>Reanudar desde este mes
                         </button>
@@ -218,42 +218,37 @@
             html += `
                 <div class="col-md-6 col-lg-4">
                     <div class="card border-0 shadow-sm h-100 expense-card ${cardClass}">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div class="d-flex align-items-center gap-3">
-                                    ${logoHtml}
-                                    <div>
-                                        <h6 class="mb-0 fw-bold text-body-emphasis">${income.name}</h6>
-                                        <small class="text-body-secondary">${income.categoryName}</small>
-                                    </div>
+                        <div class="card-body d-flex flex-column" style="gap:.75rem;">
+
+                            <div class="d-flex align-items-center gap-3">
+                                ${logoHtml}
+                                <div class="flex-fill" style="min-width:0;">
+                                    <div class="fw-semibold text-truncate text-body-emphasis">${income.name}</div>
+                                    <div class="small text-muted text-truncate">${income.categoryName}</div>
                                 </div>
-                                ${getStatusBadge(income)}
+                                <div class="flex-shrink-0">${getStatusBadge(income)}</div>
                             </div>
 
-                            <div class="mb-3">
-                                <div class="text-body-secondary small mb-1">${amountLabel}</div>
-                                <h4 class="fw-bold mb-0 ${isReceived ? 'text-success' : !isActive ? 'text-secondary' : 'text-success-emphasis'}">
-                                    ${displayAmount}
-                                </h4>
-                                ${income.currency === 'USD'
-                                    ? `<small class="badge bg-info-subtle text-info-emphasis">USD</small>`
-                                    : ''}
+                            <div>
+                                <div class="small text-muted mb-1">${amountLabel}</div>
+                                <div class="fw-bold fs-5 ${isReceived ? 'text-success' : !isActive ? 'text-secondary' : 'text-success-emphasis'}">${displayAmount}${income.currency === 'USD' ? ' <small class="badge bg-info-subtle text-info-emphasis">USD</small>' : ''}</div>
                             </div>
 
-                            <div class="mb-3 small text-body-secondary">
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <i class="fas fa-calendar-day" style="width:16px;"></i>
+                            <div class="small text-muted d-flex flex-column gap-1">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-calendar-day" style="width:14px;flex-shrink:0;"></i>
                                     <span>Día ${income.receiptDay}</span>
                                 </div>
-                                <div class="d-flex align-items-center gap-2 mb-2">
-                                    <i class="fas fa-wallet" style="width:16px;"></i>
-                                    <span>${income.accountName}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-wallet" style="width:14px;flex-shrink:0;"></i>
+                                    <span class="text-truncate">${income.accountName}</span>
                                 </div>
-                                ${startDateHtml}
-                                ${daysHtml}
                             </div>
 
-                            ${actionsHtml}
+                            <div class="small" style="min-height:1.4rem;">${daysHtml}</div>
+
+                            <div class="mt-auto">${actionsHtml}</div>
+
                         </div>
                     </div>
                 </div>`;
@@ -292,7 +287,7 @@
                 url: urls.receive,
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify(id),
+                data: JSON.stringify({ id }),
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                 success: response => {
                     if (response.success) {
