@@ -1,6 +1,7 @@
 # SistemaGastos
 
 [![CI](https://github.com/tomaslopez8991/SistemaGastos1.0/actions/workflows/ci.yml/badge.svg)](https://github.com/tomaslopez8991/SistemaGastos1.0/actions/workflows/ci.yml)
+[![CD](https://github.com/tomaslopez8991/SistemaGastos1.0/actions/workflows/cd.yml/badge.svg)](https://github.com/tomaslopez8991/SistemaGastos1.0/actions/workflows/cd.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=tomaslopez8991_SistemaGastos&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tomaslopez8991_SistemaGastos)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=tomaslopez8991_SistemaGastos&metric=bugs)](https://sonarcloud.io/summary/new_code?id=tomaslopez8991_SistemaGastos)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=tomaslopez8991_SistemaGastos&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=tomaslopez8991_SistemaGastos)
