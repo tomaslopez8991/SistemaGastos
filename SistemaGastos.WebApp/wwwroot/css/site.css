@@ -3536,12 +3536,36 @@ input.gridjs-input {
     border-radius: 12px 12px 0 0;
 }
 
+/* Item 3: centrar los tabs */
+.tmp-tabs-header .nav-tabs {
+    justify-content: center;
+}
+
+/* Reset estilos del sidenav que se filtran en los li.nav-item de los tabs */
+.tmp-tabs-header .nav-item {
+    padding: 0;
+    border-left: none;
+}
+
+.tmp-tabs-header .nav-item:hover {
+    background: transparent;
+    border-left: none;
+    padding-left: 0;
+}
+
 .tmp-tab-btn {
     font-size: 13px;
     font-weight: 600;
     padding: 8px 18px;
     color: var(--bs-body-color) !important;
     border-radius: 8px 8px 0 0 !important;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+/* Item 5: hover cool — tinte primario sutil */
+.tmp-tab-btn:not(.active):hover {
+    color: var(--bs-primary) !important;
+    background: rgba(var(--bs-primary-rgb), 0.07) !important;
 }
 
     .tmp-tab-btn.active {
@@ -3913,6 +3937,12 @@ input.gridjs-input {
     font-weight: 500;
 }
 
+/* Pausado solo este mes: tono amarillo suave */
+.expense-card.fe-card-month-paused {
+    border: 1px solid var(--bs-warning-border-subtle) !important;
+    background: color-mix(in srgb, var(--bs-warning-bg-subtle) 40%, transparent) !important;
+}
+
 /* Pausado: tono gris neutro, sin difuminar todo */
 .expense-card.fe-card-paused {
     border: 1px solid var(--bs-secondary-border-subtle) !important;
@@ -4106,6 +4136,201 @@ input.gridjs-input {
 @media (max-width: 576px) {
     .dp-summary-value { font-size: 1.1rem; }
     .dp-save-indicator #dp-save-text { display: none; }
+}
+
+/* ============================================
+   MONTH CARD SLIM (reemplaza month-card en Proyección)
+   ============================================ */
+.month-card-slim {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    max-width: 100px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-secondary-bg);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+}
+
+.month-card-slim:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--bs-primary-rgb), .5);
+}
+
+.month-card-slim.active {
+    background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), .15), rgba(var(--bs-primary-rgb), .08));
+    border-color: rgba(var(--bs-primary-rgb), .6);
+}
+
+.mcs-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--bs-secondary-color);
+    margin-bottom: 3px;
+    white-space: nowrap;
+}
+
+.month-card-slim.active .mcs-label {
+    color: rgb(var(--bs-primary-rgb));
+}
+
+.mcs-amount {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.mcs-amount.positive { color: var(--bs-success-text-emphasis, #0a3622); }
+.mcs-amount.negative { color: var(--bs-danger-text-emphasis, #58151c); }
+
+/* ============================================
+   BARRA INFO COMPACTA DEL MES
+   ============================================ */
+.month-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 13px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.month-info-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.month-info-label {
+    color: var(--bs-secondary-color);
+    font-size: 12px;
+}
+
+.month-info-value {
+    font-size: 13px;
+}
+
+.month-info-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--bs-border-color);
+    margin: 0 8px;
+}
+
+@media (max-width: 576px) {
+    .month-info-sep { display: none; }
+    .month-info-bar { gap: 6px; }
+}
+
+/* ============================================
+   PANEL LATERAL DE DETALLE DE DÍA
+   ============================================ */
+.cf-day-panel {
+    position: fixed;
+    top: 0;
+    right: -440px;
+    width: 400px;
+    height: 100vh;
+    background: var(--bs-body-bg);
+    border-left: 1px solid var(--bs-border-color);
+    z-index: 1055;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -6px 0 24px rgba(0, 0, 0, .18);
+    transition: right .3s cubic-bezier(.4, 0, .2, 1);
+}
+
+.cf-day-panel.open {
+    right: 0;
+}
+
+.cf-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .35);
+    z-index: 1054;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease;
+}
+
+.cf-panel-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.cf-day-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--bs-border-color);
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.cf-day-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cf-panel-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+.cf-panel-item:last-child {
+    border-bottom: none;
+}
+
+.cf-panel-item-desc {
+    font-size: 13px;
+    color: var(--bs-body-color);
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.cf-panel-item-source {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+    display: block;
+    margin-top: 2px;
+}
+
+.cf-panel-item-actions {
+    margin-top: 6px;
+}
+
+.btn-xs {
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+    line-height: 1.5;
+}
+
+@media (max-width: 575px) {
+    .cf-day-panel {
+        width: 100vw;
+        right: -100vw;
+    }
 }
 
 /* ============================================

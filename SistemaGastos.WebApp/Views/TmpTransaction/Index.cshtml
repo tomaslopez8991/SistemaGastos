@@ -19,12 +19,15 @@
      data-url-fixed-pay="@Url.Action("PayNow", "FixedExpense")"
      data-url-fixed-delete="@Url.Action("Delete", "FixedExpense")"
      data-url-fixed-toggle="@Url.Action("ToggleActive", "FixedExpense")"
+     data-url-fixed-pause="@Url.Action("TogglePause", "FixedExpense")"
      data-url-income-list="@Url.Action("GetList", "FixedIncome")"
      data-url-income-form="@Url.Action("GetForm", "FixedIncome")"
      data-url-income-save="@Url.Action("Save", "FixedIncome")"
      data-url-income-receive="@Url.Action("ReceiveNow", "FixedIncome")"
      data-url-income-delete="@Url.Action("Delete", "FixedIncome")"
      data-url-income-toggle="@Url.Action("ToggleActive", "FixedIncome")"
+     data-url-income-pause="@Url.Action("TogglePause", "FixedIncome")"
+     data-url-set-day-override="@Url.Action("SetDayOverride", "TmpTransaction")"
      data-url-budget-list="@Url.Action("GetBudgetTab", "Budget")"
      data-url-budget-form="@Url.Action("GetBudgetForm", "Budget")"
      data-url-budget-save="@Url.Action("Save", "Budget")"
@@ -47,14 +50,6 @@
             </h2>
             <p class="text-muted mb-0" style="font-size:13px;">Línea de tiempo de liquidez y compromisos mensuales</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <button type="button" class="btn btn-outline-primary d-flex align-items-center gap-2"
-                    id="btnOpenCalendar" data-bs-toggle="modal" data-bs-target="#calendarModal">
-                <i class="fa-solid fa-calendar-days"></i>Calendario
-            </button>
-            <a href="@Url.Action("PlanMetas", "TmpTransaction")" class="btn btn-outline-success d-flex align-items-center gap-2">
-                <i class="fa-solid fa-bullseye"></i>Plan de Metas
-            </a>
         <div class="dropdown">
             <button class="btn btn-primary dropdown-toggle d-flex align-items-center gap-2"
                     type="button"
@@ -86,18 +81,17 @@
                 </li>
             </ul>
         </div>
-        </div>
     </div>
 
-    @* ── Carrusel de meses ────────────────────────────────── *@
-    <div class="month-carousel-wrapper position-relative mb-4">
+    @* ── Carrusel slim de meses ───────────────────────────── *@
+    <div class="month-carousel-wrapper position-relative mb-3">
         <button class="carousel-nav-btn carousel-nav-prev text-body" id="carouselPrev" style="display:none;">
             <i class="fas fa-chevron-left"></i>
         </button>
         <div class="month-carousel" id="monthCarousel">
-            <div class="text-center w-100 text-body-secondary py-3">
+            <div class="text-center w-100 text-body-secondary py-2">
                 <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-                <span class="ms-2">Cargando proyección...</span>
+                <span class="ms-2 small">Cargando proyección...</span>
             </div>
         </div>
         <button class="carousel-nav-btn carousel-nav-next text-body" id="carouselNext" style="display:none;">
@@ -105,37 +99,25 @@
         </button>
     </div>
 
-    @* ── Dashboard de mes ─────────────────────────────────── *@
-    <div class="row g-3 mb-4" id="month-dashboard" style="display:none;">
-        <div class="col-md-3 col-lg">
-            <div class="tmp-dash-card income clickable" id="dash-income-card" data-breakdown="income">
-                <div>
-                    <div class="tmp-dash-label">Ingresos proyectados</div>
-                    <div class="tmp-dash-value" id="dash-income">$ —</div>
-                    <div class="tmp-dash-detail-hint"><i class="fa-regular fa-eye"></i>Ver detalle</div>
-                </div>
-                <i class="fa-solid fa-arrow-trend-up tmp-dash-icon"></i>
-            </div>
-        </div>
-        <div class="col-md-3 col-lg">
-            <div class="tmp-dash-card expense clickable" id="dash-expense-card" data-breakdown="expense">
-                <div>
-                    <div class="tmp-dash-label">Gastos proyectados</div>
-                    <div class="tmp-dash-value" id="dash-expense">$ —</div>
-                    <div class="tmp-dash-detail-hint"><i class="fa-regular fa-eye"></i>Ver detalle</div>
-                </div>
-                <i class="fa-solid fa-arrow-trend-down tmp-dash-icon"></i>
-            </div>
-        </div>
-        <div class="col-md-3 col-lg">
-            <div class="tmp-dash-card balance">
-                <div>
-                    <div class="tmp-dash-label">Saldo proyectado</div>
-                    <div class="tmp-dash-value balance-val" id="dash-balance">$ —</div>
-                </div>
-                <i class="fa-solid fa-wallet tmp-dash-icon"></i>
-            </div>
-        </div>
+    @* ── Barra info compacta del mes ──────────────────────── *@
+    <div id="month-info-bar" class="month-info-bar mb-3" style="display:none;">
+        <span class="month-info-item">
+            <i class="fa-solid fa-arrow-trend-up text-success me-1"></i>
+            <span class="month-info-label">Ingresos</span>
+            <span class="month-info-value text-success fw-semibold" id="infobar-income">$ —</span>
+        </span>
+        <span class="month-info-sep"></span>
+        <span class="month-info-item">
+            <i class="fa-solid fa-arrow-trend-down text-danger me-1"></i>
+            <span class="month-info-label">Gastos</span>
+            <span class="month-info-value text-danger fw-semibold" id="infobar-expense">$ —</span>
+        </span>
+        <span class="month-info-sep"></span>
+        <span class="month-info-item">
+            <i class="fa-solid fa-wallet me-1 text-primary"></i>
+            <span class="month-info-label">Saldo neto</span>
+            <span class="month-info-value fw-semibold" id="infobar-balance">$ —</span>
+        </span>
     </div>
 
     @* ── Card con tabs ────────────────────────────────────── *@
@@ -148,8 +130,7 @@
                             data-bs-toggle="tab"
                             data-bs-target="#planificados"
                             type="button" role="tab">
-                        <i class="fa-solid fa-calendar-day me-2 text-primary"></i>Movimientos
-                        <span class="badge rounded-pill ms-1 bg-primary bg-opacity-25 text-primary" id="badge-movimientos" style="display:none;">0</span>
+                        <i class="fa-solid fa-calendar-days me-2 text-primary"></i>Movimientos
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -197,14 +178,15 @@
 
         <div class="tab-content" id="cashflowTabsContent">
 
-            @* Tab: Movimientos planificados *@
-            <div class="tab-pane fade show active p-4" id="planificados" role="tabpanel">
-                <div class="d-flex justify-content-end mb-3">
-                    <button class="btn btn-outline-danger btn-sm btn-borrar-masivo d-flex align-items-center gap-2" disabled>
-                        <i class="fas fa-trash"></i>Borrar seleccionados
-                    </button>
+            @* Tab: Movimientos → calendario inline *@
+            <div class="tab-pane fade show active p-3" id="planificados" role="tabpanel">
+                <div class="cf-calendar-legend d-flex flex-wrap gap-3 mb-3">
+                    <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-income"></span>Ingreso</span>
+                    <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-expense"></span>Gasto fijo / planificado</span>
+                    <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-tc"></span>Tarjeta de crédito</span>
+                    <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-personas"></span>Personas (a cobrar)</span>
                 </div>
-                <div id="grid-wrapper"></div>
+                <div id="financialCalendar"></div>
             </div>
 
             @* Tab: Gastos fijos *@
@@ -258,90 +240,27 @@
         </div>
     </div>
 
-    @* ── Modal Bootstrap: desglose proyectado ────────────────── *@
-    <div class="modal fade" id="breakdownModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="fa-solid fa-table-list text-primary me-1"></i>
-                        <h5 class="modal-title fw-bold mb-0">
-                            Desglose proyectado
-                            <span class="text-body-secondary fw-normal small ms-2" id="breakdown-month-label"></span>
-                        </h5>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="row g-0">
-                        @* Columna ingresos *@
-                        <div class="col-12 col-lg-6 p-4 breakdown-col-income">
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <span class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                                      style="width:32px;height:32px;">
-                                    <i class="fa-solid fa-arrow-trend-up text-success small"></i>
-                                </span>
-                                <h6 class="fw-bold mb-0 text-success-emphasis">Ingresos</h6>
-                            </div>
-                            <div id="breakdown-income-list">
-                                <div class="text-center py-3">
-                                    <div class="spinner-border spinner-border-sm text-success"></div>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
-                                <span class="small text-body-secondary text-uppercase fw-semibold">Total ingresos</span>
-                                <span class="text-success fs-6 fw-bold" id="breakdown-income-total">$ —</span>
-                            </div>
-                        </div>
-                        @* Columna gastos *@
-                        <div class="col-12 col-lg-6 p-4 breakdown-col-expense">
-                            <div class="d-flex align-items-center gap-2 mb-3">
-                                <span class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                                      style="width:32px;height:32px;">
-                                    <i class="fa-solid fa-arrow-trend-down text-danger small"></i>
-                                </span>
-                                <h6 class="fw-bold mb-0 text-danger-emphasis">Gastos</h6>
-                            </div>
-                            <div id="breakdown-expense-list">
-                                <div class="text-center py-3">
-                                    <div class="spinner-border spinner-border-sm text-danger"></div>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
-                                <span class="small text-body-secondary text-uppercase fw-semibold">Total gastos</span>
-                                <span class="text-danger fs-6 fw-bold" id="breakdown-expense-total">$ —</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @* ── Modal Bootstrap: calendario de saldos diarios ───────── *@
-    <div class="modal fade" id="calendarModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold mb-0">
-                        <i class="fa-solid fa-calendar-days text-primary me-2"></i>Calendario de saldos
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="cf-calendar-legend d-flex flex-wrap gap-3 mb-3">
-                        <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-income"></span>Ingreso</span>
-                        <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-expense"></span>Gasto fijo / planificado</span>
-                        <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-tc"></span>Tarjeta de crédito</span>
-                        <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-personas"></span>Personas (a cobrar)</span>
-                    </div>
-                    <div id="financialCalendar"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
 </div>
+
+@* ── Panel lateral de detalle de día ─────────────────────── *@
+<div id="cf-day-panel" class="cf-day-panel">
+    <div class="cf-day-panel-header">
+        <div>
+            <div class="fw-semibold" id="cf-panel-date-label"></div>
+            <small id="cf-panel-balance-label" class="text-body-secondary"></small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-primary d-flex align-items-center gap-1" id="cf-panel-add-btn">
+                <i class="fas fa-plus"></i><span>Agregar</span>
+            </button>
+            <button type="button" class="btn-close" id="cf-panel-close-btn" aria-label="Cerrar"></button>
+        </div>
+    </div>
+    <div class="cf-day-panel-body" id="cf-panel-body">
+        <p class="text-body-secondary small">Sin movimientos para este día.</p>
+    </div>
+</div>
+<div id="cf-panel-overlay" class="cf-panel-overlay"></div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

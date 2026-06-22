@@ -163,29 +163,18 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
         return Ok(Response<bool>.Fail("No se pudo confirmar el movimiento"));
     }
 
-    // GET: /TmpTransaction/PlanMetas
-    [HttpGet]
-    public IActionResult PlanMetas() => View();
-
-    // GET: /TmpTransaction/GetDebtPlanData
-    [HttpGet]
-    [Route("GetDebtPlanData")]
-    public async Task<ActionResult<Response<DebtPlanDataDto>>> GetDebtPlanData()
-    {
-        var userID = currentUserService.UserId ?? 0;
-        var data = await mediator.Send(new GetDebtPlanDataQuery(userID));
-        return Ok(Response<DebtPlanDataDto>.Ok(data));
-    }
-
-    // POST: /TmpTransaction/SaveDebtPlanSettings
+    // POST: /TmpTransaction/SetDayOverride
     [HttpPost]
-    [Route("SaveDebtPlanSettings")]
-    public async Task<ActionResult<Response<bool>>> SaveDebtPlanSettings([FromBody] DebtPlanSettingsDto settings)
+    [Route("SetDayOverride")]
+    public async Task<ActionResult<Response<bool>>> SetDayOverride([FromBody] SetDayOverrideRequest request)
     {
         var userID = currentUserService.UserId ?? 0;
-        var ok = await mediator.Send(new SaveDebtPlanSettingsCommand(userID, settings));
-        return Ok(Response<bool>.Ok(ok));
+        var success = await mediator.Send(new SetDayAmountOverrideCommand(request.TmpTransactionID, userID, request.Day, request.Amount));
+        return Ok(success
+            ? Response<bool>.Ok(true, "Monto actualizado")
+            : Response<bool>.Fail("No se pudo actualizar el monto"));
     }
+
 }
 
 // DTO para recibir el request del frontend
@@ -208,4 +197,11 @@ public class ConfirmDayRequest
 {
     public long ID { get; set; }
     public int Day { get; set; }
+}
+
+public class SetDayOverrideRequest
+{
+    public int TmpTransactionID { get; set; }
+    public int Day { get; set; }
+    public decimal? Amount { get; set; }
 }

@@ -24,6 +24,8 @@ public class FixedIncome
     public int? DistributionEndDay { get; set; }
     /// <summary>Días del mes (separados por coma) sin movimiento dentro del rango de distribución.</summary>
     public string? ExcludedDays { get; set; }
+    /// <summary>Meses pausados (YYYY-MM separados por coma). Pausado = no aparece en proyecciones ese mes.</summary>
+    public string? PausedMonths { get; set; }
 
     public virtual Login User { get; set; } = null!;
     public virtual Account Account { get; set; } = null!;

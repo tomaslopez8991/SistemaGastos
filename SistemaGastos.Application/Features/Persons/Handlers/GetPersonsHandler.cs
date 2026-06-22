@@ -14,7 +14,7 @@ public class GetPersonsHandler(IApplicationDbContext context)
         return await context.Person
             .Where(p => p.UserID == request.UserID)
             .OrderBy(p => p.Name)
-            .Select(p => new PersonDto { ID = p.ID, Name = p.Name, Active = p.Active })
+            .Select(p => new PersonDto { ID = p.ID, Name = p.Name, Active = p.Active, CollectionDay = p.CollectionDay, DiscountAmount = p.DiscountAmount, CollectionFrom = p.CollectionFrom })
             .ToListAsync(cancellationToken);
     }
 }

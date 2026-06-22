@@ -16,6 +16,8 @@
     const URL_REGISTER_PAYMENT = container.dataset.urlPersonRegisterPayment;
     const antiForgery          = () => document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
 
+    const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+
     // ── Estado ───────────────────────────────────────────────────
     let accountsLoaded = false;
     let activeYear  = new Date().getFullYear();
@@ -67,7 +69,7 @@
                     <div class="col-12 text-center py-5 text-muted">
                         <i class="fa-solid fa-people-group fa-3x mb-3 opacity-25"></i>
                         <p class="mb-1 fw-semibold">Sin cuentas activas</p>
-                        <p class="small">Creá personas en <a href="${container.dataset.urlPersonList ? '#' : '/Person'}" class="text-success">Administrar personas</a> y asignales gastos.</p>
+                        <p class="small">Creá personas y asignales gastos.</p>
                     </div>`;
                 return;
             }
@@ -78,7 +80,7 @@
                 btn.addEventListener('click', () => collectFromPerson(
                     parseInt(btn.dataset.personId),
                     btn.dataset.personName,
-                    parseFloat(btn.dataset.totalOwed)
+                    parseFloat(btn.dataset.netOwed)
                 ));
             });
 
@@ -93,6 +95,16 @@
                 });
             });
 
+            grid.querySelectorAll('.btn-settings-pa').forEach(btn => {
+                btn.addEventListener('click', () => openSettingsModal(
+                    parseInt(btn.dataset.personId),
+                    btn.dataset.personName,
+                    parseInt(btn.dataset.collectionDay) || null,
+                    parseFloat(btn.dataset.discountAmount) || null,
+                    btn.dataset.collectionFrom || null
+                ));
+            });
+
             accountsLoaded = true;
         } catch (e) {
             console.error(e);
@@ -102,23 +114,61 @@
 
     // ── Badge tab Cuentas ────────────────────────────────────────
     function updateCuentasBadge(accounts) {
-        const withDebt = accounts.filter(a => a.totalOwed > 0).length;
+        const total = accounts.length;
         const $b = document.getElementById('badge-cuentas');
         if ($b) {
-            if (withDebt > 0) { $b.textContent = withDebt; $b.style.display = ''; }
+            if (total > 0) { $b.textContent = total; $b.style.display = ''; }
             else $b.style.display = 'none';
         }
     }
 
-    // ── Card "A cobrar" eliminada — función conservada como no-op ─
     function updateDashboardCard(_accounts) { /* card removida */ }
 
     // ── Construir card de persona ────────────────────────────────
     function buildCard(account) {
-        const id = `pa-collapse-${account.personID}`;
-        const isPos = account.totalOwed > 0;
-        const color = isPos ? 'text-danger' : 'text-success';
-        const icon  = isPos ? 'fa-arrow-trend-up' : 'fa-check-circle';
+        const id      = `pa-collapse-${account.personID}`;
+        const netOwed = account.netOwed;
+        const isPos   = netOwed > 0;
+        const color   = isPos ? 'text-danger' : 'text-success';
+        const icon    = isPos ? 'fa-arrow-trend-up' : 'fa-check-circle';
+
+        // Saldo bruto + descuento si aplica
+        let balanceHtml = `
+            <div>
+                <div class="small text-muted">Saldo adeudado</div>
+                <span class="fw-bold fs-5 ${color}">
+                    <i class="fa-solid ${icon} me-1 small"></i>${account.netOwedFmt}
+                </span>
+                ${account.discountAmount > 0 ? `
+                <div class="small text-muted mt-1">
+                    <i class="fa-solid fa-tag me-1"></i>Bruto: ${account.totalOwedFmt}
+                    &nbsp;·&nbsp;Descuento: -${account.discountAmountFmt}
+                </div>` : ''}
+            </div>`;
+
+        // Botón de cobro
+        let collectBtn = '';
+        if (isPos) {
+            if (account.isCollectedThisMonth) {
+                collectBtn = `<span class="badge bg-success-subtle text-success d-flex align-items-center gap-1 px-3 py-2">
+                    <i class="fas fa-check-circle"></i>Cobrado este mes
+                </span>`;
+            } else {
+                collectBtn = `<button class="btn btn-success btn-sm fw-bold btn-collect-pa"
+                    data-person-id="${account.personID}"
+                    data-person-name="${escHtml(account.personName)}"
+                    data-net-owed="${account.netOwed}">
+                    <i class="fas fa-hand-holding-dollar me-1"></i>Cobrar
+                </button>`;
+            }
+        }
+
+        // Badge día de cobro
+        const collectionBadge = account.collectionDay
+            ? `<span class="badge bg-primary bg-opacity-10 text-primary ms-1">
+                   <i class="fa-solid fa-calendar-day me-1"></i>Cobro día ${account.collectionDay}
+               </span>`
+            : '';
 
         const itemsHtml = account.items.length === 0
             ? `<p class="text-muted small mb-0">Sin movimientos registrados.</p>`
@@ -155,41 +205,47 @@
 
         return `
         <div class="col-md-6 col-xl-4">
-          <div class="card shadow-sm border-0 h-100">
-            <div class="card-body pb-2">
-              <div class="d-flex justify-content-between align-items-start mb-3">
-                <div class="d-flex align-items-center gap-2" style="min-width:0;">
-                  <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                       style="width:40px;height:40px;">
-                    <i class="fa-solid fa-user text-success"></i>
-                  </div>
-                  <div style="min-width:0;">
-                    <div class="fw-semibold text-truncate">${escHtml(account.personName)}</div>
-                    <div class="small text-muted">${account.items.length} movimiento(s)</div>
+          <div class="card shadow-sm border-0">
+            <div class="card-body d-flex flex-column" style="gap:.75rem;">
+
+              <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:40px;height:40px;">
+                  <i class="fa-solid fa-user text-success"></i>
+                </div>
+                <div class="flex-fill" style="min-width:0;">
+                  <div class="fw-semibold text-truncate">${escHtml(account.personName)}</div>
+                  <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
+                    <span class="small text-muted">${account.items.length} movimiento(s)</span>
+                    ${collectionBadge}
                   </div>
                 </div>
-                <button class="btn btn-sm btn-light flex-shrink-0 ms-2 btn-expand-pa"
-                        data-target="${id}" title="Ver detalle">
-                  <i class="fa-solid fa-chevron-down"></i>
-                </button>
+                <div class="d-flex gap-1 flex-shrink-0">
+                  <button class="btn btn-sm btn-light btn-settings-pa"
+                          data-person-id="${account.personID}"
+                          data-person-name="${escHtml(account.personName)}"
+                          data-collection-day="${account.collectionDay ?? ''}"
+                          data-discount-amount="${account.discountAmount ?? ''}"
+                          data-collection-from="${account.collectionFrom ?? ''}"
+                          title="Configurar cobro">
+                    <i class="fa-solid fa-gear"></i>
+                  </button>
+                  <button class="btn btn-sm btn-light btn-expand-pa"
+                          data-target="${id}" title="Ver detalle">
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </button>
+                </div>
               </div>
+
               <div class="d-flex justify-content-between align-items-center p-3 rounded bg-body-tertiary">
-                <div>
-                    <div class="small text-muted">Saldo adeudado</div>
-                    <span class="fw-bold fs-5 ${color}">
-                      <i class="fa-solid ${icon} me-1 small"></i>${account.totalOwedFmt}
-                    </span>
-                </div>
-                ${isPos ? `<button class="btn btn-success btn-sm fw-bold btn-collect-pa"
-                    data-person-id="${account.personID}"
-                    data-person-name="${escHtml(account.personName)}"
-                    data-total-owed="${account.totalOwed}">
-                    <i class="fas fa-hand-holding-dollar me-1"></i>Cobrar
-                  </button>` : ''}
+                ${balanceHtml}
+                ${collectBtn}
               </div>
+
             </div>
+
             <div class="collapse" id="${id}">
-              <div class="card-body pt-2 border-top">
+              <div class="card-body pt-0 border-top">
                 ${itemsHtml}
               </div>
             </div>
@@ -197,11 +253,79 @@
         </div>`;
     }
 
-    // ── Cobrar a persona ─────────────────────────────────────────
-    async function collectFromPerson(personId, personName, totalOwed) {
-        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+    // ── Modal de configuración de cobro ──────────────────────────
+    async function openSettingsModal(personId, personName, collectionDay, discountAmount, collectionFrom) {
+        const { isConfirmed, value } = await Swal.fire({
+            title: `Configurar cobro — ${personName}`,
+            html: `
+                <div class="text-start">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Día de cobro del mes</label>
+                        <input id="swal-collection-day" type="number" min="1" max="31"
+                               class="form-control" placeholder="Ej: 15"
+                               value="${collectionDay ?? ''}" />
+                        <small class="text-muted">Dejá vacío para no mostrar en el calendario.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Cobrar desde (mes/año)</label>
+                        <input id="swal-collection-from" type="month"
+                               class="form-control"
+                               value="${collectionFrom ?? ''}" />
+                        <small class="text-muted">El cobro aparece en el calendario a partir de este mes. Útil si ya cobraste meses anteriores.</small>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Descuento acordado</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input id="swal-discount-amount" type="number" step="0.01" min="0"
+                                   class="form-control text-end" placeholder="0.00"
+                                   value="${discountAmount ?? ''}" />
+                        </div>
+                        <small class="text-muted">Monto que vos le debés a esta persona (reduce el saldo a cobrar).</small>
+                    </div>
+                </div>`,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-save me-1"></i>Guardar',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => ({
+                collectionDay:   parseInt(document.getElementById('swal-collection-day').value) || null,
+                collectionFrom:  document.getElementById('swal-collection-from').value || null,
+                discountAmount:  parseFloat(document.getElementById('swal-discount-amount').value) || null
+            })
+        });
 
-        // Cargar cuentas disponibles
+        if (!isConfirmed) return;
+
+        try {
+            const res = await fetch(URL_SAVE, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': antiForgery()
+                },
+                body: JSON.stringify({
+                    id:             personId,
+                    name:           personName,
+                    collectionDay:  value.collectionDay,
+                    collectionFrom: value.collectionFrom,
+                    discountAmount: value.discountAmount
+                })
+            });
+            const json = await res.json();
+            if (json.success) {
+                accountsLoaded = false;
+                loadAccounts();
+                if (window.reloadCashflowCalendar) window.reloadCashflowCalendar();
+            } else {
+                Swal.fire('Error', json.message || 'No se pudo guardar', 'error');
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Error de comunicación', 'error');
+        }
+    }
+
+    // ── Cobrar a persona ─────────────────────────────────────────
+    async function collectFromPerson(personId, personName, netOwed) {
         let accounts = [];
         try {
             const res = await fetch(URL_PAYMENT_ACCOUNTS);
@@ -228,9 +352,9 @@
                             <span class="input-group-text">$</span>
                             <input id="swal-collect-amount" type="number" step="0.01"
                                 class="form-control text-end fw-bold"
-                                value="${totalOwed.toFixed(2)}" min="0.01" />
+                                value="${netOwed.toFixed(2)}" min="0.01" />
                         </div>
-                        <small class="text-muted">Total adeudado: <strong>${fmt.format(totalOwed)}</strong></small>
+                        <small class="text-muted">Saldo neto a cobrar: <strong>${fmt.format(netOwed)}</strong></small>
                     </div>
                     <div class="mb-2">
                         <label class="form-label small fw-semibold">Acreditar en cuenta</label>
@@ -269,6 +393,7 @@
                 Swal.fire({ title: 'Cobro registrado', icon: 'success', timer: 1500, showConfirmButton: false });
                 accountsLoaded = false;
                 loadAccounts();
+                if (window.reloadCashflowCalendar) window.reloadCashflowCalendar();
                 if (window.reloadCashflowBalances) window.reloadCashflowBalances();
             } else {
                 Swal.fire('Error', json.message || 'No se pudo registrar el cobro', 'error');
@@ -278,19 +403,11 @@
         }
     }
 
-    // ── TmpTransaction.js publica el mes seleccionado vía evento.
-    //    Cuando el tab Cuentas se abre por primera vez, cargamos las cuentas.
     // ── Tab switch ───────────────────────────────────────────────
     const cuentasTab = document.getElementById('cuentas-tab');
     if (cuentasTab) {
-        // Recargar siempre al abrir el tab (el mes puede haber cambiado)
         cuentasTab.addEventListener('shown.bs.tab', () => loadAccounts());
     }
 
-    // ── La card del dashboard se actualiza cuando se cargan los balances.
-    //    TmpTransaction.js dispara 'balances:loaded' con el mes activo.
-    //    Si ese evento no existe, cargamos las cuentas al inicio.
-    // ─────────────────────────────────────────────────────────────
-    // Carga inicial (para el badge del tab y el cálculo inicial)
     loadAccounts();
 })();

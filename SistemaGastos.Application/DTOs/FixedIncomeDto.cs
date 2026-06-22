@@ -18,6 +18,11 @@ public class FixedIncomeDto
     public DateTime? LastGeneratedDate { get; set; }
     public bool AlreadyReceivedThisMonth { get; set; }
     public string? ReceivedMonthName { get; set; }
+    public bool IsPausedThisMonth { get; set; }
+    public string? PausedMonths { get; set; }
+    /// <summary>Monto real cobrado en el mes (tomado de la Transaction generada al cobrar).</summary>
+    public decimal? ReceivedAmount { get; set; }
+    public string? ReceivedAmountFormatted { get; set; }
     public int? DistributionEndDay { get; set; }
     public string? ExcludedDays { get; set; }
 }

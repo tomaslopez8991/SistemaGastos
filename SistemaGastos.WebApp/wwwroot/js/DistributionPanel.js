@@ -6,50 +6,64 @@ window.DistributionPanel = (function () {
         const {
             checkboxSelector,
             panelSelector,
-            endDayInputSelector,
             gridSelector,
             getStartDay,
-            initialEndDay = null,
+            getMonthYear,
+            initialEndDay    = null,
             initialExcludedDays = []
         } = options;
 
         const $check = $popup.find(checkboxSelector);
         const $panel = $popup.find(panelSelector);
-        const $endDayInput = $popup.find(endDayInputSelector);
-        const $grid = $popup.find(gridSelector);
+        const $grid  = $popup.find(gridSelector);
 
-        const excludedDays = new Set(initialExcludedDays);
+        let selectedDays = new Set();
 
-        function getRange() {
-            const startDay = getStartDay();
-            const endDay = parseInt($endDayInput.val()) || null;
-            return { startDay, endDay };
+        function getDaysInMonth() {
+            if (typeof getMonthYear === 'function') {
+                const { year, month } = getMonthYear();
+                if (year && month) return new Date(year, month, 0).getDate();
+            }
+            return 31;
+        }
+
+        function initSelectedDays() {
+            const startDay    = getStartDay() || 1;
+            const daysInMonth = getDaysInMonth();
+            selectedDays      = new Set();
+
+            if (initialEndDay) {
+                const endDay     = Math.min(initialEndDay, daysInMonth);
+                const excludeSet = new Set(initialExcludedDays);
+                for (let d = startDay; d <= endDay; d++) {
+                    if (!excludeSet.has(d)) selectedDays.add(d);
+                }
+            } else {
+                for (let d = startDay; d <= daysInMonth; d++) {
+                    selectedDays.add(d);
+                }
+            }
         }
 
         function renderGrid() {
-            const { startDay, endDay } = getRange();
+            const startDay    = getStartDay() || 1;
+            const daysInMonth = getDaysInMonth();
             $grid.empty();
 
-            if (!startDay || !endDay || endDay <= startDay) {
-                $grid.append('<p class="tmp-days-grid-hint mb-0">Indicá un día final mayor al día de inicio para repartir el monto.</p>');
-                return;
-            }
+            for (let d = 1; d <= daysInMonth; d++) {
+                const isDisabled = d < startDay;
+                const isSelected = selectedDays.has(d);
+                const classes    = ['day-chip'];
+                if (isDisabled)            classes.push('disabled');
+                if (!isDisabled && !isSelected) classes.push('excluded');
 
-            const maxDay = Math.min(endDay, 31);
-
-            for (let day = startDay; day <= maxDay; day++) {
-                const isExcluded = excludedDays.has(day);
-                $(`<button type="button" class="day-chip ${isExcluded ? 'excluded' : ''}" data-day="${day}">${day}</button>`)
+                $(`<button type="button" class="${classes.join(' ')}" data-day="${d}">${d}</button>`)
                     .appendTo($grid);
             }
         }
 
         function applyToggleState(animate) {
             if ($check.is(':checked')) {
-                if (!$endDayInput.val()) {
-                    const startDay = getStartDay() || 1;
-                    $endDayInput.val(Math.min(startDay + 1, 31));
-                }
                 animate ? $panel.slideDown() : $panel.show();
                 renderGrid();
             } else {
@@ -57,47 +71,54 @@ window.DistributionPanel = (function () {
             }
         }
 
-        $grid.off('click.distpanel').on('click.distpanel', '.day-chip', function () {
+        $grid.off('click.distpanel').on('click.distpanel', '.day-chip:not(.disabled)', function () {
             const day = parseInt($(this).data('day'));
-            if (excludedDays.has(day)) {
-                excludedDays.delete(day);
-                $(this).removeClass('excluded');
-            } else {
-                excludedDays.add(day);
+            if (selectedDays.has(day)) {
+                selectedDays.delete(day);
                 $(this).addClass('excluded');
+            } else {
+                selectedDays.add(day);
+                $(this).removeClass('excluded');
             }
         });
 
         $check.off('change.distpanel').on('change.distpanel', function () {
+            if ($check.is(':checked') && selectedDays.size === 0) {
+                initSelectedDays();
+            }
             applyToggleState(true);
         });
 
-        $endDayInput.off('input.distpanel change.distpanel').on('input.distpanel change.distpanel', renderGrid);
-
-        // Estado inicial
-        $endDayInput.attr('min', 1).attr('max', 31);
         if (initialEndDay) {
             $check.prop('checked', true);
-            $endDayInput.val(initialEndDay);
+            initSelectedDays();
         }
         applyToggleState(false);
 
         return {
-            refresh: renderGrid,
+            refresh: function () {
+                if ($check.is(':checked')) renderGrid();
+            },
             getValues: function () {
-                if (!$check.is(':checked')) {
+                if (!$check.is(':checked') || selectedDays.size === 0) {
                     return { distributionEndDay: null, excludedDays: null };
                 }
 
-                const { startDay, endDay } = getRange();
-                if (!endDay || endDay <= startDay) {
+                const startDay    = getStartDay() || 1;
+                const validDays   = [...selectedDays].filter(d => d >= startDay);
+                if (validDays.length === 0) {
                     return { distributionEndDay: null, excludedDays: null };
                 }
 
-                const maxDay = Math.min(endDay, 31);
-                const excluded = Array.from(excludedDays)
-                    .filter(d => d >= startDay && d <= maxDay)
-                    .sort((a, b) => a - b);
+                const endDay  = Math.max(...validDays);
+                if (endDay <= startDay) {
+                    return { distributionEndDay: null, excludedDays: null };
+                }
+
+                const excluded = [];
+                for (let d = startDay; d <= endDay; d++) {
+                    if (!selectedDays.has(d)) excluded.push(d);
+                }
 
                 return {
                     distributionEndDay: endDay,

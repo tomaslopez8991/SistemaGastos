@@ -14,6 +14,11 @@ namespace SistemaGastos.Domain.Models
         [ForeignKey("UserID")]
         public virtual Login User { get; set; } = null!;
 
+        public int? CollectionDay { get; set; }
+        public decimal? DiscountAmount { get; set; }
+        public string? CollectedMonths { get; set; }
+        public string? CollectionFrom { get; set; }
+
         public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
         public virtual ICollection<CreditCardTransaction> CreditCardTransactions { get; set; } = new List<CreditCardTransaction>();
         public virtual ICollection<FixedExpense> FixedExpenses { get; set; } = new List<FixedExpense>();

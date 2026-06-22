@@ -20,6 +20,8 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
         int refMonth = request.Month > 0 ? request.Month : now.Month;
         var viewingDate = new DateTime(refYear, refMonth, 1);
 
+        var monthKey = $"{refYear}-{refMonth:D2}";
+
         var persons = await context.Person
             .Where(p => p.UserID == request.UserID && p.Active)
             .OrderBy(p => p.Name)
@@ -29,12 +31,15 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
         var personIds = persons.Select(p => p.ID).ToList();
 
+        // Solo transacciones del mes seleccionado — cobros y gastos impactan únicamente en su mes
         var transactions = await context.Transaction
             .Include(t => t.Category)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value)
-                     && t.Account.UserID == request.UserID)
+                     && t.Account.UserID == request.UserID
+                     && t.Date.Year == refYear && t.Date.Month == refMonth)
             .ToListAsync(cancellationToken);
 
+        // CC sin filtro de fecha: las cuotas se calculan por mes en el loop
         var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value))
@@ -74,47 +79,27 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
             foreach (var cc in cardTransactions.Where(t => t.PersonID == person.ID))
             {
                 var pct = cc.PersonPercentage ?? 100m;
-                int totalInstallments = cc.Installments ?? 1;
 
-                decimal effectiveAmount;
                 string typeLabel;
-
-                if (totalInstallments > 1)
-                {
-                    // Usar los meses transcurridos solo para saber en qué cuota estamos
-                    // y si el item ya fue consumido. El monto NO cambia.
-                    var purchaseDate = new DateTime(cc.TransactionDate.Year, cc.TransactionDate.Month, 1);
-                    int elapsedMonths = (viewingDate.Year - purchaseDate.Year) * 12
-                                      + (viewingDate.Month - purchaseDate.Month) + 1;
-
-                    // Compra todavía no vence en este mes
-                    if (elapsedMonths <= 0) continue;
-
-                    // Todas las cuotas ya vencieron → quitar de la grilla
-                    if (elapsedMonths > totalInstallments) continue;
-
-                    int currentInstallment = Math.Min(elapsedMonths, totalInstallments);
-                    effectiveAmount = cc.Amount; // monto original sin modificar
-                    typeLabel = $"TC ({currentInstallment}/{totalInstallments} cuotas)";
-                }
+                if ((cc.Installments ?? 1) > 1)
+                    typeLabel = $"TC ({cc.Installments} cuotas)";
+                else if (cc.Fixed)
+                    typeLabel = "TC cargo fijo";
                 else
-                {
-                    effectiveAmount = cc.Amount;
                     typeLabel = "Tarjeta de crédito";
-                }
 
-                var attributed = effectiveAmount * pct / 100m;
+                var attributed = cc.Amount * pct / 100m;
                 items.Add(new PersonAccountItemDto
                 {
-                    Description = cc.Description,
+                    Description    = cc.Description,
                     OriginalAmount = cc.Amount,
-                    Amount = attributed,
-                    AmountFmt = attributed.ToString("C", culture),
-                    Type = "CreditCard",
-                    TypeLabel = typeLabel,
-                    Percentage = pct,
-                    Date = cc.TransactionDate,
-                    DateFmt = cc.TransactionDate.ToString("dd/MM/yyyy")
+                    Amount         = attributed,
+                    AmountFmt      = attributed.ToString("C", culture),
+                    Type           = "CreditCard",
+                    TypeLabel      = typeLabel,
+                    Percentage     = pct,
+                    Date           = cc.TransactionDate,
+                    DateFmt        = cc.TransactionDate.ToString("dd/MM/yyyy")
                 });
             }
 
@@ -137,15 +122,26 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
             }
 
             items = items.OrderByDescending(i => i.Date).ToList();
-            decimal total = items.Sum(i => i.Amount);
+            decimal total    = items.Sum(i => i.Amount);
+            decimal discount = person.DiscountAmount ?? 0m;
+            decimal netOwed  = total - discount;
+            bool isCollected = !string.IsNullOrEmpty(person.CollectedMonths)
+                && person.CollectedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey);
 
             result.Add(new PersonAccountDto
             {
-                PersonID = person.ID,
-                PersonName = person.Name,
-                TotalOwed = total,
-                TotalOwedFmt = total.ToString("C", culture),
-                Items = items
+                PersonID          = person.ID,
+                PersonName        = person.Name,
+                TotalOwed         = total,
+                TotalOwedFmt      = total.ToString("C", culture),
+                DiscountAmount    = discount,
+                DiscountAmountFmt = discount > 0 ? discount.ToString("C", culture) : string.Empty,
+                NetOwed           = netOwed,
+                NetOwedFmt        = netOwed.ToString("C", culture),
+                CollectionDay        = person.CollectionDay,
+                CollectionFrom       = person.CollectionFrom,
+                IsCollectedThisMonth = isCollected,
+                Items             = items
             });
         }
 
