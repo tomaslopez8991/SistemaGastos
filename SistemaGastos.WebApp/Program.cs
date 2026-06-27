@@ -95,8 +95,9 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Siste
 
 builder.Services.AddTransient<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddleware>();
 
-// MiniProfiler — solo activo en Development
-if (builder.Environment.IsDevelopment())
+// MiniProfiler — visible solo para el usuario configurado en MiniProfiler:AdminUsername
+var profilerAdmin = builder.Configuration["MiniProfiler:AdminUsername"];
+if (!string.IsNullOrEmpty(profilerAdmin))
 {
     builder.Services.AddMiniProfiler(options =>
     {
@@ -104,6 +105,12 @@ if (builder.Environment.IsDevelopment())
         options.ColorScheme = ColorScheme.Dark;
         options.PopupRenderPosition = RenderPosition.BottomLeft;
         options.PopupShowTimeWithChildren = true;
+        options.ResultsAuthorize = req =>
+            req.HttpContext.User?.Identity?.IsAuthenticated == true &&
+            req.HttpContext.User.Identity.Name == profilerAdmin;
+        options.ResultsListAuthorize = req =>
+            req.HttpContext.User?.Identity?.IsAuthenticated == true &&
+            req.HttpContext.User.Identity.Name == profilerAdmin;
     }).AddEntityFramework();
 }
 
@@ -166,7 +173,7 @@ app.UseMiddleware<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddlewa
 
 app.UseRouting();
 
-if (app.Environment.IsDevelopment())
+if (!string.IsNullOrEmpty(builder.Configuration["MiniProfiler:AdminUsername"]))
     app.UseMiniProfiler();
 
 // 7. EL ORDEN IMPORTA (AQU� ESTABA EL ERROR PRINCIPAL)
