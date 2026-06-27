@@ -99,6 +99,7 @@ builder.Services.AddMediatR(cfg => {
 
     // 2. REGISTRAR EL PIPELINE (IMPORTANTE)
     // Esto le dice a MediatR: "Usa este comportamiento para validar"
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 });
 
