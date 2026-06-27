@@ -33,4 +33,5 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AccountInterestSetting> AccountInterestSetting { get; set; }
     public DbSet<AccountInterestDailyLog> AccountInterestDailyLog { get; set; }
     public DbSet<AccountInterestMonthlyCharge> AccountInterestMonthlyCharge { get; set; }
+    public DbSet<PerformanceLog> PerformanceLog { get; set; }
 }

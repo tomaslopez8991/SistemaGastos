@@ -1,10 +1,10 @@
-﻿using SistemaGastos.Application.Interfaces;
+﻿using Microsoft.Extensions.Configuration;
+using SistemaGastos.Application.Interfaces;
 using System.Security.Claims;
 
 namespace SistemaGastos.WebApp.Services;
 
-// Implementación concreta que sabe leer la Sesión HTTP
-public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
+public class CurrentUserService(IHttpContextAccessor httpContextAccessor, IConfiguration configuration) : ICurrentUserService
 {
     public int? UserId
     {
@@ -23,4 +23,14 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICur
     public string? Username => httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Name);
 
     public bool IsAuthenticated => UserId.HasValue;
+
+    public bool IsAdmin
+    {
+        get
+        {
+            var adminUsername = configuration["MiniProfiler:AdminUsername"];
+            return !string.IsNullOrEmpty(adminUsername) &&
+                   string.Equals(Username, adminUsername, StringComparison.OrdinalIgnoreCase);
+        }
+    }
 }

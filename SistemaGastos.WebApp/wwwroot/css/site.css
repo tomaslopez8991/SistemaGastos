@@ -4496,5 +4496,60 @@ input.gridjs-input {
 }
 
 /* ============================================
+   MÓDULO: SYSTEM ALERTS
+   ============================================ */
+.sa-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.sa-handler-name {
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-body-color);
+}
+
+.sa-ms-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bs-body-color);
+    font-variant-numeric: tabular-nums;
+}
+
+.sa-badge-slow {
+    background: rgba(239, 159, 39, .15);
+    color: #EF9F27;
+    border: 1px solid rgba(239, 159, 39, .3);
+}
+
+.sa-badge-warning {
+    background: rgba(239, 68, 68, .12);
+    color: #EF4444;
+    border: 1px solid rgba(239, 68, 68, .25);
+}
+
+.sa-badge-critical {
+    background: rgba(139, 0, 0, .18);
+    color: #ff6b6b;
+    border: 1px solid rgba(139, 0, 0, .35);
+}
+
+.sa-payload {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+    word-break: break-all;
+    white-space: pre-wrap;
+    cursor: help;
+}
+
+@media (max-width: 768px) {
+    .sa-stat-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
    FIN DEL STYLESHEET
    ============================================ */
