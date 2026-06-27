@@ -1,5 +1,6 @@
 using FluentValidation;
 using MediatR;
+using StackExchange.Profiling;
 using Microsoft.AspNetCore.Authentication.Cookies; // NECESARIO PARA AUTH
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides; // NECESARIO PARA SOMEE
@@ -94,6 +95,18 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Siste
 
 builder.Services.AddTransient<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddleware>();
 
+// MiniProfiler — solo activo en Development
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddMiniProfiler(options =>
+    {
+        options.RouteBasePath = "/profiler";
+        options.ColorScheme = ColorScheme.Dark;
+        options.PopupRenderPosition = RenderPosition.BottomLeft;
+        options.PopupShowTimeWithChildren = true;
+    }).AddEntityFramework();
+}
+
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(SistemaGastos.Application.Features.Accounts.Queries.GetAccountsQuery).Assembly);
 
@@ -152,6 +165,9 @@ app.UseCookiePolicy();
 app.UseMiddleware<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddleware>();
 
 app.UseRouting();
+
+if (app.Environment.IsDevelopment())
+    app.UseMiniProfiler();
 
 // 7. EL ORDEN IMPORTA (AQU� ESTABA EL ERROR PRINCIPAL)
 // Primero Sesi�n -> Luego Autenticaci�n -> Al final Autorizaci�n
