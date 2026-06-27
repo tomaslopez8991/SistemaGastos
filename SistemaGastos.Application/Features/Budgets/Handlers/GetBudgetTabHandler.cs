@@ -11,21 +11,29 @@ public class GetBudgetTabHandler(IApplicationDbContext context)
 {
     public async Task<List<BudgetStatusViewModel>> Handle(GetBudgetTabQuery request, CancellationToken cancellationToken)
     {
-        var budgets = await context.Budget
+        var budgetsTask = context.Budget
             .Include(b => b.Category)
             .Where(b => b.UserID == request.UserId && b.PeriodMonth == request.Month && b.PeriodYear == request.Year)
             .ToListAsync(cancellationToken);
 
-        var cashExpenses = await context.Transaction
+        var cashExpensesTask = context.Transaction
             .AsNoTracking()
             .Where(t => t.Account.UserID == request.UserId && t.Date.Month == request.Month && t.Date.Year == request.Year)
+            .Select(t => new { t.CategoryID, t.Amount })
             .ToListAsync(cancellationToken);
 
-        var cardExpenses = await context.CreditCardTransaction
+        var cardExpensesTask = context.CreditCardTransaction
             .AsNoTracking()
             .Include(t => t.Account)
             .Where(t => t.Account.UserID == request.UserId && t.TransactionDate.Month == request.Month && t.TransactionDate.Year == request.Year)
+            .Select(t => new { t.CategoryID, t.Amount })
             .ToListAsync(cancellationToken);
+
+        await Task.WhenAll(budgetsTask, cashExpensesTask, cardExpensesTask);
+
+        var budgets      = budgetsTask.Result;
+        var cashExpenses = cashExpensesTask.Result;
+        var cardExpenses = cardExpensesTask.Result;
 
         var now = DateTime.Now;
         int daysInMonth = DateTime.DaysInMonth(request.Year, request.Month);

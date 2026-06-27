@@ -15,13 +15,45 @@ public class GetAllNotificationsHandler(IApplicationDbContext context)
         var tomorrow = today.AddDays(1);
         var notifications = new List<NotificationDto>();
 
-        // ── 1. TAREAS vencidas o con recordatorio activo ──────────────────────
-        var tasks = await context.TodoTask
+        // Queries independientes: se ejecutan en paralelo
+        var tasksTask = context.TodoTask
             .AsNoTracking()
             .Where(t => t.UserID == request.UserId && !t.IsCompleted)
             .Where(t => t.DueDate <= tomorrow || (t.ReminderDate != null && t.ReminderDate <= today))
             .OrderBy(t => t.DueDate)
             .ToListAsync(cancellationToken);
+
+        var fixedExpensesTask = context.FixedExpense
+            .AsNoTracking()
+            .Where(f => f.UserID == request.UserId && f.Active)
+            .Where(f => f.LastGeneratedDate == null
+                || f.LastGeneratedDate.Value.Year < today.Year
+                || (f.LastGeneratedDate.Value.Year == today.Year
+                    && f.LastGeneratedDate.Value.Month < today.Month))
+            .ToListAsync(cancellationToken);
+
+        var budgetsTask = context.Budget
+            .AsNoTracking()
+            .Include(b => b.Category)
+            .Where(b => b.UserID == request.UserId
+                && b.PeriodMonth == today.Month
+                && b.PeriodYear == today.Year
+                && b.AmountLimit > 0)
+            .ToListAsync(cancellationToken);
+
+        var negativeAccountsTask = context.Account
+            .AsNoTracking()
+            .Where(a => a.UserID == request.UserId && a.Balance < 0)
+            .ToListAsync(cancellationToken);
+
+        await Task.WhenAll(tasksTask, fixedExpensesTask, budgetsTask, negativeAccountsTask);
+
+        var tasks            = tasksTask.Result;
+        var fixedExpenses    = fixedExpensesTask.Result;
+        var budgets          = budgetsTask.Result;
+        var negativeAccounts = negativeAccountsTask.Result;
+
+        // ── 1. TAREAS vencidas o con recordatorio activo ──────────────────────
 
         foreach (var t in tasks)
         {
@@ -46,14 +78,6 @@ public class GetAllNotificationsHandler(IApplicationDbContext context)
         }
 
         // ── 2. GASTOS FIJOS activos no pagados este mes y próximos o vencidos ─
-        var fixedExpenses = await context.FixedExpense
-            .AsNoTracking()
-            .Where(f => f.UserID == request.UserId && f.Active)
-            .Where(f => f.LastGeneratedDate == null
-                || f.LastGeneratedDate.Value.Year < today.Year
-                || (f.LastGeneratedDate.Value.Year == today.Year
-                    && f.LastGeneratedDate.Value.Month < today.Month))
-            .ToListAsync(cancellationToken);
 
         foreach (var f in fixedExpenses)
         {
@@ -91,18 +115,9 @@ public class GetAllNotificationsHandler(IApplicationDbContext context)
         }
 
         // ── 3. PRESUPUESTOS del mes actual >= 80% gastado ─────────────────────
-        var budgets = await context.Budget
-            .AsNoTracking()
-            .Include(b => b.Category)
-            .Where(b => b.UserID == request.UserId
-                && b.PeriodMonth == today.Month
-                && b.PeriodYear == today.Year
-                && b.AmountLimit > 0)
-            .ToListAsync(cancellationToken);
-
         if (budgets.Count > 0)
         {
-            var cashExpenses = await context.Transaction
+            var cashExpensesTask2 = context.Transaction
                 .AsNoTracking()
                 .Where(t => t.Account.UserID == request.UserId
                     && t.Date.Month == today.Month
@@ -110,7 +125,7 @@ public class GetAllNotificationsHandler(IApplicationDbContext context)
                 .Select(t => new { t.CategoryID, t.Amount })
                 .ToListAsync(cancellationToken);
 
-            var cardExpenses = await context.CreditCardTransaction
+            var cardExpensesTask2 = context.CreditCardTransaction
                 .AsNoTracking()
                 .Include(t => t.Account)
                 .Where(t => t.Account.UserID == request.UserId
@@ -118,6 +133,10 @@ public class GetAllNotificationsHandler(IApplicationDbContext context)
                     && t.TransactionDate.Year == today.Year)
                 .Select(t => new { t.CategoryID, t.Amount })
                 .ToListAsync(cancellationToken);
+
+            await Task.WhenAll(cashExpensesTask2, cardExpensesTask2);
+            var cashExpenses = cashExpensesTask2.Result;
+            var cardExpenses = cardExpensesTask2.Result;
 
             foreach (var b in budgets)
             {
@@ -143,11 +162,6 @@ public class GetAllNotificationsHandler(IApplicationDbContext context)
         }
 
         // ── 4. CUENTAS con saldo negativo ─────────────────────────────────────
-        var negativeAccounts = await context.Account
-            .AsNoTracking()
-            .Where(a => a.UserID == request.UserId && a.Balance < 0)
-            .ToListAsync(cancellationToken);
-
         foreach (var a in negativeAccounts)
         {
             notifications.Add(new NotificationDto(

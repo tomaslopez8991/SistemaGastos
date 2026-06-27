@@ -20,15 +20,71 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
     {
         var fechaActual = DateTime.Now;
         var culture = new CultureInfo("es-AR");
-        decimal cotizacionDolar = await dolarService.GetDolarBolsaAsync();
 
-        // ====================================================================
-        // 1. SALDO INICIAL (igual que GetProjectedBalancesHandler)
-        // ====================================================================
-        var accounts = await context.Account
+        // Todas las queries son independientes: se ejecutan en paralelo
+        var dolarTask = dolarService.GetDolarBolsaAsync();
+
+        var accountsTask = context.Account
             .Where(a => a.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
+        var manualProjectionsTask = context.TmpTransaction
+            .Include(t => t.Category)
+            .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
+            .ToListAsync(cancellationToken);
+
+        var cardTransactionsTask = context.CreditCardTransaction
+            .Include(t => t.Account)
+            .Include(t => t.Category)
+            .Include(t => t.Person)
+            .Where(t => t.Account.UserID == request.UserID)
+            .ToListAsync(cancellationToken);
+
+        var allFixedExpensesTask = context.FixedExpense
+            .AsNoTracking()
+            .Include(f => f.Category)
+            .Include(f => f.Person)
+            .Where(f => f.UserID == request.UserID && f.Active)
+            .ToListAsync(cancellationToken);
+
+        var paidFixedExpensesTask = context.Transaction
+            .AsNoTracking()
+            .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
+            .Select(t => new { ExpenseID = t.FixedExpenseID, Year = t.Date.Year, Month = t.Date.Month })
+            .ToListAsync(cancellationToken);
+
+        var allFixedIncomesTask = context.FixedIncome
+            .AsNoTracking()
+            .Where(f => f.UserID == request.UserID && f.Active)
+            .ToListAsync(cancellationToken);
+
+        var personsTask = context.Person
+            .Where(p => p.UserID == request.UserID && p.Active && p.CollectionDay != null)
+            .ToListAsync(cancellationToken);
+
+        var receivedFixedIncomesTask = context.Transaction
+            .AsNoTracking()
+            .Where(t => t.Account.UserID == request.UserID && t.FixedIncomeID != null)
+            .Select(t => new { IncomeID = t.FixedIncomeID, Year = t.Date.Year, Month = t.Date.Month })
+            .ToListAsync(cancellationToken);
+
+        await Task.WhenAll(accountsTask, manualProjectionsTask, cardTransactionsTask,
+            allFixedExpensesTask, paidFixedExpensesTask, allFixedIncomesTask,
+            personsTask, receivedFixedIncomesTask);
+
+        decimal cotizacionDolar      = await dolarTask;
+        var accounts                 = accountsTask.Result;
+        var manualProjections        = manualProjectionsTask.Result;
+        var cardTransactions         = cardTransactionsTask.Result;
+        var allFixedExpenses         = allFixedExpensesTask.Result;
+        var paidFixedExpenses        = paidFixedExpensesTask.Result;
+        var allFixedIncomes          = allFixedIncomesTask.Result;
+        var personsWithCollection    = personsTask.Result;
+        var receivedFixedIncomes     = receivedFixedIncomesTask.Result;
+
+        // ====================================================================
+        // 1. SALDO INICIAL
+        // ====================================================================
         var saldoLiquidezARS = accounts
             .Where(a => a.Type != AccountType.TarjetaCredito && a.Currency == "ARS")
             .Sum(a => a.Balance);
@@ -42,42 +98,8 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
         var ccAccounts = accounts.Where(a => a.Type == AccountType.TarjetaCredito).ToList();
 
         // ====================================================================
-        // 2. DATOS BASE (proyecciones manuales, tarjetas, fijos)
+        // 2. TRANSACCIONES ATRIBUIDAS A PERSONAS (depende de personsWithCollection)
         // ====================================================================
-        var manualProjections = await context.TmpTransaction
-            .Include(t => t.Category)
-            .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
-            .ToListAsync(cancellationToken);
-
-        var cardTransactions = await context.CreditCardTransaction
-            .Include(t => t.Account)
-            .Include(t => t.Category)
-            .Include(t => t.Person)
-            .Where(t => t.Account.UserID == request.UserID)
-            .ToListAsync(cancellationToken);
-
-        var allFixedExpenses = await context.FixedExpense
-            .AsNoTracking()
-            .Include(f => f.Category)
-            .Include(f => f.Person)
-            .Where(f => f.UserID == request.UserID && f.Active)
-            .ToListAsync(cancellationToken);
-
-        var paidFixedExpenses = await context.Transaction
-            .AsNoTracking()
-            .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
-            .Select(t => new { ExpenseID = t.FixedExpenseID, Year = t.Date.Year, Month = t.Date.Month })
-            .ToListAsync(cancellationToken);
-
-        var allFixedIncomes = await context.FixedIncome
-            .AsNoTracking()
-            .Where(f => f.UserID == request.UserID && f.Active)
-            .ToListAsync(cancellationToken);
-
-        var personsWithCollection = await context.Person
-            .Where(p => p.UserID == request.UserID && p.Active && p.CollectionDay != null)
-            .ToListAsync(cancellationToken);
-
         List<Domain.Models.Transaction> personAttributedTx = new();
         if (personsWithCollection.Count > 0)
         {
@@ -89,14 +111,8 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 .ToListAsync(cancellationToken);
         }
 
-        var receivedFixedIncomes = await context.Transaction
-            .AsNoTracking()
-            .Where(t => t.Account.UserID == request.UserID && t.FixedIncomeID != null)
-            .Select(t => new { IncomeID = t.FixedIncomeID, Year = t.Date.Year, Month = t.Date.Month })
-            .ToListAsync(cancellationToken);
-
         // ====================================================================
-        // 3. TRANSACCIONES REALES (días pasados del mes actual y meses anteriores)
+        // 3. TRANSACCIONES REALES (días pasados/mes actual)
         // ====================================================================
         var startDate     = new DateTime(fechaActual.Year, fechaActual.Month, 1);
         var requestedDate = new DateTime(request.Year, request.Month, 1);
