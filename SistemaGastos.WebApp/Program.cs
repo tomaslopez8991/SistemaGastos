@@ -80,7 +80,7 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-builder.Services.AddScoped<IAccountInterestService, SistemaGastos.Application.Features.AccountInterest.Services.AccountInterestService>();
+builder.Services.AddScoped<IAccountInterestService, SistemaGastos.Infraestructure.Services.AccountInterestService>();
 
 builder.Services.AddScoped<IEmailTemplateHelper, EmailTemplateHelper>();
 builder.Services.AddTransient<IARCAService, ARCAServiceStub>();
