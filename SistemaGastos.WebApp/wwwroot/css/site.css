@@ -3024,6 +3024,144 @@ input.gridjs-input {
     }
 }
 
+/* ── Breakdown por categoría ───────────────── */
+.cc-breakdown-card {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 1.25rem;
+}
+
+.cc-breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    user-select: none;
+}
+
+.cc-breakdown-subtitle {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+}
+
+.cc-breakdown-chevron {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+    transition: transform .2s ease;
+}
+
+.cc-breakdown-body {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.cc-breakdown-chart-wrap {
+    flex-shrink: 0;
+    width: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cc-breakdown-list {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.cc-cat-row {
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: background .15s;
+}
+
+.cc-cat-row:hover {
+    background: var(--bs-secondary-bg);
+}
+
+.cc-cat-row.cc-cat-active {
+    background: rgba(var(--bs-primary-rgb), .08);
+    border: 1px solid rgba(var(--bs-primary-rgb), .25);
+}
+
+.cc-cat-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--bs-body-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cc-cat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cc-cat-ars {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bs-body-color);
+}
+
+.cc-cat-usd {
+    font-size: 11px;
+    color: #378ADD;
+    font-weight: 500;
+}
+
+.cc-cat-count {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+}
+
+.cc-cat-bar-track {
+    height: 4px;
+    background: var(--bs-secondary-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.cc-cat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .4s ease;
+}
+
+.cc-breakdown-hint {
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: rgba(var(--bs-primary-rgb), .06);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--bs-secondary-color);
+    border: 1px solid rgba(var(--bs-primary-rgb), .15);
+}
+
+@media (max-width: 768px) {
+    .cc-breakdown-body {
+        flex-direction: column;
+    }
+    .cc-breakdown-chart-wrap {
+        width: 100%;
+    }
+    .cc-breakdown-list {
+        max-height: 200px;
+    }
+}
+
 /* ============================================
    FIN MÓDULO TARJETAS DE CRÉDITO
    ============================================ */

@@ -148,4 +148,12 @@ public class CreditCardTransactionController(IMediator mediator, ICurrentUserSer
             varUsd = result.VariableUsd
         });
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetCategoryBreakdown()
+    {
+        var userId = currentUser.UserId ?? 0;
+        var result = await mediator.Send(new GetCreditCardCategoryBreakdownQuery(userId));
+        return Json(result);
+    }
 }
