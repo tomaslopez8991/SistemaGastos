@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Models;
 
-namespace SistemaGastos.Application.Features.AccountInterest.Services;
+namespace SistemaGastos.Infraestructure.Services;
 
 public class AccountInterestService(IApplicationDbContext context) : IAccountInterestService
 {
