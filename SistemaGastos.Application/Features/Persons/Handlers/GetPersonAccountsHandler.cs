@@ -31,23 +31,28 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
         var personIds = persons.Select(p => p.ID).ToList();
 
-        // Solo transacciones del mes seleccionado — cobros y gastos impactan únicamente en su mes
-        var transactions = await context.Transaction
+        // Tres queries independientes: se ejecutan en paralelo
+        var transactionsTask = context.Transaction
             .Include(t => t.Category)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value)
                      && t.Account.UserID == request.UserID
                      && t.Date.Year == refYear && t.Date.Month == refMonth)
             .ToListAsync(cancellationToken);
 
-        // CC sin filtro de fecha: las cuotas se calculan por mes en el loop
-        var cardTransactions = await context.CreditCardTransaction
+        var cardTransactionsTask = context.CreditCardTransaction
             .Include(t => t.Account)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value))
             .ToListAsync(cancellationToken);
 
-        var fixedExpenses = await context.FixedExpense
+        var fixedExpensesTask = context.FixedExpense
             .Where(f => f.PersonID != null && personIds.Contains(f.PersonID.Value) && f.Active)
             .ToListAsync(cancellationToken);
+
+        await Task.WhenAll(transactionsTask, cardTransactionsTask, fixedExpensesTask);
+
+        var transactions     = transactionsTask.Result;
+        var cardTransactions = cardTransactionsTask.Result;
+        var fixedExpenses    = fixedExpensesTask.Result;
 
         var result = new List<PersonAccountDto>();
 
