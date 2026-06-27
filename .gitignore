@@ -480,3 +480,11 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# ── Secrets & sensitive config ──────────────────────────────────────────────
+appsettings.json
+appsettings.*.json
+!appsettings.Development.json
+
+# ASP.NET Core Data Protection keys
+**/keys/*.xml
