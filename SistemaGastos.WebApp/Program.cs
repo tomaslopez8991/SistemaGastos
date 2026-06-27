@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaGastos;
 using SistemaGastos.Application.Behaviors;
 using SistemaGastos.Application.Interfaces;
-using SistemaGastos.Application.Validators;
+using SistemaGastos.Application.Features.Transactions.Validators;
 using SistemaGastos.Data;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Application.Options;
