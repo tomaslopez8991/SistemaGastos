@@ -3008,6 +3008,17 @@ input.gridjs-input {
 
 /* Botones de acción (reusan .tx-btn-action de Transactions) */
 
+/* Indicador de gasto compartido en la grilla */
+.cc-shared-badge {
+    font-size: 10px;
+    color: var(--bs-info);
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
 /* ── Responsive ────────────────────────────── */
 @media (max-width: 768px) {
     .cc-stat-row {

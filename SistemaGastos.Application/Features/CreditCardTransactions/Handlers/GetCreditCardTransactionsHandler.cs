@@ -52,7 +52,10 @@ public class GetCreditCardTransactionsHandler(IApplicationDbContext context, ICu
                 Currency = t.Account.Currency,
                 ActualInstallment = t.ActualInstallment ?? 0,
                 Installments = t.Installments ?? 1,
-                Fixed = t.Fixed
+                Fixed = t.Fixed,
+                PersonID = t.PersonID,
+                PersonPercentage = t.PersonPercentage,
+                PersonName = t.Person != null ? t.Person.Name : null
             })
             .ToListAsync(cancellationToken);
 

@@ -15,7 +15,15 @@ public class GetCreditCardCategoryBreakdownHandler(IApplicationDbContext context
             .AsNoTracking()
             .Where(t => t.Account.UserID == request.UserId)
             .GroupBy(t => new { t.Category.Name, t.Account.Currency })
-            .Select(g => new { g.Key.Name, g.Key.Currency, Total = g.Sum(t => t.Amount), Count = g.Count() })
+            .Select(g => new
+            {
+                g.Key.Name,
+                g.Key.Currency,
+                Total = g.Sum(t => t.PersonID != null && t.PersonPercentage != null
+                    ? t.Amount * (t.PersonPercentage.Value / 100m)
+                    : t.Amount),
+                Count = g.Count()
+            })
             .ToListAsync(cancellationToken);
 
         return rows

@@ -104,12 +104,23 @@
             {
                 id: 'monto',
                 name: 'Monto',
-                width: '120px',
-                formatter: (cell, row) => {
-                    // row.cells[8].data = currency
-                    const currency = row.cells[8]?.data || 'ARS';
+                width: '145px',
+                formatter: (cell) => {
+                    const { amount, currency, shared } = cell;
                     const cls = currency === 'USD' ? 'cc-amount-usd' : 'cc-amount-ars';
-                    return gridjs.html(`<span class="${cls}">${cell}</span>`);
+                    const mainHtml = `<span class="${cls}">${formatAmount(amount, currency)}</span>`;
+
+                    if (!shared) return gridjs.html(mainHtml);
+
+                    const fullFormatted = formatAmount(shared.full, currency);
+                    return gridjs.html(`
+                        <div>
+                            ${mainHtml}
+                            <div class="cc-shared-badge" title="Total: ${fullFormatted} · compartido con ${shared.person}">
+                                <i class="fa-solid fa-user-group"></i> ${shared.pct}% · ${shared.person}
+                            </div>
+                        </div>
+                    `);
                 }
             },
             {
@@ -169,27 +180,33 @@
                 $('#statCount').text(data.total ?? data.results?.length ?? '—');
 
                 return (data.results || []).map(t => {
-                    // ⚠️ Verificar que el DTO del backend incluya accountName.
-                    // Si no viene, agregar la propiedad en el query/DTO del backend
-                    // incluyendo: .Include(t => t.Account) y mapeando t.Account.Name → accountName
                     const accountName = t.accountName || t.account?.name || '';
                     const cuotas = (t.actualInstallment > 0)
                         ? `${String(t.actualInstallment).padStart(2, '0')}/${String(t.installments).padStart(2, '0')}`
                         : null;
 
+                    // Si hay persona asignada, calcular la parte del usuario
+                    const isShared = t.personID && t.personPercentage;
+                    const myAmount = isShared
+                        ? t.amount * (t.personPercentage / 100)
+                        : t.amount;
+                    const sharedMeta = isShared
+                        ? { pct: t.personPercentage, person: t.personName, full: t.amount }
+                        : null;
+
                     return [
-                        t.id,                           // [0] check (id)
+                        t.id,                                   // [0] check (id)
                         t.transactionDate
                             ? new Date(t.transactionDate).toLocaleDateString('es-AR')
-                            : '',                       // [1] fecha
-                        t.description || '',            // [2] descripcion
-                        t.categoryName || '—',          // [3] categoria
-                        cuotas,                         // [4] cuotas
-                        formatAmount(t.amount, t.currency), // [5] monto
-                        t.fixed ?? false,               // [6] tipo
-                        t.id,                           // [7] id oculto (acciones)
-                        t.currency || 'ARS',            // [8] currency oculta (monto formatter)
-                        accountName                     // [9] accountName oculta (descripcion formatter)
+                            : '',                               // [1] fecha
+                        t.description || '',                    // [2] descripcion
+                        t.categoryName || '—',                  // [3] categoria
+                        cuotas,                                 // [4] cuotas
+                        { amount: myAmount, currency: t.currency || 'ARS', shared: sharedMeta }, // [5] monto
+                        t.fixed ?? false,                       // [6] tipo
+                        t.id,                                   // [7] id oculto (acciones)
+                        t.currency || 'ARS',                    // [8] currency oculta
+                        accountName                             // [9] accountName oculta
                     ];
                 });
             }
