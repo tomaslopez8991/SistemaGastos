@@ -3637,6 +3637,19 @@ input.gridjs-input {
     color: #000 !important;
 }
 
+/* Transacciones reales (días históricos) — versión desaturada de income/expense */
+.cf-evt-hist-income {
+    background-color: color-mix(in srgb, var(--bs-success) 55%, var(--bs-secondary)) !important;
+    border-color:     color-mix(in srgb, var(--bs-success) 55%, var(--bs-secondary)) !important;
+    opacity: .85;
+}
+
+.cf-evt-hist-expense {
+    background-color: color-mix(in srgb, var(--bs-danger) 55%, var(--bs-secondary)) !important;
+    border-color:     color-mix(in srgb, var(--bs-danger) 55%, var(--bs-secondary)) !important;
+    opacity: .85;
+}
+
 #financialCalendar .fc-event {
     font-size: 10px;
     padding: 0 2px;

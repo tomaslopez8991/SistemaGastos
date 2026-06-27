@@ -96,26 +96,88 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             .ToListAsync(cancellationToken);
 
         // ====================================================================
-        // 3. (reservado — balance por persona se computa en el loop mensual, sección E)
+        // 3. TRANSACCIONES REALES (días pasados del mes actual y meses anteriores)
         // ====================================================================
+        var startDate     = new DateTime(fechaActual.Year, fechaActual.Month, 1);
+        var requestedDate = new DateTime(request.Year, request.Month, 1);
+
+        bool viewingPast    = requestedDate < startDate;
+        bool viewingCurrent = !viewingPast && requestedDate == startDate;
+
+        // Carga todas las transacciones desde el inicio del mes solicitado hasta hoy.
+        // Para mes actual: solo las del mes actual (ya sucedidas).
+        // Para mes pasado: las del mes pasado + las de todos los meses intermedios hasta hoy
+        //   → permite calcular el saldo al inicio del mes pasado restando el delta acumulado.
+        List<Domain.Models.Transaction> allTxsFromViewed = new();
+        List<Domain.Models.Transaction> actualMonthTxs   = new();
+        decimal saldoMesInicio = saldoInicialTotal;
+
+        if (viewingPast || viewingCurrent)
+        {
+            allTxsFromViewed = await context.Transaction
+                .Include(t => t.Category)
+                .Include(t => t.Account)
+                .Where(t => t.Account.UserID == request.UserID && t.Date >= requestedDate)
+                .ToListAsync(cancellationToken);
+
+            actualMonthTxs = allTxsFromViewed
+                .Where(t => t.Date.Year == requestedDate.Year && t.Date.Month == requestedDate.Month)
+                .ToList();
+
+            // Saldo al inicio del mes visto = saldo actual − neto de todas las tx desde ese mes hasta hoy
+            decimal netDelta = allTxsFromViewed
+                .Sum(t => (t.Category?.Type == "Ingreso" ? 1m : -1m) * t.Amount);
+            saldoMesInicio = saldoInicialTotal - netDelta;
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // CAMINO RÁPIDO: mes pasado — construir resultado solo desde tx reales
+        // ────────────────────────────────────────────────────────────────────
+        var result = new DailyCalendarDto
+        {
+            Year       = requestedDate.Year,
+            Month      = requestedDate.Month,
+            MonthLabel = requestedDate.ToString("MMMM yyyy", culture),
+            DolarRate  = cotizacionDolar
+        };
+
+        if (viewingPast)
+        {
+            var mp           = requestedDate;
+            var daysInMonthP = DateTime.DaysInMonth(mp.Year, mp.Month);
+
+            result.StartingBalance    = saldoMesInicio;
+            result.StartingBalanceFmt = saldoMesInicio.ToString("C", culture);
+
+            decimal runningP = saldoMesInicio;
+            for (int day = 1; day <= daysInMonthP; day++)
+            {
+                var dayTxs = actualMonthTxs.Where(t => t.Date.Day == day).ToList();
+                decimal incomeP  = dayTxs.Where(t => t.Category?.Type == "Ingreso").Sum(t => t.Amount);
+                decimal expenseP = dayTxs.Where(t => t.Category?.Type != "Ingreso").Sum(t => t.Amount);
+                runningP += incomeP - expenseP;
+
+                result.Days.Add(new DailyBalanceDto
+                {
+                    Day        = day,
+                    Date       = new DateTime(mp.Year, mp.Month, day).ToString("yyyy-MM-dd"),
+                    Income     = incomeP,
+                    Expense    = expenseP,
+                    Balance    = runningP,
+                    BalanceFmt = runningP.ToString("C", culture),
+                    Items      = new List<DailyBalanceItemDto>()
+                });
+            }
+            return result;
+        }
 
         // ====================================================================
         // 4. RECORRER MESES HASTA EL MES SOLICITADO, ACUMULANDO SALDO
         // ====================================================================
-        var startDate = new DateTime(fechaActual.Year, fechaActual.Month, 1);
-        var requestedDate = new DateTime(request.Year, request.Month, 1);
         var monthIndex = Math.Max(0, MonthDiff(startDate, requestedDate));
 
         var mesProximo = startDate.AddMonths(1);
         var mesDespuesDelPago = startDate.AddMonths(2);
-
-        var result = new DailyCalendarDto
-        {
-            Year = requestedDate.Year,
-            Month = requestedDate.Month,
-            MonthLabel = requestedDate.ToString("MMMM yyyy", culture),
-            DolarRate = cotizacionDolar
-        };
 
         decimal acumulado = saldoInicialTotal;
 
@@ -397,29 +459,60 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
             if (i == monthIndex)
             {
-                result.StartingBalance = acumulado;
-                result.StartingBalanceFmt = acumulado.ToString("C", culture);
+                // Mes actual: saldo inicial = balance real al comienzo del mes (no el saldo de hoy)
+                decimal startBal = viewingCurrent ? saldoMesInicio : acumulado;
+                result.StartingBalance    = startBal;
+                result.StartingBalanceFmt = startBal.ToString("C", culture);
 
-                decimal running = acumulado;
+                decimal running = startBal;
+                var todayDate = fechaActual.Date;
+
                 for (int day = 1; day <= daysInMonth; day++)
                 {
-                    var items = itemsByDay.TryGetValue(day, out var list)
-                        ? list.OrderBy(x => x.IsIncome ? 0 : 1).ToList()
-                        : new List<DailyBalanceItemDto>();
+                    List<DailyBalanceItemDto> items;
 
-                    decimal income = items.Where(x => x.IsIncome).Sum(x => x.Amount);
+                    if (viewingCurrent && new DateTime(m.Year, m.Month, day).Date <= todayDate)
+                    {
+                        // Días transcurridos (incluyendo hoy): balance calculado desde tx reales,
+                        // sin exponer los items individuales (no se muestran chips en el calendario)
+                        var dayTxs = actualMonthTxs.Where(t => t.Date.Day == day).ToList();
+                        decimal inc = dayTxs.Where(t => t.Category?.Type == "Ingreso").Sum(t => t.Amount);
+                        decimal exp = dayTxs.Where(t => t.Category?.Type != "Ingreso").Sum(t => t.Amount);
+                        running += inc - exp;
+
+                        result.Days.Add(new DailyBalanceDto
+                        {
+                            Day        = day,
+                            Date       = new DateTime(m.Year, m.Month, day).ToString("yyyy-MM-dd"),
+                            Income     = inc,
+                            Expense    = exp,
+                            Balance    = running,
+                            BalanceFmt = running.ToString("C", culture),
+                            Items      = new List<DailyBalanceItemDto>()
+                        });
+                        continue;
+                    }
+                    else
+                    {
+                        // Días futuros: proyecciones
+                        items = itemsByDay.TryGetValue(day, out var projList)
+                            ? projList.OrderBy(x => x.IsIncome ? 0 : 1).ToList()
+                            : new List<DailyBalanceItemDto>();
+                    }
+
+                    decimal income  = items.Where(x => x.IsIncome).Sum(x => x.Amount);
                     decimal expense = items.Where(x => !x.IsIncome).Sum(x => x.Amount);
                     running += income - expense;
 
                     result.Days.Add(new DailyBalanceDto
                     {
-                        Day = day,
-                        Date = new DateTime(m.Year, m.Month, day).ToString("yyyy-MM-dd"),
-                        Income = income,
-                        Expense = expense,
-                        Balance = running,
+                        Day        = day,
+                        Date       = new DateTime(m.Year, m.Month, day).ToString("yyyy-MM-dd"),
+                        Income     = income,
+                        Expense    = expense,
+                        Balance    = running,
                         BalanceFmt = running.ToString("C", culture),
-                        Items = items
+                        Items      = items
                     });
                 }
             }

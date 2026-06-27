@@ -18,7 +18,8 @@
         GastoFijo:     'Gasto fijo',
         IngresoFijo:   'Ingreso fijo',
         TarjetaCredito:'Tarjeta de crédito',
-        Personas:      'A cobrar (persona)'
+        Personas:      'A cobrar (persona)',
+        Transaccion:   'Transacción registrada'
     };
 
     let calendar = null;
@@ -518,6 +519,7 @@
     }
 
     function eventClassFor(item) {
+        if (item.sourceType === 'Transaccion')    return item.isIncome ? 'cf-evt-hist-income' : 'cf-evt-hist-expense';
         if (item.sourceType === 'TarjetaCredito') return 'cf-evt-tc';
         if (item.sourceType === 'Personas')       return 'cf-evt-personas';
         return item.isIncome ? 'cf-evt-income' : 'cf-evt-expense';

@@ -6,7 +6,6 @@ using SistemaGastos.Application.Features.FixedExpense.Commands;
 using SistemaGastos.Application.Features.FixedExpense.Queries;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Application.Wrappers;
-using SistemaGastos.WebApp.Models;
 
 namespace SistemaGastos.Controllers;
 

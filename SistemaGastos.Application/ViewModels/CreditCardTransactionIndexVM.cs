@@ -1,6 +1,6 @@
 ﻿using SistemaGastos.Domain.Models;
 
-namespace SistemaGastos.WebApp.Models.ViewModels;
+namespace SistemaGastos.Application.ViewModels;
 
 public class CreditCardTransactionIndexVM
 {

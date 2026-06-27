@@ -1,6 +1,6 @@
 using MediatR;
 using SistemaGastos.Application.DTOs;
-using SistemaGastos.WebApp.Models.ViewModels;
+using SistemaGastos.Application.ViewModels;
 
 namespace SistemaGastos.Application.Features.Transactions.Queries;
 
