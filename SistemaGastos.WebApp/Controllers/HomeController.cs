@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SistemaGastos.Application.Features.AccountInterest.Commands;
 using SistemaGastos.Application.Features.Dashboard.Queries;
 using SistemaGastos.WebApp.Services;
 
@@ -28,18 +27,6 @@ public class HomeController(IMediator mediator, ICurrentUserService currentUser)
         return View(model);
     }
 
-    [HttpPost]
-    public async Task<IActionResult> RecalcularIntereses()
-    {
-        if (currentUser.UserId.HasValue)
-        {
-            await mediator.Send(new RecalculateAccountInterestCommand(currentUser.UserId.Value));
-            TempData["SuccessMessage"] = "Intereses recalculados correctamente.";
-        }
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    public IActionResult Privacy() => View();
+public IActionResult Privacy() => View();
     public IActionResult Error() => View();
 }
