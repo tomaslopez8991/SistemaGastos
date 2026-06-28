@@ -25,6 +25,14 @@ jobs:
             -o ./publish \
             /p:UseAppHost=false
 
+      - name: Take site offline (unlock IIS process)
+        run: |
+          curl --ssl-no-revoke --ftp-pasv \
+            -u "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+            -T .github/app_offline.htm \
+            "ftp://${{ secrets.FTP_HOST }}${{ secrets.FTP_SERVER_DIR }}app_offline.htm"
+          sleep 5
+
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -38,3 +46,10 @@ jobs:
             **/.git*
             **/.git*/**
             **/appsettings.Production.json
+
+      - name: Bring site back online
+        run: |
+          curl --ssl-no-revoke --ftp-pasv \
+            -u "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+            "ftp://${{ secrets.FTP_HOST }}${{ secrets.FTP_SERVER_DIR }}" \
+            -Q "DELE app_offline.htm"
