@@ -29,8 +29,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, b => b.MigrationsAssembly("SistemaGastos.Infraestructure")));
 
 // 2. PERSISTENCIA DE LLAVES (DATA PROTECTION) - CR�TICO EN SOMEE
-var keysFolder = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "keys");
-if (!Directory.Exists(keysFolder)) Directory.CreateDirectory(keysFolder);
+// Use ContentRootPath directly (not nested wwwroot) so the keys folder is writable on shared hosting
+var keysFolder = Path.Combine(builder.Environment.ContentRootPath, "keys");
+try
+{
+    if (!Directory.Exists(keysFolder)) Directory.CreateDirectory(keysFolder);
+}
+catch { /* If the folder can't be created, Data Protection will use in-memory keys */ }
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
@@ -136,8 +141,17 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 
     // Actualiza el log diario de intereses y genera el cobro mensual si corresponde
-    var accountInterestService = scope.ServiceProvider.GetRequiredService<IAccountInterestService>();
-    await accountInterestService.RunAccrualAsync();
+    // Wrapped in try-catch: a failure here must not prevent the app from starting
+    try
+    {
+        var accountInterestService = scope.ServiceProvider.GetRequiredService<IAccountInterestService>();
+        await accountInterestService.RunAccrualAsync();
+    }
+    catch (Exception ex)
+    {
+        var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        startupLogger.LogError(ex, "RunAccrualAsync failed on startup — app will continue");
+    }
 }
 
 // 6. CONFIGURACI�N DE PROXY (CR�TICO PARA HTTPS EN SOMEE)
