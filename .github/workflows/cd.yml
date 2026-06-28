@@ -27,11 +27,11 @@ jobs:
 
       - name: Take site offline (unlock IIS process)
         run: |
-          curl --ssl-no-revoke --ftp-pasv \
-            -u "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
-            -T .github/app_offline.htm \
-            "ftp://${{ secrets.FTP_HOST }}${{ secrets.FTP_SERVER_DIR }}app_offline.htm"
-          sleep 5
+          SERVER_DIR=$(echo "${{ secrets.FTP_SERVER_DIR }}" | tr '\\' '/')
+          lftp -e "put .github/app_offline.htm -o ${SERVER_DIR}app_offline.htm; quit" \
+            -u "${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }}" \
+            "${{ secrets.FTP_HOST }}"
+          sleep 8
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -48,8 +48,9 @@ jobs:
             **/appsettings.Production.json
 
       - name: Bring site back online
+        if: always()
         run: |
-          curl --ssl-no-revoke --ftp-pasv \
-            -u "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
-            "ftp://${{ secrets.FTP_HOST }}${{ secrets.FTP_SERVER_DIR }}" \
-            -Q "DELE app_offline.htm"
+          SERVER_DIR=$(echo "${{ secrets.FTP_SERVER_DIR }}" | tr '\\' '/')
+          lftp -e "rm -f ${SERVER_DIR}app_offline.htm; quit" \
+            -u "${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }}" \
+            "${{ secrets.FTP_HOST }}"
