@@ -26,12 +26,27 @@ jobs:
             /p:UseAppHost=false
 
       - name: Take site offline (unlock IIS process)
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          SERVER_DIR=$(echo "${{ secrets.FTP_SERVER_DIR }}" | tr '\\' '/')
-          lftp -e "put .github/app_offline.htm -o ${SERVER_DIR}app_offline.htm; quit" \
-            -u "${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }}" \
-            "${{ secrets.FTP_HOST }}"
-          sleep 8
+          python3 - <<'EOF'
+          import ftplib, os, time
+
+          host = os.environ['FTP_HOST']
+          user = os.environ['FTP_USER']
+          pwd  = os.environ['FTP_PASS']
+          d    = os.environ['FTP_DIR'].replace('\\', '/')
+
+          with ftplib.FTP(host) as ftp:
+              ftp.login(user, pwd)
+              with open('.github/app_offline.htm', 'rb') as f:
+                  ftp.storbinary(f'STOR {d}app_offline.htm', f)
+              print('app_offline.htm uploaded')
+          time.sleep(8)
+          EOF
 
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -49,8 +64,25 @@ jobs:
 
       - name: Bring site back online
         if: always()
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ secrets.FTP_SERVER_DIR }}
         run: |
-          SERVER_DIR=$(echo "${{ secrets.FTP_SERVER_DIR }}" | tr '\\' '/')
-          lftp -e "rm -f ${SERVER_DIR}app_offline.htm; quit" \
-            -u "${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }}" \
-            "${{ secrets.FTP_HOST }}"
+          python3 - <<'EOF'
+          import ftplib, os
+
+          host = os.environ['FTP_HOST']
+          user = os.environ['FTP_USER']
+          pwd  = os.environ['FTP_PASS']
+          d    = os.environ['FTP_DIR'].replace('\\', '/')
+
+          with ftplib.FTP(host) as ftp:
+              ftp.login(user, pwd)
+              try:
+                  ftp.delete(f'{d}app_offline.htm')
+                  print('app_offline.htm deleted, site is back online')
+              except ftplib.error_perm:
+                  print('app_offline.htm not found, nothing to delete')
+          EOF
