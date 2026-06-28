@@ -14,10 +14,11 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
     {
         var culture = new CultureInfo("es-AR");
 
-        // Tres queries independientes: se ejecutan en paralelo
+        // El call HTTP al dólar corre en paralelo con las queries de DB.
+        // EF Core DbContext no es thread-safe: las queries de DB van secuenciales.
         var dolarTask = dolarService.GetDolarBolsaAsync();
 
-        var fixedExpensesTask = context.FixedExpense
+        var fixedExpenses = await context.FixedExpense
             .AsNoTracking()
             .Include(f => f.Category)
             .Include(f => f.Account)
@@ -25,7 +26,7 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
             .OrderBy(f => f.PaymentDay)
             .ToListAsync(cancellationToken);
 
-        var paidViaTransactionTask = context.Transaction
+        var paidViaTransaction = await context.Transaction
             .AsNoTracking()
             .Where(t => t.FixedExpenseID != null
                      && t.Date.Year == request.Year
@@ -33,7 +34,7 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
             .Select(t => new { ExpenseID = t.FixedExpenseID!.Value, t.Amount, Currency = "ARS" })
             .ToListAsync(cancellationToken);
 
-        var paidViaCreditCardTask = context.CreditCardTransaction
+        var paidViaCreditCard = await context.CreditCardTransaction
             .AsNoTracking()
             .Where(t => t.FixedExpenseID != null
                      && t.TransactionDate.Year == request.Year
@@ -41,12 +42,7 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
             .Select(t => new { ExpenseID = t.FixedExpenseID!.Value, t.Amount, Currency = t.Account.Currency })
             .ToListAsync(cancellationToken);
 
-        await Task.WhenAll(fixedExpensesTask, paidViaTransactionTask, paidViaCreditCardTask);
-
-        decimal dolarRate         = await dolarTask;
-        var fixedExpenses         = fixedExpensesTask.Result;
-        var paidViaTransaction    = paidViaTransactionTask.Result;
-        var paidViaCreditCard     = paidViaCreditCardTask.Result;
+        decimal dolarRate = await dolarTask;
 
         var paidIds = paidViaTransaction.Select(t => t.ExpenseID)
             .Union(paidViaCreditCard.Select(t => t.ExpenseID))

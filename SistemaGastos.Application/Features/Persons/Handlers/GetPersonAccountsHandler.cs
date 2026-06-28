@@ -31,28 +31,22 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
         var personIds = persons.Select(p => p.ID).ToList();
 
-        // Tres queries independientes: se ejecutan en paralelo
-        var transactionsTask = context.Transaction
+        // EF Core DbContext no es thread-safe: queries secuenciales
+        var transactions = await context.Transaction
             .Include(t => t.Category)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value)
                      && t.Account.UserID == request.UserID
                      && t.Date.Year == refYear && t.Date.Month == refMonth)
             .ToListAsync(cancellationToken);
 
-        var cardTransactionsTask = context.CreditCardTransaction
+        var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value))
             .ToListAsync(cancellationToken);
 
-        var fixedExpensesTask = context.FixedExpense
+        var fixedExpenses = await context.FixedExpense
             .Where(f => f.PersonID != null && personIds.Contains(f.PersonID.Value) && f.Active)
             .ToListAsync(cancellationToken);
-
-        await Task.WhenAll(transactionsTask, cardTransactionsTask, fixedExpensesTask);
-
-        var transactions     = transactionsTask.Result;
-        var cardTransactions = cardTransactionsTask.Result;
-        var fixedExpenses    = fixedExpensesTask.Result;
 
         var result = new List<PersonAccountDto>();
 
