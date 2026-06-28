@@ -55,7 +55,7 @@ public class GetCreditCardTransactionsHandler(IApplicationDbContext context, ICu
                 Fixed = t.Fixed,
                 PersonID = t.PersonID,
                 PersonPercentage = t.PersonPercentage,
-                PersonName = t.Person?.Name
+                PersonName = t.Person == null ? null : t.Person.Name
             })
             .ToListAsync(cancellationToken);
 
