@@ -15,58 +15,49 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
     {
         var fechaActual = DateTime.Now;
 
-        // Todas las queries son independientes: se ejecutan en paralelo
+        // El call HTTP al dólar corre en paralelo con las queries de DB.
+        // EF Core DbContext no es thread-safe: las queries de DB van secuenciales.
         var dolarTask = dolarService.GetDolarBolsaAsync();
 
-        var accountsTask = context.Account
+        var accounts = await context.Account
             .Where(a => a.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
-        var manualProjectionsTask = context.TmpTransaction
+        var manualProjections = await context.TmpTransaction
             .Include(t => t.Category)
             .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
             .ToListAsync(cancellationToken);
 
-        var cardTransactionsTask = context.CreditCardTransaction
+        var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
             .Include(t => t.Category)
             .Where(t => t.Account.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
-        var allFixedExpensesTask = context.FixedExpense
+        var allFixedExpenses = await context.FixedExpense
             .AsNoTracking()
             .Include(f => f.Category)
             .Where(f => f.UserID == request.UserID && f.Active)
             .ToListAsync(cancellationToken);
 
-        var paidFixedExpensesTask = context.Transaction
+        var paidFixedExpenses = await context.Transaction
             .AsNoTracking()
             .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
             .Select(t => new { ExpenseID = t.FixedExpenseID, Year = t.Date.Year, Month = t.Date.Month })
             .ToListAsync(cancellationToken);
 
-        var allFixedIncomesTask = context.FixedIncome
+        var allFixedIncomes = await context.FixedIncome
             .AsNoTracking()
             .Where(f => f.UserID == request.UserID && f.Active)
             .ToListAsync(cancellationToken);
 
-        var receivedFixedIncomesTask = context.Transaction
+        var receivedFixedIncomes = await context.Transaction
             .AsNoTracking()
             .Where(t => t.Account.UserID == request.UserID && t.FixedIncomeID != null)
             .Select(t => new { IncomeID = t.FixedIncomeID, Year = t.Date.Year, Month = t.Date.Month })
             .ToListAsync(cancellationToken);
 
-        await Task.WhenAll(accountsTask, manualProjectionsTask, cardTransactionsTask,
-            allFixedExpensesTask, paidFixedExpensesTask, allFixedIncomesTask, receivedFixedIncomesTask);
-
         decimal cotizacionDolar = await dolarTask;
-        var accounts          = accountsTask.Result;
-        var manualProjections = manualProjectionsTask.Result;
-        var cardTransactions  = cardTransactionsTask.Result;
-        var allFixedExpenses  = allFixedExpensesTask.Result;
-        var paidFixedExpenses = paidFixedExpensesTask.Result;
-        var allFixedIncomes   = allFixedIncomesTask.Result;
-        var receivedFixedIncomes = receivedFixedIncomesTask.Result;
 
         // ====================================================================
         // 1. CALCULAR SALDO INICIAL
