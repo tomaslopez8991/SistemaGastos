@@ -240,90 +240,98 @@ async function fetchApi(url, method = 'GET', body = null) {
         'dashboard': {
             storageKey: 'dashboard_tutorial_completed',
             icono: 'fa-house',
-            titulo: 'Dashboard Financiero',
-            descripcion: 'Tu panel de control con un resumen completo de tu situación financiera.',
-            features: ['Saldo total y métricas clave del mes', 'Deuda en tarjetas en tiempo real', 'Accesos rápidos a todos los módulos'],
-            stepTitles: ['Panel de Control', 'Métricas Financieras', 'Saldo Total', 'Gastos del Mes', 'Deuda en Tarjetas', 'Accesos Rápidos', 'Atajos del Sistema', 'Proyección', 'Calculadora TC', 'Tareas Pendientes', 'Categorías']
+            titulo: 'Dashboard',
+            descripcion: 'Tu resumen financiero en tiempo real.',
+            features: ['Saldo, ingresos y balance del mes', 'Vencimientos próximos y módulos más usados'],
+            stepTitles: ['Panel principal', 'Métricas del mes', 'Gastos fijos pendientes', 'Módulos más usados', 'Accesos rápidos']
         },
         'transacciones': {
             storageKey: 'transacciones_tutorial_completed',
             icono: 'fa-money-bill-transfer',
             titulo: 'Transacciones',
-            descripcion: 'El corazón del sistema: registrá todos tus movimientos financieros diarios.',
-            features: ['Crear ingresos y gastos fácilmente', 'Filtrar por fecha, cuenta y categoría', 'Ver el balance neto del mes en tiempo real'],
-            stepTitles: ['Módulo de Transacciones', 'Panel de Control', 'Nuevo Movimiento', 'Filtros de Búsqueda', 'Filtro por Fecha', 'Filtro Hasta', 'Filtro por Cuenta', 'Filtro por Categoría', 'Aplicar Filtros', 'Limpiar Filtros', 'Lista de Movimientos']
+            descripcion: 'Registrá cada ingreso y gasto.',
+            features: ['Crear movimientos en segundos', 'Filtrar por fecha, cuenta o categoría'],
+            stepTitles: ['Módulo de transacciones', 'Crear transacción', 'Filtros', 'Lista de movimientos']
+        },
+        'transacciones-crear': {
+            storageKey: 'transacciones_crear_tutorial_completed',
+            icono: 'fa-layer-group',
+            titulo: 'Registrar Movimiento',
+            descripcion: 'Cargá uno o varios movimientos a la vez.',
+            features: ['Carga masiva con varios bloques', 'Cada bloque puede dividirse entre cuentas'],
+            stepTitles: ['Registrar movimientos', 'Carga masiva', 'Guardar']
         },
         'billetera': {
             storageKey: 'billetera_tutorial_completed',
             icono: 'fa-building-columns',
             titulo: 'Mis Cuentas',
-            descripcion: 'Gestioná todas tus cuentas bancarias y efectivo en un solo lugar.',
-            features: ['Registrar cuentas bancarias y efectivo', 'Ver saldo consolidado por moneda', 'Agregar y editar cuentas'],
-            stepTitles: ['Mis Cuentas', 'Panel General', 'Agregar Cuenta', 'Saldo por Moneda', 'Detalle de Cuentas']
+            descripcion: 'Tus cuentas bancarias y efectivo.',
+            features: ['Registrar y gestionar cuentas', 'Ver saldo consolidado por moneda'],
+            stepTitles: ['Mis Cuentas', 'Agregar cuenta', 'Saldos por moneda', 'Lista de cuentas']
         },
         'tareas': {
             storageKey: 'tareas_tutorial_completed',
             icono: 'fa-list-check',
-            titulo: 'Tareas Financieras',
-            descripcion: 'Organizá tus pendientes financieros para no olvidar ningún pago.',
-            features: ['Crear tareas con prioridad (Alta / Media / Baja)', 'Configurar recordatorios por fecha', 'Seguir el historial de tareas completadas'],
-            stepTitles: ['Tareas Financieras', 'Panel de Tareas', 'Nueva Tarea', 'Filtrar por Prioridad', 'Vista Kanban', 'Pendientes', 'Gestionar Tarea', 'Completadas', 'Historial']
+            titulo: 'Tareas',
+            descripcion: 'Tus pagos y compromisos pendientes.',
+            features: ['Crear tareas con prioridad y recordatorio', 'Ver pendientes y completadas'],
+            stepTitles: ['Módulo de tareas', 'Crear tarea', 'Filtrar por prioridad', 'Pendientes', 'Completadas']
         },
         'creditcard': {
             storageKey: 'creditcard_tutorial_completed',
             icono: 'fa-credit-card',
-            titulo: 'Tarjetas de Crédito',
-            descripcion: 'Controlá tus consumos con tarjeta, cuotas y deuda total.',
-            features: ['Registrar consumos en cuotas', 'Ver deuda total y distribución', 'Eliminar consumos en lote'],
-            stepTitles: ['Tarjetas de Crédito', 'Panel de Control', 'Eliminar en Lote', 'Nuevo Consumo', 'Deuda Total', 'Distribución de Deuda', 'Lista de Consumos']
+            titulo: 'Tarjetas de crédito',
+            descripcion: 'Controlá consumos y cuotas.',
+            features: ['Registrar consumos en cuotas', 'Ver deuda total y distribución'],
+            stepTitles: ['Tarjetas de crédito', 'Nuevo consumo', 'Deuda total', 'Composición de deuda', 'Lista de consumos']
         },
         'cashflow': {
             storageKey: 'cashflow_tutorial_completed',
             icono: 'fa-timeline',
-            titulo: 'Proyección / Cashflow',
-            descripcion: 'Proyectá tu liquidez futura y planificá tus finanzas con anticipación.',
-            features: ['Planificar ingresos y gastos futuros', 'Ver cashflow proyectado mes a mes', 'Gestionar gastos recurrentes'],
-            stepTitles: ['Cashflow Pro']
+            titulo: 'Proyección',
+            descripcion: 'Tu cashflow proyectado mes a mes.',
+            features: ['Planificar ingresos y gastos futuros', 'Ver liquidez de un vistazo por mes'],
+            stepTitles: ['Módulo de proyección', 'Crear elemento', 'Selector de mes', 'Barra del mes', 'Pestañas de contenido']
         },
         'presupuestos': {
             storageKey: 'presupuestos_tutorial_completed',
             icono: 'fa-chart-pie',
             titulo: 'Presupuestos',
-            descripcion: 'Definí límites de gasto por categoría y seguí tu cumplimiento en tiempo real.',
-            features: ['Definir límites por categoría', 'Ver progreso visual de cada presupuesto', 'Recibir alertas inteligentes al acercarte al límite'],
-            stepTitles: ['Presupuestos', 'Panel de Presupuestos', 'Navegar por Meses', 'Nuevo Presupuesto', 'Resumen del Mes', 'Estado Financiero', 'Cifras Clave', 'Progreso del Mes', 'Días Restantes', 'Tarjetas por Categoría', 'Sin Presupuesto Aún', 'Crear desde Cero', 'Copiar del Mes Anterior', 'Tarjeta de Categoría', 'Opciones de Categoría', 'Alerta Inteligente']
+            descripcion: 'Límites de gasto por categoría.',
+            features: ['Definir un tope por categoría', 'Seguir el avance en tiempo real'],
+            stepTitles: ['Módulo de presupuestos', 'Navegar meses', 'Crear presupuesto', 'Panel resumen', 'Tarjetas por categoría', 'Alerta inteligente']
         },
         'estadisticas': {
             storageKey: 'estadisticas_tutorial_completed',
             icono: 'fa-chart-line',
             titulo: 'Estadísticas',
-            descripcion: 'Analizá tus finanzas con gráficos, tendencias históricas y proyecciones.',
-            features: ['Tendencia de ingresos vs gastos (6 meses)', 'Top de categorías de gasto e ingreso', 'Patrimonio neto y proyecciones futuras'],
-            stepTitles: ['Dashboard Financiero', 'Panel de Análisis', 'Actualizar Datos', 'Situación Patrimonial', 'Patrimonio Neto', 'Saldo Total', 'Deuda en Tarjetas', 'Actividad del Mes', 'Ingresos del Mes', 'Gastos del Mes', 'Ahorro del Mes', 'Gasto Diario', 'Tendencia Histórica', 'Top Gastos', 'Top Ingresos', 'Distribución de Cuentas', 'Proyecciones', 'Últimas Transacciones']
+            descripcion: 'Análisis histórico de tus finanzas.',
+            features: ['Tendencia ingresos vs gastos (6 meses)', 'Patrimonio, top gastos y proyecciones'],
+            stepTitles: ['Módulo de estadísticas', 'Patrimonio neto', 'Actividad del mes', 'Tendencia histórica', 'Top categorías']
         },
         'gastosfijos': {
             storageKey: 'gastosfijos_tutorial_completed',
             icono: 'fa-file-invoice-dollar',
             titulo: 'Gastos Fijos',
-            descripcion: 'Controlá tus suscripciones y pagos recurrentes mensuales.',
-            features: ['Registrar suscripciones y servicios', 'Ver próximos vencimientos', 'Marcar gastos como pagados cada mes'],
-            stepTitles: ['Gastos Fijos', 'Panel de Gastos Fijos', 'Nuevo Gasto Fijo', 'Resumen Mensual', 'Total Mensual', 'Pagado Este Mes', 'Pendientes de Pago', 'Próximo Vencimiento', 'Filtros', 'Filtrar por Estado', 'Filtrar por Categoría', 'Aplicar Filtros', 'Lista de Gastos']
+            descripcion: 'Suscripciones y pagos recurrentes.',
+            features: ['Registrar servicios y suscripciones', 'Ver vencimientos y estado de pago'],
+            stepTitles: ['Módulo de gastos fijos', 'Agregar gasto fijo', 'Resumen mensual', 'Filtros de búsqueda', 'Lista de gastos']
         },
         'categorias': {
             storageKey: 'categorias_tutorial_completed',
             icono: 'fa-tags',
             titulo: 'Categorías',
-            descripcion: 'Organizá tus movimientos con etiquetas personalizadas.',
-            features: ['Crear categorías de ingresos y gastos', 'Elegir ícono y color personalizados', 'Filtrar por tipo de categoría'],
-            stepTitles: ['Categorías', 'Panel de Categorías', 'Nueva Categoría', 'Filtrar por Tipo', 'Ver Todas', 'Solo Gastos', 'Solo Ingresos', 'Lista de Categorías']
+            descripcion: 'Las etiquetas para clasificar tus movimientos.',
+            features: ['Crear categorías de ingresos y gastos', 'Elegir ícono y color personalizados'],
+            stepTitles: ['Módulo de categorías', 'Nueva categoría', 'Filtrar por tipo', 'Lista de categorías']
         },
         'perfil': {
             storageKey: 'perfil_tutorial_completed',
             icono: 'fa-user-gear',
             titulo: 'Mi Perfil',
-            descripcion: 'Gestioná tu cuenta, datos personales y configuración de seguridad.',
-            features: ['Actualizar tu correo de contacto', 'Cambiar tu contraseña', 'Ver tu rol y estado de cuenta'],
-            stepTitles: ['Mi Perfil', 'Tu Identidad', 'Estado de Conexión', 'Tu Rol', 'Secciones del Perfil', 'Pestañas de Configuración', 'Pestaña Datos', 'Pestaña Seguridad', 'Datos Personales', 'Nombre de Usuario', 'Tu Rol', 'Email de Contacto', 'Guardar Email', 'Cambiar Contraseña', 'Nueva Contraseña', 'Confirmar Contraseña', 'Guardar Contraseña']
+            descripcion: 'Tu cuenta y configuración de seguridad.',
+            features: ['Actualizar tu email de contacto', 'Cambiar tu contraseña'],
+            stepTitles: ['Mi Perfil', 'Tu identidad', 'Actualizar datos', 'Cambiar contraseña']
         }
     };
 
@@ -334,8 +342,9 @@ async function fetchApi(url, method = 'GET', body = null) {
     function detectarModuloActual() {
         const path = window.location.pathname.toLowerCase();
 
+        if (path.includes('/transaction/create')) return 'transacciones-crear';
         if (path.includes('/transaction/index') ||
-            (path.includes('/transaction') && !path.includes('tmp') && !path.includes('credit') && !path.includes('statistics'))) {
+            (path.includes('/transaction') && !path.includes('tmp') && !path.includes('credit') && !path.includes('statistics') && !path.includes('/create'))) {
             return 'transacciones';
         }
         if (path.includes('/account')) return 'billetera';
@@ -368,15 +377,15 @@ async function fetchApi(url, method = 'GET', body = null) {
             skipLabel: '✕',
             doneLabel: '<i class="fa-solid fa-check me-1"></i> ¡Listo!',
             showProgress: true,
-            showBullets: false,
+            showBullets: true,
             exitOnOverlayClick: false,
             disableInteraction: false,
             scrollToElement: true,
             scrollPadding: 80,
-            overlayOpacity: 0.72,
+            overlayOpacity: 0.68,
             tooltipClass: 'customTooltip',
             highlightClass: 'customHighlight',
-            showStepNumbers: false
+            showStepNumbers: true
         });
 
         // Aplicar títulos de cada paso dinámicamente (sin tocar el HTML)
@@ -384,7 +393,8 @@ async function fetchApi(url, method = 'GET', body = null) {
             const elements = Array.from(document.querySelectorAll('[data-intro]'))
                 .sort((a, b) => parseInt(a.dataset.step || 0) - parseInt(b.dataset.step || 0));
             elements.forEach((el, idx) => {
-                if (config.stepTitles[idx] && !el.hasAttribute('data-title')) {
+                el.removeAttribute('data-title');
+                if (config.stepTitles[idx]) {
                     el.setAttribute('data-title', config.stepTitles[idx]);
                 }
             });

@@ -21,8 +21,8 @@ function editSetting(id, accountId, rate, enabled) {
 async function saveSetting() {
     const id = document.getElementById('settingID').value;
     const payload = {
-        settingID: id ? parseInt(id) : null,
-        accountID: parseInt(document.getElementById('accountID').value),
+        settingID: id ? parseInt(id, 10) : null,
+        accountID: parseInt(document.getElementById('accountID').value, 10),
         interestRate: parseFloat(document.getElementById('interestRate').value),
         enabled: document.getElementById('settingEnabled').checked,
         userID: 0

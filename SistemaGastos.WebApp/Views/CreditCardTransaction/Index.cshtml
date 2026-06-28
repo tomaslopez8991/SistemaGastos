@@ -14,13 +14,11 @@
      data-url-multiple-form="@Url.Action("GetMultipleForm", "CreditCardTransaction")"
      data-url-totals="@Url.Action("GetTotals", "CreditCardTransaction")"
      data-url-category-breakdown="@Url.Action("GetCategoryBreakdown", "CreditCardTransaction")"
-     data-intro="Bienvenido al módulo de Tarjetas de Crédito. Aquí registras todos tus consumos con tarjeta, calculas cuotas y controlas el monto total que deberás pagar en cada resumen."
+     data-intro="Controlá consumos con tarjeta, cuotas y deuda total. Los montos en USD se convierten al dólar bolsa."
      data-step="1">
 
     @* Header *@
-    <div class="d-flex justify-content-between align-items-start mb-4"
-         data-intro="Desde este encabezado puedes crear nuevos consumos, eliminar los seleccionados y tener una vista general de tu control de gastos con tarjeta."
-         data-step="2">
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
             <h2 class="fw-semibold mb-0" style="font-size:22px;">
                 <i class="fa-regular fa-credit-card text-primary me-2"></i>Tarjetas de crédito
@@ -30,15 +28,13 @@
         <div class="d-flex gap-2">
             <button id="deleteSelectedBtn"
                     class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2"
-                    disabled
-                    data-intro="Selecciona varios consumos marcando sus casillas y luego usa este botón para eliminarlos en lote."
-                    data-step="3">
+                    disabled>
                 <i class="fas fa-trash"></i>Borrar seleccionados
             </button>
             <button id="btnCrear"
                     class="btn btn-primary btn-sm d-flex align-items-center gap-2"
-                    data-intro="Haz clic aquí para registrar un nuevo consumo con tarjeta."
-                    data-step="4">
+                    data-intro="Registrá un consumo con tarjeta desde acá. <span class='tut-action'>→ Tocá <strong>+ Nuevo movimiento</strong>. Completá: <strong>Descripción</strong> (ej: Netflix), <strong>Tarjeta</strong>, <strong>Monto cuota</strong>, <strong>Fecha</strong>, <strong>Categoría</strong> y <strong>Cuotas</strong>. Luego Guardar.</span>"
+                    data-step="2">
                 <i class="fas fa-plus"></i>Nuevo movimiento
             </button>
         </div>
@@ -46,8 +42,8 @@
 
     @* Stats rápidas *@
     <div class="cc-stat-row"
-         data-intro="Resumen rápido de tu deuda total en tarjetas."
-         data-step="5">
+         data-intro="Tu deuda total en tarjetas. El total estimado convierte los montos USD al dólar bolsa actual."
+         data-step="3">
         <div class="cc-stat-card">
             <div class="cc-stat-label"><i class="fas fa-money-bill-1 me-1"></i>Total ARS</div>
             <div class="cc-stat-value cc-expense" id="statTotalArs">$ —</div>
@@ -68,8 +64,8 @@
 
     @* Barra de composición de deuda *@
     <div class="cc-debt-card"
-         data-intro="Esta barra muestra qué porcentaje de tu deuda corresponde a gastos fijos versus variables."
-         data-step="6">
+         data-intro="Cuánto de tu deuda es fijo (cuotas pactadas) y cuánto es variable. A más azul, más predecible el gasto."
+         data-step="4">
         <div class="cc-debt-header">
             <span class="cc-debt-title">Composición de deuda</span>
             <span class="cc-dolar-badge" id="dolarBadge">Dólar bolsa: —</span>
@@ -123,8 +119,8 @@
 
     @* Tabla *@
     <div class="tx-table-card"
-         data-intro="Listado completo de tus consumos con tarjeta. Podés ordenar, buscar, editar y eliminar."
-         data-step="7">
+         data-intro="Lista de consumos. Marcá casillas para eliminar en lote, o usá ✏ para editar uno."
+         data-step="5">
         <div id="card-grid-wrapper"></div>
     </div>
 

@@ -15,13 +15,11 @@
      data-url-dropdown-data="@Url.Action("GetDropdownData", "Transaction")"
      data-url-invoice-preview="@Url.Action("GetInvoicePreview", "Transaction")"
      data-url-emit-invoice="@Url.Action("EmitInvoice", "Transaction")"
-     data-intro="Bienvenido al módulo de Transacciones. Aquí registras todos tus ingresos y gastos reales del día a día. Es el corazón del sistema: cada movimiento que hagas impacta en tus cuentas, presupuestos y estadísticas."
+     data-intro="Registrá cada ingreso y gasto desde acá. Cada movimiento impacta en el saldo de la cuenta asignada y en tus estadísticas."
      data-step="1">
 
     @* Header *@
-    <div class="d-flex justify-content-between align-items-start mb-4"
-         data-intro="Desde este encabezado puedes ver el listado completo de tus movimientos financieros y crear nuevos registros."
-         data-step="2">
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
             <h2 class="fw-semibold mb-0" style="font-size:22px;">
                 <i class="fas fa-exchange-alt text-primary me-2"></i>Movimientos
@@ -31,8 +29,8 @@
         <a href="@Url.Action("Create", "Transaction")"
                class="btn btn-primary d-flex align-items-center gap-2"
                id="btnNewTransaction"
-               data-intro="Haz clic aquí para registrar uno o varios movimientos a la vez. Puedes crear múltiples transacciones en una sola operación para ahorrar tiempo."
-               data-step="3">
+               data-intro="Creá un nuevo movimiento desde acá. Podés cargar varios a la vez. <span class='tut-action'>→ Tocá <strong>+ Nuevo Movimiento</strong>. En el formulario completá: <strong>Fecha</strong>, <strong>Categoría</strong>, <strong>Descripción</strong>, <strong>Cuenta</strong> y <strong>Monto</strong>. Luego Guardar.</span>"
+               data-step="2">
             <i class="fas fa-plus"></i>Nuevo Movimiento
         </a>
     </div>
@@ -55,43 +53,37 @@
 
     @* Filtros *@
     <div class="tx-filters-card"
-         data-intro="Usa estos filtros para buscar movimientos específicos por fecha, cuenta o categoría."
-         data-step="4">
+         data-intro="Filtrá por fecha (desde/hasta), cuenta o categoría. Los filtros se aplican en combinación. <span class='tut-action'>→ Elegí los criterios y tocá Filtrar.</span>"
+         data-step="3">
         <div class="tx-filters-inner">
             <div>
-                <label class="tx-filter-label" for="filterStart"
-                       data-intro="Filtra desde una fecha específica." data-step="5">Desde</label>
+                <label class="tx-filter-label" for="filterStart">Desde</label>
                 <input type="date" class="form-control form-control-sm" id="filterStart" />
             </div>
             <div>
-                <label class="tx-filter-label" for="filterEnd"
-                       data-intro="Filtra hasta una fecha límite." data-step="6">Hasta</label>
+                <label class="tx-filter-label" for="filterEnd">Hasta</label>
                 <input type="date" class="form-control form-control-sm" id="filterEnd" />
             </div>
             <div>
-                <label class="tx-filter-label" for="filterAccount"
-                       data-intro="Filtra movimientos de una cuenta específica." data-step="7">Cuenta</label>
+                <label class="tx-filter-label" for="filterAccount">Cuenta</label>
                 <select class="form-select form-select-sm" id="filterAccount">
                     <option value="">Todas las cuentas</option>
                 </select>
             </div>
             <div>
-                <label class="tx-filter-label" for="filterCategory"
-                       data-intro="Filtra por categoría para ver solo gastos de un tipo." data-step="8">Categoría</label>
+                <label class="tx-filter-label" for="filterCategory">Categoría</label>
                 <select class="form-select form-select-sm" id="filterCategory">
                     <option value="">Todas las categorías</option>
                 </select>
             </div>
             <div class="tx-filter-actions">
                 <button class="btn btn-primary btn-sm d-flex align-items-center gap-1"
-                        id="btnApplyFilters"
-                        data-intro="Aplica los filtros seleccionados." data-step="9">
+                        id="btnApplyFilters">
                     <i class="fas fa-filter"></i>Filtrar
                 </button>
                 <button class="btn btn-outline-secondary btn-sm"
                         id="btnClearFilters"
-                        title="Limpiar filtros"
-                        data-intro="Limpia todos los filtros." data-step="10">
+                        title="Limpiar filtros">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -100,8 +92,8 @@
 
     @* Tabla *@
     <div class="tx-table-card"
-         data-intro="Esta tabla muestra todos tus movimientos. Los ingresos aparecen en verde y los gastos en rojo."
-         data-step="11">
+         data-intro="Verde = ingreso, rojo = gasto. Hacé clic en ✏ para editar o 🗑 para eliminar un movimiento."
+         data-step="4">
         <div id="grid-wrapper"></div>
     </div>
 </div>

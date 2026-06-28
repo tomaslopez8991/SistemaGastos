@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Gastos Fijos y Suscripciones";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -12,13 +12,11 @@
      data-url-delete="@Url.Action("Delete", "FixedExpense")"
      data-url-pay="@Url.Action("PayNow", "FixedExpense")"
      data-url-toggle="@Url.Action("ToggleActive", "FixedExpense")"
-     data-intro="Bienvenido al módulo de Gastos Fijos. Aquí puedes controlar todos tus gastos recurrentes mensuales como Netflix, Spotify, servicios, cuotas fijas y más."
+     data-intro="Controlá tus pagos recurrentes: Netflix, servicios, cuotas, suscripciones. Nunca más olvidés un vencimiento."
      data-step="1">
 
     <!-- Header -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3"
-         data-intro="Este módulo te ayuda a no olvidar ningún pago recurrente. Registra tus suscripciones y gastos fijos para tener control total de tus compromisos mensuales."
-         data-step="2">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
         <div>
             <h2 class="fw-bold mb-0">
                 <i class="fas fa-calendar-check text-primary me-2"></i>Gastos Fijos
@@ -27,20 +25,18 @@
         </div>
         <button class="btn btn-primary shadow-sm"
                 id="btnNewExpense"
-                data-intro="Haz clic aquí para agregar un nuevo gasto fijo o suscripción. Por ejemplo: Netflix, luz, gas, internet, cuota del gimnasio, etc."
-                data-step="3">
+                data-intro="Agregá un nuevo gasto fijo desde acá. <span class='tut-action'>→ Tocá <strong>+ Nuevo Gasto Fijo</strong>. Completá: <strong>Nombre</strong> (ej: Netflix), <strong>Moneda</strong> (ARS/USD), <strong>Monto mensual</strong>, <strong>Día de vencimiento</strong> (ej: 15) y <strong>Categoría</strong>. Luego Guardar.</span>"
+                data-step="2">
             <i class="fas fa-plus me-2"></i>Nuevo Gasto Fijo
         </button>
     </div>
 
     <!-- Resumen Cards -->
     <div class="row g-3 mb-4"
-         data-intro="Estas tarjetas te muestran un resumen rápido de tus gastos fijos: cuánto pagas mensualmente, qué ya pagaste este mes, qué está pendiente y cuál es tu próximo vencimiento."
-         data-step="4">
+         data-intro="Resumen mensual: total comprometido, ya pagado, pendiente y próximo vencimiento."
+         data-step="3">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100"
-                 data-intro="Total Mensual: suma de todos tus gastos fijos activos. Este es el monto que comprometes cada mes en pagos recurrentes."
-                 data-step="5">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <small class="text-muted text-uppercase fw-bold">Total Mensual</small>
@@ -52,9 +48,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100"
-                 data-intro="Pagado este mes: muestra cuánto ya abonaste de tus gastos fijos en el mes actual. Te ayuda a ver cuánto del presupuesto ya utilizaste."
-                 data-step="6">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <small class="text-muted text-uppercase fw-bold">Pagado este mes</small>
@@ -66,9 +60,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100"
-                 data-intro="Pendientes: suma de los gastos que aún no pagaste este mes. Mantén este número bajo para evitar sorpresas."
-                 data-step="7">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <small class="text-muted text-uppercase fw-bold">Pendientes</small>
@@ -80,9 +72,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100"
-                 data-intro="Próximo Vencimiento: te alerta sobre el próximo gasto fijo que vence. Así nunca te olvidas de pagar y evitas recargos o cortes de servicio."
-                 data-step="8">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <small class="text-muted text-uppercase fw-bold">Próximo Vencimiento</small>
@@ -97,16 +87,13 @@
 
     <!-- Filtros -->
     <div class="card border-0 shadow-sm mb-4"
-         data-intro="Usa estos filtros para ver solo los gastos que te interesan: activos, pagados, pendientes o inactivos. También puedes filtrar por categoría."
-         data-step="9">
+         data-intro="Filtrá por estado (activo, pagado, pendiente) o categoría. <span class='tut-action'>→ Elegí <strong>Pendientes</strong> y aplicá para ver solo los que faltan pagar.</span>"
+         data-step="4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label small fw-bold text-muted">Estado</label>
-                    <select class="form-select"
-                            id="filterStatus"
-                            data-intro="Filtra por estado: Activos (están vigentes), Pagados (ya abonados este mes), Pendientes (faltan pagar) o Inactivos (suspendidos temporalmente)."
-                            data-step="10">
+                    <select class="form-select" id="filterStatus">
                         <option value="all">Todos</option>
                         <option value="active" selected>Activos</option>
                         <option value="paid">Pagados este mes</option>
@@ -116,18 +103,12 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label small fw-bold text-muted">Categoría</label>
-                    <select class="form-select"
-                            id="filterCategory"
-                            data-intro="Filtra por categoría para ver solo gastos de un tipo específico: Servicios, Entretenimiento, Salud, etc."
-                            data-step="11">
+                    <select class="form-select" id="filterCategory">
                         <option value="">Todas las categorías</option>
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <button class="btn btn-outline-primary w-100"
-                            id="btnApplyFilters"
-                            data-intro="Aplica los filtros seleccionados para actualizar la lista de gastos fijos mostrados."
-                            data-step="12">
+                    <button class="btn btn-outline-primary w-100" id="btnApplyFilters">
                         <i class="fas fa-filter me-2"></i>Aplicar Filtros
                     </button>
                 </div>
@@ -138,8 +119,8 @@
     <!-- Lista de Gastos Fijos -->
     <div id="expenses-grid"
          class="row g-3"
-         data-intro="Aquí aparecerá la lista de todos tus gastos fijos en formato de tarjetas. Cada una mostrará el nombre, monto, fecha de vencimiento y opciones para pagar, editar o desactivar."
-         data-step="13">
+         data-intro="Cada tarjeta muestra nombre, monto y vencimiento. <span class='tut-action'>→ Tocá <strong>Pagar ahora</strong> para registrar el pago del mes.</span>"
+         data-step="5">
         <div class="col-12 text-center py-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Cargando...</span>

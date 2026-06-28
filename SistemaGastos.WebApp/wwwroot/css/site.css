@@ -1994,6 +1994,21 @@ input.gridjs-input {
     font-size: 0.9rem !important;
     line-height: 1.65 !important;
     min-height: 60px !important;
+    min-width: 300px !important;
+    max-width: 380px !important;
+}
+
+/* Bloque de acción dentro del tooltip */
+.introjs-tooltiptext .tut-action {
+    display: block;
+    margin-top: 10px;
+    padding: 7px 11px;
+    background: rgba(var(--bs-primary-rgb), 0.10);
+    border-left: 3px solid rgb(var(--bs-primary-rgb));
+    border-radius: 0 6px 6px 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgb(var(--bs-primary-rgb));
 }
 
 /* ── Botones ──────────────────────────────────────── */

@@ -5,13 +5,11 @@
 
 <div id="statistics-container"
      data-url-stats="@Url.Action("GetStatistics", "Transaction")"
-     data-intro="Bienvenido al Dashboard Financiero. Aquí verás un análisis completo de tus finanzas: patrimonio neto, tendencia histórica, top de categorías, proyecciones y más."
+     data-intro="Resumen financiero completo: patrimonio, actividad del mes, tendencia histórica y top de categorías."
      data-step="1">
 
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4"
-         data-intro="Panel de control financiero. Muestra un análisis detallado de tus finanzas con datos en tiempo real."
-         data-step="2">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-0">
                 <i class="fas fa-chart-line text-primary me-2"></i>Dashboard Financiero
@@ -22,21 +20,17 @@
             </p>
         </div>
         <button class="btn btn-outline-primary btn-sm"
-                onclick="location.reload()"
-                data-intro="Actualiza todos los datos para ver la información más reciente en tiempo real."
-                data-step="3">
+                onclick="location.reload()">
             <i class="fas fa-sync-alt me-2"></i>Actualizar
         </button>
     </div>
 
     <!-- Fila 1: KPIs Patrimoniales -->
     <div class="row g-3 mb-4"
-         data-intro="Estas tres métricas resumen tu situación patrimonial: cuánto tenés (saldo), cuánto debés (deuda) y tu riqueza neta (patrimonio)."
-         data-step="4">
+         data-intro="Patrimonio neto = saldo total menos deudas de tarjeta. Es el indicador más importante de tu salud financiera."
+         data-step="2">
         <div class="col-md-4">
-            <div class="card h-100 border-primary shadow-sm"
-                 data-intro="Patrimonio Neto: saldo total menos deudas. Si es positivo, tenés más activos que pasivos — es el indicador más importante de tu salud financiera."
-                 data-step="5">
+            <div class="card h-100 border-primary shadow-sm">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <small class="text-muted text-uppercase" style="letter-spacing:.05em">Patrimonio Neto</small>
@@ -48,9 +42,7 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card h-100 border-success shadow-sm"
-                 data-intro="Saldo Total: suma de todo el dinero disponible en tus cuentas (banco, efectivo, etc.)."
-                 data-step="6">
+            <div class="card h-100 border-success shadow-sm">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <small class="text-muted text-uppercase" style="letter-spacing:.05em">Saldo Total</small>
@@ -62,9 +54,7 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card h-100 border-danger shadow-sm"
-                 data-intro="Deuda en Tarjetas: total de consumos pendientes de pago en cuotas. Controlá este número para no comprometer tu flujo futuro."
-                 data-step="7">
+            <div class="card h-100 border-danger shadow-sm">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <small class="text-muted text-uppercase" style="letter-spacing:.05em">Deuda Tarjetas</small>
@@ -79,12 +69,10 @@
 
     <!-- Fila 2: Mes Actual -->
     <div class="row g-3 mb-4"
-         data-intro="Estos indicadores muestran tu actividad del mes actual: ingresos, gastos, ahorro generado y ritmo de consumo diario."
-         data-step="8">
+         data-intro="Actividad del mes: ingresos, gastos, ahorro y ritmo diario. El badge muestra la variación vs el mes anterior."
+         data-step="3">
         <div class="col-md-3">
-            <div class="card h-100 border-success shadow-sm"
-                 data-intro="Ingresos del mes: total de dinero recibido. El badge muestra la variación porcentual respecto al mes anterior."
-                 data-step="9">
+            <div class="card h-100 border-success shadow-sm">
                 <div class="card-body">
                     <small class="text-success fw-bold text-uppercase">Ingresos del Mes</small>
                     <h3 class="fw-bold mb-1 text-success" id="currentIncome">$ -</h3>
@@ -97,9 +85,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card h-100 border-danger shadow-sm"
-                 data-intro="Gastos del mes: total de egresos registrados. Compará con el mes anterior para ver si estás gastando más o menos."
-                 data-step="10">
+            <div class="card h-100 border-danger shadow-sm">
                 <div class="card-body">
                     <small class="text-danger fw-bold text-uppercase">Gastos del Mes</small>
                     <h3 class="fw-bold mb-1 text-danger" id="currentExpense">$ -</h3>
@@ -112,9 +98,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card h-100 border-info shadow-sm"
-                 data-intro="Ahorro del mes: diferencia entre ingresos y gastos. La barra de progreso muestra tu tasa de ahorro — a mayor barra, mejor."
-                 data-step="11">
+            <div class="card h-100 border-info shadow-sm">
                 <div class="card-body">
                     <small class="text-info fw-bold text-uppercase">Ahorro del Mes</small>
                     <h3 class="fw-bold mb-1 text-info" id="currentSavings">$ -</h3>
@@ -130,9 +114,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card h-100 border-warning shadow-sm"
-                 data-intro="Gasto Diario Promedio: cuánto gastás por día en promedio. Te ayuda a proyectar si terminarás el mes dentro de tu presupuesto."
-                 data-step="12">
+            <div class="card h-100 border-warning shadow-sm">
                 <div class="card-body">
                     <small class="text-warning fw-bold text-uppercase">Gasto Diario Prom.</small>
                     <h3 class="fw-bold mb-1 text-warning" id="avgDailyExpense">$ -</h3>
@@ -146,8 +128,8 @@
     <div class="row g-3 mb-4">
         <div class="col-12">
             <div class="card shadow-sm"
-                 data-intro="Tendencia histórica: compará ingresos (verde) vs gastos (rojo) mes a mes en los últimos 6 meses. Si el verde supera al rojo sistemáticamente, estás generando ahorro consistente."
-                 data-step="13">
+                 data-intro="Tendencia histórica: ingresos (verde) vs gastos (rojo) de los últimos 6 meses. Si el verde supera al rojo, estás generando ahorro."
+                 data-step="4">
                 <div class="card-header border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-bar text-primary me-2"></i>Tendencia — Últimos 6 Meses
@@ -174,8 +156,8 @@
     <div class="row g-3 mb-4">
         <div class="col-md-6">
             <div class="card h-100 shadow-sm"
-                 data-intro="Top Gastos: ranking de las categorías donde más gastaste este mes, con gráfico de distribución. Identificá dónde concentrar tus esfuerzos de ahorro."
-                 data-step="14">
+                 data-intro="Top categorías del mes por gasto e ingreso. <span class='tut-action'>→ Revisá dónde concentrar tu ahorro mirando el ranking de gastos.</span>"
+                 data-step="5">
                 <div class="card-header border-bottom">
                     <h5 class="mb-0"><i class="fas fa-fire text-danger me-2"></i>Top Gastos del Mes</h5>
                 </div>
@@ -194,9 +176,7 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card h-100 shadow-sm"
-                 data-intro="Top Ingresos: tus principales fuentes de ingreso del mes con su porcentaje sobre el total de entradas."
-                 data-step="15">
+            <div class="card h-100 shadow-sm">
                 <div class="card-header border-bottom">
                     <h5 class="mb-0"><i class="fas fa-arrow-trend-up text-success me-2"></i>Top Ingresos del Mes</h5>
                 </div>
@@ -212,9 +192,7 @@
     <!-- Fila 5: Distribución de Cuentas + Proyecciones -->
     <div class="row g-3 mb-4">
         <div class="col-md-5">
-            <div class="card h-100 shadow-sm"
-                 data-intro="Distribución de Cuentas: cómo está repartido tu dinero entre tus diferentes cuentas bancarias, efectivo, etc."
-                 data-step="16">
+            <div class="card h-100 shadow-sm">
                 <div class="card-header border-bottom">
                     <h5 class="mb-0"><i class="fas fa-wallet text-success me-2"></i>Distribución de Cuentas</h5>
                 </div>
@@ -226,9 +204,7 @@
             </div>
         </div>
         <div class="col-md-7">
-            <div class="card h-100 shadow-sm"
-                 data-intro="Proyecciones: estimaciones de tu saldo futuro basadas en tu ritmo actual de gastos y cuotas pendientes. Te alerta si necesitás ajustar tu consumo."
-                 data-step="17">
+            <div class="card h-100 shadow-sm">
                 <div class="card-header border-bottom">
                     <h6 class="mb-0"><i class="fas fa-crystal-ball text-primary me-2"></i>Proyecciones</h6>
                 </div>
@@ -261,9 +237,7 @@
     <!-- Fila 6: Últimas Transacciones -->
     <div class="row g-3 mb-4">
         <div class="col-12">
-            <div class="card shadow-sm"
-                 data-intro="Últimas Transacciones: historial rápido de tus movimientos más recientes. Verificá que todo esté registrado correctamente."
-                 data-step="18">
+            <div class="card shadow-sm">
                 <div class="card-header border-bottom">
                     <h6 class="mb-0"><i class="fas fa-history text-secondary me-2"></i>Últimas Transacciones</h6>
                 </div>
