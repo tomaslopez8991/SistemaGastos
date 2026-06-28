@@ -20,30 +20,15 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
     {
         var fechaActual = DateTime.Now;
         var culture = new CultureInfo("es-AR");
-        decimal cotizacionDolar = await dolarService.GetDolarBolsaAsync();
 
-        // ====================================================================
-        // 1. SALDO INICIAL (igual que GetProjectedBalancesHandler)
-        // ====================================================================
+        // El call HTTP al dólar corre en paralelo con las queries de DB.
+        // EF Core DbContext no es thread-safe: las queries de DB van secuenciales.
+        var dolarTask = dolarService.GetDolarBolsaAsync();
+
         var accounts = await context.Account
             .Where(a => a.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
-        var saldoLiquidezARS = accounts
-            .Where(a => a.Type != AccountType.TarjetaCredito && a.Currency == "ARS")
-            .Sum(a => a.Balance);
-
-        var saldoLiquidezUSD = accounts
-            .Where(a => a.Type != AccountType.TarjetaCredito && (a.Currency == "USD" || a.Currency == "USDT"))
-            .Sum(a => a.Balance);
-
-        decimal saldoInicialTotal = saldoLiquidezARS + (saldoLiquidezUSD * cotizacionDolar);
-
-        var ccAccounts = accounts.Where(a => a.Type == AccountType.TarjetaCredito).ToList();
-
-        // ====================================================================
-        // 2. DATOS BASE (proyecciones manuales, tarjetas, fijos)
-        // ====================================================================
         var manualProjections = await context.TmpTransaction
             .Include(t => t.Category)
             .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
@@ -78,6 +63,32 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             .Where(p => p.UserID == request.UserID && p.Active && p.CollectionDay != null)
             .ToListAsync(cancellationToken);
 
+        var receivedFixedIncomes = await context.Transaction
+            .AsNoTracking()
+            .Where(t => t.Account.UserID == request.UserID && t.FixedIncomeID != null)
+            .Select(t => new { IncomeID = t.FixedIncomeID, Year = t.Date.Year, Month = t.Date.Month })
+            .ToListAsync(cancellationToken);
+
+        decimal cotizacionDolar = await dolarTask;
+
+        // ====================================================================
+        // 1. SALDO INICIAL
+        // ====================================================================
+        var saldoLiquidezARS = accounts
+            .Where(a => a.Type != AccountType.TarjetaCredito && a.Currency == "ARS")
+            .Sum(a => a.Balance);
+
+        var saldoLiquidezUSD = accounts
+            .Where(a => a.Type != AccountType.TarjetaCredito && (a.Currency == "USD" || a.Currency == "USDT"))
+            .Sum(a => a.Balance);
+
+        decimal saldoInicialTotal = saldoLiquidezARS + (saldoLiquidezUSD * cotizacionDolar);
+
+        var ccAccounts = accounts.Where(a => a.Type == AccountType.TarjetaCredito).ToList();
+
+        // ====================================================================
+        // 2. TRANSACCIONES ATRIBUIDAS A PERSONAS (depende de personsWithCollection)
+        // ====================================================================
         List<Domain.Models.Transaction> personAttributedTx = new();
         if (personsWithCollection.Count > 0)
         {
@@ -89,14 +100,8 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 .ToListAsync(cancellationToken);
         }
 
-        var receivedFixedIncomes = await context.Transaction
-            .AsNoTracking()
-            .Where(t => t.Account.UserID == request.UserID && t.FixedIncomeID != null)
-            .Select(t => new { IncomeID = t.FixedIncomeID, Year = t.Date.Year, Month = t.Date.Month })
-            .ToListAsync(cancellationToken);
-
         // ====================================================================
-        // 3. TRANSACCIONES REALES (días pasados del mes actual y meses anteriores)
+        // 3. TRANSACCIONES REALES (días pasados/mes actual)
         // ====================================================================
         var startDate     = new DateTime(fechaActual.Year, fechaActual.Month, 1);
         var requestedDate = new DateTime(request.Year, request.Month, 1);

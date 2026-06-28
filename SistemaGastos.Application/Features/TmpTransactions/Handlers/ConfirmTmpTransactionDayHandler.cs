@@ -4,6 +4,7 @@ using SistemaGastos.Application.Features.TmpTransactions.Commands;
 using SistemaGastos.Application.Helpers;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Models;
+using System.Text.Json;
 
 namespace SistemaGastos.Application.Features.TmpTransactions.Handlers;
 
@@ -46,6 +47,14 @@ public class ConfirmTmpTransactionDayHandler(IApplicationDbContext context)
         if (!distribution.TryGetValue(request.Day, out var portionAmount))
             throw new Exception("El día indicado no forma parte de la distribución");
 
+        // Aplicar override de monto si el usuario lo modificó manualmente para este día
+        var overrides = string.IsNullOrEmpty(tmp.DayAmountOverrides)
+            ? new Dictionary<string, decimal>()
+            : JsonSerializer.Deserialize<Dictionary<string, decimal>>(tmp.DayAmountOverrides) ?? new();
+
+        if (overrides.TryGetValue(request.Day.ToString(), out var overriddenAmount))
+            portionAmount = overriddenAmount;
+
         // 5. Registrar la transacción real para ese día
         var transaction = new Transaction
         {
@@ -68,8 +77,11 @@ public class ConfirmTmpTransactionDayHandler(IApplicationDbContext context)
 
         context.Transaction.Add(transaction);
 
-        // 7. Excluir el día confirmado y redistribuir el monto restante
+        // 7. Excluir el día confirmado, limpiar su override y redistribuir el monto restante
         excluded.Add(request.Day);
+        overrides.Remove(request.Day.ToString());
+        tmp.DayAmountOverrides = overrides.Count > 0 ? JsonSerializer.Serialize(overrides) : null;
+
         var remainingAmount = tmp.Amount - portionAmount;
         var remaining = DistributionHelper.Distribute(remainingAmount, dateTransaction.Day, tmp.DistributionEndDay, excluded, daysInMonth);
 

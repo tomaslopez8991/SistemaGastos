@@ -31,7 +31,7 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
         var personIds = persons.Select(p => p.ID).ToList();
 
-        // Solo transacciones del mes seleccionado — cobros y gastos impactan únicamente en su mes
+        // EF Core DbContext no es thread-safe: queries secuenciales
         var transactions = await context.Transaction
             .Include(t => t.Category)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value)
@@ -39,7 +39,6 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
                      && t.Date.Year == refYear && t.Date.Month == refMonth)
             .ToListAsync(cancellationToken);
 
-        // CC sin filtro de fecha: las cuotas se calculan por mes en el loop
         var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
             .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value))

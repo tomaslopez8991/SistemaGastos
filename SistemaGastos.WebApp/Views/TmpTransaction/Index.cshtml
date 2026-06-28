@@ -39,7 +39,7 @@
      data-url-person-delete="@Url.Action("Delete", "Person")"
      data-url-person-payment-accounts="@Url.Action("GetPaymentAccounts", "Person")"
      data-url-person-register-payment="@Url.Action("RegisterPayment", "Person")"
-     data-intro="Bienvenido al módulo de Cashflow Pro. Aquí proyectás tu liquidez futura y administrás tus gastos recurrentes en un solo lugar."
+     data-intro="Proyectá tu liquidez futura mes a mes. Acá planificás ingresos, gastos y ves cuánto dinero vas a tener."
      data-step="1">
 
     @* ── Header ───────────────────────────────────────────── *@
@@ -55,7 +55,9 @@
                     type="button"
                     id="btnCrearDropdown"
                     data-bs-toggle="dropdown"
-                    aria-expanded="false">
+                    aria-expanded="false"
+                    data-intro="Agregá elementos al módulo de proyección. <span class='tut-action'>→ Tocá <strong>+ Nuevo</strong> y elegí: <strong>Transacción planificada</strong> (un gasto/ingreso puntual), <strong>Gasto fijo</strong> (recurrente mensual), <strong>Ingreso fijo</strong> o <strong>Presupuesto</strong> (límite por categoría).</span>"
+                    data-step="2">
                 <i class="fas fa-plus"></i>Nuevo
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="btnCrearDropdown">
@@ -84,7 +86,9 @@
     </div>
 
     @* ── Carrusel slim de meses ───────────────────────────── *@
-    <div class="month-carousel-wrapper position-relative mb-3">
+    <div class="month-carousel-wrapper position-relative mb-3"
+         data-intro="Navegá entre meses con las flechas. El mes resaltado es el activo. <span class='tut-action'>→ Hacé clic en otro mes para ver su proyección.</span>"
+         data-step="3">
         <button class="carousel-nav-btn carousel-nav-prev text-body" id="carouselPrev" style="display:none;">
             <i class="fas fa-chevron-left"></i>
         </button>
@@ -100,7 +104,9 @@
     </div>
 
     @* ── Barra info compacta del mes ──────────────────────── *@
-    <div id="month-info-bar" class="month-info-bar mb-3" style="display:none;">
+    <div id="month-info-bar" class="month-info-bar mb-3" style="display:none;"
+         data-intro="Ingresos, gastos y saldo neto del mes seleccionado de un vistazo."
+         data-step="4">
         <span class="month-info-item">
             <i class="fa-solid fa-arrow-trend-up text-success me-1"></i>
             <span class="month-info-label">Ingresos</span>
@@ -121,7 +127,9 @@
     </div>
 
     @* ── Card con tabs ────────────────────────────────────── *@
-    <div class="tx-table-card mb-4">
+    <div class="tx-table-card mb-4"
+         data-intro="Cuatro pestañas: Movimientos planificados, Gastos fijos, Ingresos fijos y Presupuestos. <span class='tut-action'>→ Tocá cada pestaña para ver y gestionar esa sección.</span>"
+         data-step="5">
         <div class="tmp-tabs-header">
             <ul class="nav nav-tabs border-bottom-0" id="cashflowTabs" role="tablist">
                 <li class="nav-item" role="presentation">

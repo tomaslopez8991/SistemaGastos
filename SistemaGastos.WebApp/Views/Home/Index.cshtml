@@ -1,10 +1,10 @@
-﻿@model SistemaGastos.Application.DTOs.DashboardVM
+@model SistemaGastos.Application.DTOs.DashboardVM
 @{
     ViewData["Title"] = "Dashboard";
 }
 
 <div class="text-center mb-5"
-     data-intro="¡Bienvenido a SistemaGastos! Este es tu panel de control central donde verás un resumen rápido de tu situación financiera actual."
+     data-intro="Bienvenido a SistemaGastos. Acá vas a ver todo lo que necesitás saber de tus finanzas de un vistazo."
      data-step="1">
     <h1 class="display-4 fw-bold" style="text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
         SistemaGastos <span class="text-primary">2.0</span>
@@ -12,15 +12,14 @@
     <p class="lead">Resumen financiero al @DateTime.Now.ToString("dd/MM/yyyy")</p>
 </div>
 
+<!-- ── Métricas principales ── -->
 <div class="row g-4 mb-5"
-     data-intro="Estas tres tarjetas te muestran tus métricas financieras clave: tu saldo total disponible, cuánto gastaste este mes y cuánto debes en tarjetas de crédito."
+     data-intro="Saldo total, ingresos, gastos y balance neto del mes. El balance se pone rojo si gastás más de lo que ingresás."
      data-step="2">
 
     <!-- Saldo Total -->
-    <div class="col-md-4">
-        <div class="card card-glass-modern border-0 h-100"
-             data-intro="Saldo Total: es la suma de todo tu dinero disponible en cuentas bancarias, efectivo y otros activos. Este número te dice cuánta liquidez tienes en este momento."
-             data-step="3">
+    <div class="col-md-3">
+        <div class="card card-glass-modern border-0 h-100">
             <div class="gradient-overlay gradient-success"></div>
             <div class="card-body p-4 position-relative">
                 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -31,21 +30,38 @@
                         <i class="fa-solid fa-trending-up me-1"></i>Activo
                     </span>
                 </div>
-                <div>
-                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Saldo Total</p>
-                    <h2 class="fw-bold mb-0 @(Model.SaldoTotal >= 0 ? "text-success" : "text-danger")" style="font-size: 2rem; letter-spacing: -1px;">
-                        @Model.SaldoTotal.ToString("C")
-                    </h2>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Saldo Total</p>
+                <h2 class="fw-bold mb-0 @(Model.SaldoTotal >= 0 ? "text-success" : "text-danger")" style="font-size: 2rem; letter-spacing: -1px;">
+                    @Model.SaldoTotal.ToString("C")
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ingresos del Mes -->
+    <div class="col-md-3">
+        <div class="card card-glass-modern border-0 h-100">
+            <div class="gradient-overlay" style="background: linear-gradient(135deg, rgba(32,201,151,.12) 0%, transparent 60%)"></div>
+            <div class="card-body p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div class="metric-badge" style="background:rgba(32,201,151,.15)">
+                        <i class="fa-solid fa-arrow-trend-up fa-lg" style="color:#20c997"></i>
+                    </div>
+                    <span class="badge border" style="color:#20c997;background:rgba(32,201,151,.12);border-color:#20c997!important">
+                        <i class="fa-solid fa-calendar me-1"></i>Mes
+                    </span>
                 </div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Ingresos del Mes</p>
+                <h2 class="fw-bold mb-0" style="font-size: 2rem; letter-spacing: -1px; color:#20c997">
+                    @Model.IngresosMes.ToString("C")
+                </h2>
             </div>
         </div>
     </div>
 
     <!-- Gastos Registrados -->
-    <div class="col-md-4">
-        <div class="card card-glass-modern border-0 h-100"
-             data-intro="Gastos del Mes: muestra cuánto has gastado en el mes actual. Te ayuda a controlar si estás dentro de tu presupuesto o si necesitas ajustar tus hábitos."
-             data-step="4">
+    <div class="col-md-3">
+        <div class="card card-glass-modern border-0 h-100">
             <div class="gradient-overlay gradient-danger"></div>
             <div class="card-body p-4 position-relative">
                 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -56,48 +72,38 @@
                         <i class="fa-solid fa-calendar me-1"></i>Mes
                     </span>
                 </div>
-                <div>
-                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Gastos Registrados</p>
-                    <h2 class="fw-bold mb-0 text-danger" style="font-size: 2rem; letter-spacing: -1px;">
-                        @Model.GastosMes.ToString("C")
-                    </h2>
-                </div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Gastos del Mes</p>
+                <h2 class="fw-bold mb-0 text-danger" style="font-size: 2rem; letter-spacing: -1px;">
+                    @Model.GastosMes.ToString("C")
+                </h2>
             </div>
         </div>
     </div>
 
-    <!-- Intereses Acumulados -->
-    <div class="col-md-4"
-         data-intro="Intereses Acumulados: total de intereses devengados a la fecha por descubierto en las cuentas con cálculo de intereses habilitado. Se cobran automáticamente el día 7 de cada mes."
-         data-step="5b">
+    <!-- Balance Neto del Mes -->
+    <div class="col-md-3">
         <div class="card card-glass-modern border-0 h-100">
-            <div class="gradient-overlay gradient-info"></div>
+            <div class="gradient-overlay @(Model.BalanceMes >= 0 ? "gradient-success" : "gradient-danger")"></div>
             <div class="card-body p-4 position-relative">
                 <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div class="metric-badge bg-info bg-opacity-10">
-                        <i class="fa-solid fa-percent text-info fa-lg"></i>
+                    <div class="metric-badge @(Model.BalanceMes >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
+                        <i class="fa-solid @(Model.BalanceMes >= 0 ? "fa-scale-balanced text-success" : "fa-scale-unbalanced text-danger") fa-lg"></i>
                     </div>
-                    <form asp-controller="Home" asp-action="RecalcularIntereses" method="post" class="m-0">
-                        <button type="submit" class="badge text-info bg-info bg-opacity-10 border border-info" style="cursor: pointer;">
-                            <i class="fa-solid fa-rotate me-1"></i>Recalcular
-                        </button>
-                    </form>
+                    <span class="badge @(Model.BalanceMes >= 0 ? "text-success bg-success bg-opacity-10 border border-success" : "text-danger bg-danger bg-opacity-10 border border-danger")">
+                        @(Model.BalanceMes >= 0 ? "Superávit" : "Déficit")
+                    </span>
                 </div>
-                <div>
-                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Intereses Acumulados</p>
-                    <h2 class="fw-bold mb-0 text-info" style="font-size: 2rem; letter-spacing: -1px;">
-                        @Model.InteresesAcumulados.ToString("C")
-                    </h2>
-                </div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Balance del Mes</p>
+                <h2 class="fw-bold mb-0 @(Model.BalanceMes >= 0 ? "text-success" : "text-danger")" style="font-size: 2rem; letter-spacing: -1px;">
+                    @Model.BalanceMes.ToString("C")
+                </h2>
             </div>
         </div>
     </div>
 
     <!-- Consumos Tarjeta -->
     <div class="col-md-4">
-        <div class="card card-glass-modern border-0 h-100"
-             data-intro="Deuda en Tarjetas: es el total de consumos pendientes de pago en tus tarjetas de crédito. Mantén este número bajo control para evitar intereses y recargos."
-             data-step="5">
+        <div class="card card-glass-modern border-0 h-100">
             <div class="gradient-overlay gradient-warning"></div>
             <div class="card-body p-4 position-relative">
                 <div class="d-flex justify-content-between align-items-start mb-4">
@@ -108,34 +114,105 @@
                         <i class="fa-solid fa-exclamation me-1"></i>Deuda
                     </span>
                 </div>
-                <div>
-                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Consumos Tarjeta</p>
-                    <h2 class="fw-bold mb-0 text-warning" style="font-size: 2rem; letter-spacing: -1px;">
-                        @Model.DeudaTarjetas.ToString("C")
-                    </h2>
-                </div>
+                <p class="text-muted small mb-2 text-uppercase fw-semibold">Consumos Tarjeta</p>
+                <h2 class="fw-bold mb-0 text-warning" style="font-size: 2rem; letter-spacing: -1px;">
+                    @Model.DeudaTarjetas.ToString("C")
+                </h2>
             </div>
         </div>
     </div>
 
+    <!-- Próximos Gastos Fijos -->
+    @if (Model.ProximosGastosFijos.Count > 0)
+    {
+        <div class="col-md-8"
+             data-intro="Gastos fijos con vencimiento pendiente este mes. El badge muestra cuántos días faltan — rojo significa urgente (≤ 3 días)."
+             data-step="3">
+            <div class="card card-glass-modern border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <div class="metric-badge bg-info bg-opacity-10">
+                            <i class="fa-solid fa-calendar-check text-info fa-lg"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0 text-uppercase fw-semibold">Próximos Gastos Fijos</p>
+                            <small class="text-muted">Vencimientos restantes del mes</small>
+                        </div>
+                        <a asp-controller="FixedExpense" asp-action="Index" class="ms-auto btn btn-sm btn-outline-secondary">Ver todos</a>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var gasto in Model.ProximosGastosFijos)
+                        {
+                            var diasRestantes = gasto.PaymentDay - DateTime.Now.Day;
+                            var badgeClass = diasRestantes <= 3 ? "bg-danger" : diasRestantes <= 7 ? "bg-warning" : "bg-secondary";
+                            <div class="d-flex align-items-center gap-3 px-3 py-2 rounded" style="background:rgba(255,255,255,.04)">
+                                @if (!string.IsNullOrEmpty(gasto.LogoUrl))
+                                {
+                                    <img src="@gasto.LogoUrl" alt="@gasto.Name" style="width:28px;height:28px;object-fit:contain;border-radius:4px">
+                                }
+                                else
+                                {
+                                    <div class="d-flex align-items-center justify-content-center rounded" style="width:28px;height:28px;background:rgba(255,255,255,.08)">
+                                        <i class="fa-solid fa-receipt text-muted" style="font-size:.7rem"></i>
+                                    </div>
+                                }
+                                <span class="fw-semibold flex-grow-1 text-truncate">@gasto.Name</span>
+                                <span class="text-muted small">día @gasto.PaymentDay</span>
+                                <span class="badge @badgeClass">@(diasRestantes == 0 ? "Hoy" : $"en {diasRestantes}d")</span>
+                                <span class="fw-bold text-danger small">@gasto.Amount.ToString("N0") @gasto.Currency</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="col-md-8">
+            <div class="card card-glass-modern border-0 h-100">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                    <div class="metric-badge bg-success bg-opacity-10">
+                        <i class="fa-solid fa-circle-check text-success fa-lg"></i>
+                    </div>
+                    <div>
+                        <p class="text-muted small mb-0 text-uppercase fw-semibold">Gastos Fijos</p>
+                        <span class="text-success fw-semibold">Sin vencimientos pendientes este mes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
+<!-- ── Módulos más usados (localStorage) ── -->
+<div class="d-flex justify-content-between align-items-center mb-3"
+     data-intro="El sistema registra automáticamente cuánto usás cada módulo. Los más frecuentes aparecen acá rankeados."
+     data-step="4">
+    <h4 class="mb-0">
+        <i class="fa-solid fa-fire me-2 text-warning"></i>Módulos más usados
+    </h4>
+    <button class="btn btn-sm btn-link text-muted" onclick="dashboardResetUsage()" title="Resetear contadores">
+        <i class="fa-solid fa-rotate-left me-1"></i>Resetear
+    </button>
+</div>
+<div class="row g-3 mb-5" id="most-used-modules">
+    <!-- Rendered by JS -->
+</div>
+
+<!-- ── Accesos Rápidos ── -->
 <h4 class="mb-3"
-    data-intro="Accesos Rápidos: estos botones te llevan directamente a los módulos más usados del sistema. Haz clic en cualquiera para comenzar a trabajar."
-    data-step="6">
+    data-intro="Todos los módulos disponibles de un clic. <span class='tut-action'>→ Tocá cualquiera para empezar a usarlo.</span>"
+    data-step="5">
     <i class="fa-solid fa-rocket me-2"></i>Accesos Rápidos
 </h4>
 
-<div class="row g-3"
-     data-intro="Desde aquí puedes acceder rápidamente a las funciones principales: proyectar tu cashflow, calcular consumos de tarjeta, ver tus tareas pendientes y gestionar categorías."
-     data-step="7">
+<div class="row g-3 mb-4">
 
-    <div class="col-6 col-md-3">
-        <a asp-controller="TmpTransaction"
-           asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm"
-           data-intro="Proyección / Cashflow: planifica tus ingresos y gastos futuros para saber cuánta liquidez tendrás en los próximos meses."
-           data-step="8">
+    <div class="col-6 col-md-2">
+        <a asp-controller="TmpTransaction" asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm module-link"
+           data-module="Proyección">
             <div class="card-body text-center">
                 <div class="icon-wrapper mb-3">
                     <i class="fa-solid fa-calculator fa-3x text-info"></i>
@@ -145,12 +222,10 @@
         </a>
     </div>
 
-    <div class="col-6 col-md-3">
-        <a asp-controller="CreditCardTransaction"
-           asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm"
-           data-intro="Calculadora de Tarjetas: registra consumos, gestiona cuotas y controla los resúmenes de tus tarjetas de crédito."
-           data-step="9">
+    <div class="col-6 col-md-2">
+        <a asp-controller="CreditCardTransaction" asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm module-link"
+           data-module="Tarjetas">
             <div class="card-body text-center">
                 <div class="icon-wrapper mb-3">
                     <i class="fa-solid fa-credit-card fa-3x text-primary"></i>
@@ -160,12 +235,23 @@
         </a>
     </div>
 
-    <div class="col-6 col-md-3">
-        <a asp-controller="Todo"
-           asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm"
-           data-intro="Tareas: organiza tus pendientes financieros (pagos, trámites, recordatorios). Si hay tareas pendientes, verás un contador en rojo."
-           data-step="10">
+    <div class="col-6 col-md-2">
+        <a asp-controller="Transaction" asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm module-link"
+           data-module="Transacciones">
+            <div class="card-body text-center">
+                <div class="icon-wrapper mb-3">
+                    <i class="fa-solid fa-money-bill-transfer fa-3x text-success"></i>
+                </div>
+                <h6 class="mb-0 fw-bold">Transacciones</h6>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-2">
+        <a asp-controller="Todo" asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm module-link"
+           data-module="Tareas">
             <div class="card-body text-center">
                 <div class="icon-wrapper mb-3 position-relative d-inline-block">
                     <i class="fa-solid fa-list-check fa-3x text-warning"></i>
@@ -173,7 +259,6 @@
                     {
                         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                             @Model.TareasPendientes
-                            <span class="visually-hidden">tareas pendientes</span>
                         </span>
                     }
                 </div>
@@ -182,19 +267,34 @@
         </a>
     </div>
 
-    <div class="col-6 col-md-3">
-        <a asp-controller="Category"
-           asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm"
-           data-intro="Categorías: crea y gestiona las etiquetas que usarás para clasificar tus ingresos y gastos (Comida, Transporte, Salario, etc.)."
-           data-step="11">
+    <div class="col-6 col-md-2">
+        <a asp-controller="Transaction" asp-action="Statistics"
+           class="card card-action h-100 text-decoration-none shadow-sm module-link"
+           data-module="Estadísticas">
             <div class="card-body text-center">
                 <div class="icon-wrapper mb-3">
-                    <i class="fa-solid fa-tags fa-3x text-secondary"></i>
+                    <i class="fas fa-chart-line fa-3x text-info"></i>
                 </div>
-                <h6 class="mb-0 fw-bold">Categorías</h6>
+                <h6 class="mb-0 fw-bold">Estadísticas</h6>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-6 col-md-2">
+        <a asp-controller="Person" asp-action="Index"
+           class="card card-action h-100 text-decoration-none shadow-sm module-link"
+           data-module="Cuentas">
+            <div class="card-body text-center">
+                <div class="icon-wrapper mb-3">
+                    <i class="fa-solid fa-people-group fa-3x text-secondary"></i>
+                </div>
+                <h6 class="mb-0 fw-bold">Cuentas</h6>
             </div>
         </a>
     </div>
 
 </div>
+
+@section Scripts {
+<script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

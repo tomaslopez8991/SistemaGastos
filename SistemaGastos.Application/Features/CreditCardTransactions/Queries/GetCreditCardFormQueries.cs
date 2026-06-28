@@ -8,3 +8,4 @@ public record GetCreditCardIndexQuery(int UserId) : IRequest<CreditCardTransacti
 public record GetCreditCardTransactionFormQuery(int UserId, int? Id) : IRequest<CreditCardFormDto>;
 public record GetMultipleCreditCardFormQuery(int UserId) : IRequest<CreditCardFormDto>;
 public record GetCreditCardTotalsQuery(int UserId) : IRequest<CreditCardTotalsDto>;
+public record GetCreditCardCategoryBreakdownQuery(int UserId) : IRequest<List<CategoryBreakdownDto>>;

@@ -159,6 +159,14 @@
                     <div class="nav-section-title">Administración</div>
                     <ul class="nav-list">
                         <li>
+                            <a asp-controller="AccountInterest" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-percent"></i>
+                                </div>
+                                <span class="nav-text">Intereses</span>
+                            </a>
+                        </li>
+                        <li>
                             <a asp-controller="Category" asp-action="Index" class="nav-item">
                                 <div class="nav-icon">
                                     <i class="fa-solid fa-tags"></i>
@@ -174,6 +182,17 @@
                                 <span class="nav-text">Mi Perfil</span>
                             </a>
                         </li>
+                        @if (CurrentUser.IsAdmin)
+                        {
+                            <li>
+                                <a asp-controller="SystemAlerts" asp-action="Index" class="nav-item">
+                                    <div class="nav-icon">
+                                        <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+                                    </div>
+                                    <span class="nav-text">Alertas del sistema</span>
+                                </a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </nav>
@@ -338,6 +357,10 @@
         <script>window._showLoginNotifications = true;</script>
     }
     @await RenderSectionAsync("Scripts", required: false)
+@if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+{
+    <mini-profiler />
+}
 
     <button class="tutorial-fab" id="btnAyudaGlobal" aria-label="Tutorial interactivo del módulo">
         <div class="tutorial-fab-icon-wrap">

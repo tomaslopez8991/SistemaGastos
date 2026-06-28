@@ -1,5 +1,6 @@
 using FluentValidation;
 using MediatR;
+using StackExchange.Profiling;
 using Microsoft.AspNetCore.Authentication.Cookies; // NECESARIO PARA AUTH
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides; // NECESARIO PARA SOMEE
@@ -94,11 +95,31 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Siste
 
 builder.Services.AddTransient<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddleware>();
 
+// MiniProfiler — visible solo para el usuario configurado en MiniProfiler:AdminUsername
+var profilerAdmin = builder.Configuration["MiniProfiler:AdminUsername"];
+if (!string.IsNullOrEmpty(profilerAdmin))
+{
+    builder.Services.AddMiniProfiler(options =>
+    {
+        options.RouteBasePath = "/profiler";
+        options.ColorScheme = ColorScheme.Dark;
+        options.PopupRenderPosition = RenderPosition.BottomLeft;
+        options.PopupShowTimeWithChildren = true;
+        options.ResultsAuthorize = req =>
+            req.HttpContext.User?.Identity?.IsAuthenticated == true &&
+            req.HttpContext.User.Identity.Name == profilerAdmin;
+        options.ResultsListAuthorize = req =>
+            req.HttpContext.User?.Identity?.IsAuthenticated == true &&
+            req.HttpContext.User.Identity.Name == profilerAdmin;
+    }).AddEntityFramework();
+}
+
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(SistemaGastos.Application.Features.Accounts.Queries.GetAccountsQuery).Assembly);
 
     // 2. REGISTRAR EL PIPELINE (IMPORTANTE)
     // Esto le dice a MediatR: "Usa este comportamiento para validar"
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 });
 
@@ -151,6 +172,9 @@ app.UseCookiePolicy();
 app.UseMiddleware<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddleware>();
 
 app.UseRouting();
+
+if (!string.IsNullOrEmpty(builder.Configuration["MiniProfiler:AdminUsername"]))
+    app.UseMiniProfiler();
 
 // 7. EL ORDEN IMPORTA (AQU� ESTABA EL ERROR PRINCIPAL)
 // Primero Sesi�n -> Luego Autenticaci�n -> Al final Autorizaci�n

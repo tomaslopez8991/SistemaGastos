@@ -11,6 +11,7 @@ public class GetBudgetTabHandler(IApplicationDbContext context)
 {
     public async Task<List<BudgetStatusViewModel>> Handle(GetBudgetTabQuery request, CancellationToken cancellationToken)
     {
+        // EF Core DbContext no es thread-safe: queries secuenciales
         var budgets = await context.Budget
             .Include(b => b.Category)
             .Where(b => b.UserID == request.UserId && b.PeriodMonth == request.Month && b.PeriodYear == request.Year)
@@ -19,12 +20,14 @@ public class GetBudgetTabHandler(IApplicationDbContext context)
         var cashExpenses = await context.Transaction
             .AsNoTracking()
             .Where(t => t.Account.UserID == request.UserId && t.Date.Month == request.Month && t.Date.Year == request.Year)
+            .Select(t => new { t.CategoryID, t.Amount })
             .ToListAsync(cancellationToken);
 
         var cardExpenses = await context.CreditCardTransaction
             .AsNoTracking()
             .Include(t => t.Account)
             .Where(t => t.Account.UserID == request.UserId && t.TransactionDate.Month == request.Month && t.TransactionDate.Year == request.Year)
+            .Select(t => new { t.CategoryID, t.Amount })
             .ToListAsync(cancellationToken);
 
         var now = DateTime.Now;
