@@ -51,9 +51,10 @@
                 name: 'Request payload',
                 formatter: (cell) => {
                     if (!cell) return '—';
-                    const preview = cell.length > 80 ? cell.substring(0, 80) + '…' : cell;
+                    const escaped = cell.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    const preview = escaped.length > 80 ? escaped.substring(0, 80) + '…' : escaped;
                     return gridjs.html(
-                        `<code class="sa-payload" title="${cell.replace(/"/g, '&quot;')}">${preview}</code>`
+                        `<code class="sa-payload" title="${escaped}">${preview}</code>`
                     );
                 }
             }

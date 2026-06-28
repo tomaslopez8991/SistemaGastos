@@ -17,7 +17,7 @@ public class UpsertAccountInterestSettingHandler(IApplicationDbContext context)
         {
             var existing = await context.AccountInterestSetting
                 .FirstOrDefaultAsync(s => s.ID == request.SettingID.Value && s.UserID == request.UserID, cancellationToken)
-                ?? throw new Exception("Configuración no encontrada");
+                ?? throw new InvalidOperationException("Configuración no encontrada");
 
             existing.InterestRate = request.InterestRate;
             existing.Enabled = request.Enabled;
@@ -27,7 +27,7 @@ public class UpsertAccountInterestSettingHandler(IApplicationDbContext context)
             var already = await context.AccountInterestSetting
                 .AnyAsync(s => s.AccountID == request.AccountID && s.UserID == request.UserID, cancellationToken);
 
-            if (already) throw new Exception("Esta cuenta ya tiene una configuración de intereses");
+            if (already) throw new InvalidOperationException("Esta cuenta ya tiene una configuración de intereses");
 
             context.AccountInterestSetting.Add(new AccountInterestSetting
             {
@@ -47,7 +47,7 @@ public class UpsertAccountInterestSettingHandler(IApplicationDbContext context)
     {
         var setting = await context.AccountInterestSetting
             .FirstOrDefaultAsync(s => s.ID == request.SettingID && s.UserID == request.UserID, cancellationToken)
-            ?? throw new Exception("Configuración no encontrada");
+            ?? throw new InvalidOperationException("Configuración no encontrada");
 
         setting.Enabled = !setting.Enabled;
         await context.SaveChangesAsync(cancellationToken);
@@ -58,7 +58,7 @@ public class UpsertAccountInterestSettingHandler(IApplicationDbContext context)
     {
         var setting = await context.AccountInterestSetting
             .FirstOrDefaultAsync(s => s.ID == request.SettingID && s.UserID == request.UserID, cancellationToken)
-            ?? throw new Exception("Configuración no encontrada");
+            ?? throw new InvalidOperationException("Configuración no encontrada");
 
         context.AccountInterestSetting.Remove(setting);
         await context.SaveChangesAsync(cancellationToken);

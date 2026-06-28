@@ -14,6 +14,7 @@ public class PerformanceBehavior<TRequest, TResponse>(
     where TRequest : notnull
 {
     private const int SlowRequestThresholdMs = 500;
+    private static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
@@ -36,7 +37,7 @@ public class PerformanceBehavior<TRequest, TResponse>(
                 {
                     HandlerName = requestName,
                     ElapsedMs = elapsed,
-                    RequestData = JsonSerializer.Serialize(request, new JsonSerializerOptions { WriteIndented = false }),
+                    RequestData = JsonSerializer.Serialize(request, JsonOptions),
                     CreatedAt = DateTime.UtcNow
                 };
                 context.PerformanceLog.Add(log);

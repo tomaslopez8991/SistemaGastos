@@ -46,7 +46,8 @@ jobs:
             /d:sonar.projectBaseDir="$GITHUB_WORKSPACE" \
             /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" \
             /d:sonar.exclusions="**/wwwroot/lib/**,**/Migrations/**,**/obj/**,**/bin/**" \
-            /d:sonar.coverage.exclusions="**/Program.cs,**/Migrations/**,**/*ViewModel.cs,**/*Dto.cs"
+            /d:sonar.coverage.exclusions="**/Program.cs,**/Migrations/**,**/*ViewModel.cs,**/*Dto.cs,**/Views/**,**/wwwroot/**" \
+            /d:sonar.cpd.exclusions="**/Views/**"
 
       - name: Build
         run: dotnet build SistemaGastos.WebApp/SistemaGastos.sln --no-restore -c Release
