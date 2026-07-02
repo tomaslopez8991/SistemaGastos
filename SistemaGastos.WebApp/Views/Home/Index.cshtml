@@ -1,298 +1,267 @@
 @model SistemaGastos.Application.DTOs.DashboardVM
 @{
     ViewData["Title"] = "Dashboard";
+    var culture = new System.Globalization.CultureInfo("es-AR");
 }
 
-<div class="text-center mb-5"
-     data-intro="Bienvenido a SistemaGastos. Acá vas a ver todo lo que necesitás saber de tus finanzas de un vistazo."
-     data-step="1">
-    <h1 class="display-4 fw-bold" style="text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
-        SistemaGastos <span class="text-primary">2.0</span>
-    </h1>
-    <p class="lead">Resumen financiero al @DateTime.Now.ToString("dd/MM/yyyy")</p>
-</div>
+<div class="fin-dashboard">
 
-<!-- ── Métricas principales ── -->
-<div class="row g-4 mb-5"
-     data-intro="Saldo total, ingresos, gastos y balance neto del mes. El balance se pone rojo si gastás más de lo que ingresás."
-     data-step="2">
-
-    <!-- Saldo Total -->
-    <div class="col-md-3">
-        <div class="card card-glass-modern border-0 h-100">
-            <div class="gradient-overlay gradient-success"></div>
-            <div class="card-body p-4 position-relative">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div class="metric-badge bg-success bg-opacity-10">
-                        <i class="fa-solid fa-wallet text-success fa-lg"></i>
-                    </div>
-                    <span class="badge text-success bg-success bg-opacity-10 border border-success">
-                        <i class="fa-solid fa-trending-up me-1"></i>Activo
-                    </span>
-                </div>
-                <p class="text-muted small mb-2 text-uppercase fw-semibold">Saldo Total</p>
-                <h2 class="fw-bold mb-0 @(Model.SaldoTotal >= 0 ? "text-success" : "text-danger")" style="font-size: 2rem; letter-spacing: -1px;">
-                    @Model.SaldoTotal.ToString("C")
-                </h2>
-            </div>
+    <!-- ── Header ── -->
+    <div class="fin-header mb-4"
+         data-intro="Bienvenido a SistemaGastos. Acá vas a ver todo lo que necesitás saber de tus finanzas de un vistazo."
+         data-step="1">
+        <div>
+            <span class="fin-header-eyebrow">Panel financiero</span>
+            <h1 class="fw-bold mb-1 mt-1" style="font-size: 2rem;">
+                SistemaGastos <span class="text-primary">2.0</span>
+            </h1>
+            <p class="text-muted mb-0">Resumen financiero al día de hoy.</p>
+        </div>
+        <div class="fin-date-pill">
+            <i class="fa-regular fa-calendar"></i>
+            @DateTime.Now.ToString("dd 'de' MMMM, yyyy", culture)
         </div>
     </div>
 
-    <!-- Ingresos del Mes -->
-    <div class="col-md-3">
-        <div class="card card-glass-modern border-0 h-100">
-            <div class="gradient-overlay" style="background: linear-gradient(135deg, rgba(32,201,151,.12) 0%, transparent 60%)"></div>
-            <div class="card-body p-4 position-relative">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div class="metric-badge" style="background:rgba(32,201,151,.15)">
-                        <i class="fa-solid fa-arrow-trend-up fa-lg" style="color:#20c997"></i>
+    <!-- ── Saldo Total (hero) + resumen del mes ── -->
+    <div class="row g-4 mb-4"
+         data-intro="Saldo total, ingresos, gastos y balance neto del mes. El balance se pone rojo si gastás más de lo que ingresás."
+         data-step="2">
+        <div class="col-12">
+            <div class="fin-hero">
+                <div class="fin-hero-glow @(Model.SaldoTotal >= 0 ? "positive" : "negative")"></div>
+                <div class="position-relative">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                        <div>
+                            <p class="text-uppercase fw-semibold small text-muted mb-2" style="letter-spacing:1px;">
+                                <i class="fa-solid fa-wallet me-1"></i> Saldo Total
+                            </p>
+                            <h2 class="fin-hero-value fin-num mb-0 @(Model.SaldoTotal >= 0 ? "text-success" : "text-danger")">
+                                @Model.SaldoTotal.ToString("C")
+                            </h2>
+                        </div>
+                        <span class="fin-trend @(Model.SaldoTotal >= 0 ? "text-success bg-success bg-opacity-10 border border-success" : "text-danger bg-danger bg-opacity-10 border border-danger")">
+                            <i class="fa-solid @(Model.SaldoTotal >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down")"></i>
+                            @(Model.SaldoTotal >= 0 ? "Activo" : "Negativo")
+                        </span>
                     </div>
-                    <span class="badge border" style="color:#20c997;background:rgba(32,201,151,.12);border-color:#20c997!important">
-                        <i class="fa-solid fa-calendar me-1"></i>Mes
-                    </span>
+
+                    <div class="fin-hero-sub">
+                        <div class="fin-hero-sub-item">
+                            <div class="fin-hero-sub-label"><i class="fa-solid fa-arrow-trend-up text-success"></i> Ingresos del mes</div>
+                            <div class="fin-hero-sub-value fin-num text-success">@Model.IngresosMes.ToString("C")</div>
+                        </div>
+                        <div class="fin-hero-sub-item">
+                            <div class="fin-hero-sub-label"><i class="fa-solid fa-arrow-trend-down text-danger"></i> Gastos del mes</div>
+                            <div class="fin-hero-sub-value fin-num text-danger">@Model.GastosMes.ToString("C")</div>
+                        </div>
+                        <div class="fin-hero-sub-item">
+                            <div class="fin-hero-sub-label">
+                                <i class="fa-solid @(Model.BalanceMes >= 0 ? "fa-scale-balanced text-success" : "fa-scale-unbalanced text-danger")"></i>
+                                Balance del mes
+                            </div>
+                            <div class="fin-hero-sub-value fin-num @(Model.BalanceMes >= 0 ? "text-success" : "text-danger")">
+                                @Model.BalanceMes.ToString("C")
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-muted small mb-2 text-uppercase fw-semibold">Ingresos del Mes</p>
-                <h2 class="fw-bold mb-0" style="font-size: 2rem; letter-spacing: -1px; color:#20c997">
-                    @Model.IngresosMes.ToString("C")
-                </h2>
             </div>
         </div>
-    </div>
 
-    <!-- Gastos Registrados -->
-    <div class="col-md-3">
-        <div class="card card-glass-modern border-0 h-100">
-            <div class="gradient-overlay gradient-danger"></div>
-            <div class="card-body p-4 position-relative">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div class="metric-badge bg-danger bg-opacity-10">
-                        <i class="fa-solid fa-money-bill-wave text-danger fa-lg"></i>
+        <!-- Consumos Tarjeta -->
+        <div class="col-md-4">
+            <div class="card fin-card card-glass-modern border-0 h-100">
+                <div class="gradient-overlay gradient-warning"></div>
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div class="metric-badge bg-warning bg-opacity-10">
+                            <i class="fa-regular fa-credit-card text-warning fa-lg"></i>
+                        </div>
+                        <span class="badge text-warning bg-warning bg-opacity-10 border border-warning">
+                            <i class="fa-solid fa-exclamation me-1"></i>Deuda
+                        </span>
                     </div>
-                    <span class="badge text-danger bg-danger bg-opacity-10 border border-danger">
-                        <i class="fa-solid fa-calendar me-1"></i>Mes
-                    </span>
+                    <p class="text-muted small mb-2 text-uppercase fw-semibold">Consumos Tarjeta</p>
+                    <h2 class="fw-bold mb-0 fin-num text-warning" style="font-size: 2rem;">
+                        @Model.DeudaTarjetas.ToString("C")
+                    </h2>
                 </div>
-                <p class="text-muted small mb-2 text-uppercase fw-semibold">Gastos del Mes</p>
-                <h2 class="fw-bold mb-0 text-danger" style="font-size: 2rem; letter-spacing: -1px;">
-                    @Model.GastosMes.ToString("C")
-                </h2>
             </div>
         </div>
-    </div>
 
-    <!-- Balance Neto del Mes -->
-    <div class="col-md-3">
-        <div class="card card-glass-modern border-0 h-100">
-            <div class="gradient-overlay @(Model.BalanceMes >= 0 ? "gradient-success" : "gradient-danger")"></div>
-            <div class="card-body p-4 position-relative">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div class="metric-badge @(Model.BalanceMes >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10")">
-                        <i class="fa-solid @(Model.BalanceMes >= 0 ? "fa-scale-balanced text-success" : "fa-scale-unbalanced text-danger") fa-lg"></i>
+        <!-- Próximos Gastos Fijos -->
+        @if (Model.ProximosGastosFijos.Count > 0)
+        {
+            <div class="col-md-8"
+                 data-intro="Gastos fijos con vencimiento pendiente este mes. El badge muestra cuántos días faltan — rojo significa urgente (≤ 3 días)."
+                 data-step="3">
+                <div class="card fin-card card-glass-modern border-0 h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <div class="metric-badge bg-info bg-opacity-10">
+                                <i class="fa-solid fa-calendar-check text-info fa-lg"></i>
+                            </div>
+                            <div>
+                                <p class="text-muted small mb-0 text-uppercase fw-semibold">Próximos Gastos Fijos</p>
+                                <small class="text-muted">Vencimientos restantes del mes</small>
+                            </div>
+                            <a asp-controller="FixedExpense" asp-action="Index" class="ms-auto btn btn-sm btn-outline-secondary">Ver todos</a>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var gasto in Model.ProximosGastosFijos)
+                            {
+                                var diasRestantes = gasto.PaymentDay - DateTime.Now.Day;
+                                var badgeClass = diasRestantes <= 3 ? "bg-danger" : diasRestantes <= 7 ? "bg-warning" : "bg-secondary";
+                                <div class="fin-expense-row">
+                                    @if (!string.IsNullOrEmpty(gasto.LogoUrl))
+                                    {
+                                        <img src="@gasto.LogoUrl" alt="@gasto.Name" style="width:28px;height:28px;object-fit:contain;border-radius:4px">
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex align-items-center justify-content-center rounded" style="width:28px;height:28px;background:rgba(255,255,255,.08)">
+                                            <i class="fa-solid fa-receipt text-muted" style="font-size:.7rem"></i>
+                                        </div>
+                                    }
+                                    <span class="fw-semibold flex-grow-1 text-truncate">@gasto.Name</span>
+                                    <span class="text-muted small">día @gasto.PaymentDay</span>
+                                    <span class="badge @badgeClass">@(diasRestantes == 0 ? "Hoy" : $"en {diasRestantes}d")</span>
+                                    <span class="fw-bold text-danger small fin-num">@gasto.Amount.ToString("N0") @gasto.Currency</span>
+                                </div>
+                            }
+                        </div>
                     </div>
-                    <span class="badge @(Model.BalanceMes >= 0 ? "text-success bg-success bg-opacity-10 border border-success" : "text-danger bg-danger bg-opacity-10 border border-danger")">
-                        @(Model.BalanceMes >= 0 ? "Superávit" : "Déficit")
-                    </span>
                 </div>
-                <p class="text-muted small mb-2 text-uppercase fw-semibold">Balance del Mes</p>
-                <h2 class="fw-bold mb-0 @(Model.BalanceMes >= 0 ? "text-success" : "text-danger")" style="font-size: 2rem; letter-spacing: -1px;">
-                    @Model.BalanceMes.ToString("C")
-                </h2>
             </div>
-        </div>
-    </div>
-
-    <!-- Consumos Tarjeta -->
-    <div class="col-md-4">
-        <div class="card card-glass-modern border-0 h-100">
-            <div class="gradient-overlay gradient-warning"></div>
-            <div class="card-body p-4 position-relative">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div class="metric-badge bg-warning bg-opacity-10">
-                        <i class="fa-regular fa-credit-card text-warning fa-lg"></i>
-                    </div>
-                    <span class="badge text-warning bg-warning bg-opacity-10 border border-warning">
-                        <i class="fa-solid fa-exclamation me-1"></i>Deuda
-                    </span>
-                </div>
-                <p class="text-muted small mb-2 text-uppercase fw-semibold">Consumos Tarjeta</p>
-                <h2 class="fw-bold mb-0 text-warning" style="font-size: 2rem; letter-spacing: -1px;">
-                    @Model.DeudaTarjetas.ToString("C")
-                </h2>
-            </div>
-        </div>
-    </div>
-
-    <!-- Próximos Gastos Fijos -->
-    @if (Model.ProximosGastosFijos.Count > 0)
-    {
-        <div class="col-md-8"
-             data-intro="Gastos fijos con vencimiento pendiente este mes. El badge muestra cuántos días faltan — rojo significa urgente (≤ 3 días)."
-             data-step="3">
-            <div class="card card-glass-modern border-0 h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <div class="metric-badge bg-info bg-opacity-10">
-                            <i class="fa-solid fa-calendar-check text-info fa-lg"></i>
+        }
+        else
+        {
+            <div class="col-md-8">
+                <div class="card fin-card card-glass-modern border-0 h-100">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="metric-badge bg-success bg-opacity-10">
+                            <i class="fa-solid fa-circle-check text-success fa-lg"></i>
                         </div>
                         <div>
-                            <p class="text-muted small mb-0 text-uppercase fw-semibold">Próximos Gastos Fijos</p>
-                            <small class="text-muted">Vencimientos restantes del mes</small>
+                            <p class="text-muted small mb-0 text-uppercase fw-semibold">Gastos Fijos</p>
+                            <span class="text-success fw-semibold">Sin vencimientos pendientes este mes</span>
                         </div>
-                        <a asp-controller="FixedExpense" asp-action="Index" class="ms-auto btn btn-sm btn-outline-secondary">Ver todos</a>
                     </div>
-                    <div class="d-flex flex-column gap-2">
-                        @foreach (var gasto in Model.ProximosGastosFijos)
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- ── Módulos más usados (localStorage) ── -->
+    <div class="d-flex justify-content-between align-items-center mb-3"
+         data-intro="El sistema registra automáticamente cuánto usás cada módulo. Los más frecuentes aparecen acá rankeados."
+         data-step="4">
+        <h4 class="mb-0">
+            <i class="fa-solid fa-fire me-2 text-warning"></i>Módulos más usados
+        </h4>
+        <button class="btn btn-sm btn-link text-muted" onclick="dashboardResetUsage()" title="Resetear contadores">
+            <i class="fa-solid fa-rotate-left me-1"></i>Resetear
+        </button>
+    </div>
+    <div class="row g-3 mb-5" id="most-used-modules">
+        <!-- Rendered by JS -->
+    </div>
+
+    <!-- ── Accesos Rápidos ── -->
+    <h4 class="mb-3"
+        data-intro="Todos los módulos disponibles de un clic. <span class='tut-action'>→ Tocá cualquiera para empezar a usarlo.</span>"
+        data-step="5">
+        <i class="fa-solid fa-rocket me-2"></i>Accesos Rápidos
+    </h4>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-6 col-md-2">
+            <a asp-controller="TmpTransaction" asp-action="Index"
+               class="card fin-card card-action h-100 text-decoration-none shadow-sm module-link"
+               data-module="Proyección">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-calculator text-info"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold">Proyección</h6>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <a asp-controller="CreditCardTransaction" asp-action="Index"
+               class="card fin-card card-action h-100 text-decoration-none shadow-sm module-link"
+               data-module="Tarjetas">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-credit-card text-primary"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold">Calculadora TC</h6>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <a asp-controller="Transaction" asp-action="Index"
+               class="card fin-card card-action h-100 text-decoration-none shadow-sm module-link"
+               data-module="Transacciones">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-money-bill-transfer text-success"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold">Transacciones</h6>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <a asp-controller="Todo" asp-action="Index"
+               class="card fin-card card-action h-100 text-decoration-none shadow-sm module-link"
+               data-module="Tareas">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper position-relative d-inline-flex">
+                        <i class="fa-solid fa-list-check text-warning"></i>
+                        @if (Model.TareasPendientes > 0)
                         {
-                            var diasRestantes = gasto.PaymentDay - DateTime.Now.Day;
-                            var badgeClass = diasRestantes <= 3 ? "bg-danger" : diasRestantes <= 7 ? "bg-warning" : "bg-secondary";
-                            <div class="d-flex align-items-center gap-3 px-3 py-2 rounded" style="background:rgba(255,255,255,.04)">
-                                @if (!string.IsNullOrEmpty(gasto.LogoUrl))
-                                {
-                                    <img src="@gasto.LogoUrl" alt="@gasto.Name" style="width:28px;height:28px;object-fit:contain;border-radius:4px">
-                                }
-                                else
-                                {
-                                    <div class="d-flex align-items-center justify-content-center rounded" style="width:28px;height:28px;background:rgba(255,255,255,.08)">
-                                        <i class="fa-solid fa-receipt text-muted" style="font-size:.7rem"></i>
-                                    </div>
-                                }
-                                <span class="fw-semibold flex-grow-1 text-truncate">@gasto.Name</span>
-                                <span class="text-muted small">día @gasto.PaymentDay</span>
-                                <span class="badge @badgeClass">@(diasRestantes == 0 ? "Hoy" : $"en {diasRestantes}d")</span>
-                                <span class="fw-bold text-danger small">@gasto.Amount.ToString("N0") @gasto.Currency</span>
-                            </div>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                @Model.TareasPendientes
+                            </span>
                         }
                     </div>
+                    <h6 class="mb-0 fw-bold">Tareas</h6>
                 </div>
-            </div>
+            </a>
         </div>
-    }
-    else
-    {
-        <div class="col-md-8">
-            <div class="card card-glass-modern border-0 h-100">
-                <div class="card-body p-4 d-flex align-items-center gap-3">
-                    <div class="metric-badge bg-success bg-opacity-10">
-                        <i class="fa-solid fa-circle-check text-success fa-lg"></i>
+
+        <div class="col-6 col-md-2">
+            <a asp-controller="Transaction" asp-action="Statistics"
+               class="card fin-card card-action h-100 text-decoration-none shadow-sm module-link"
+               data-module="Estadísticas">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-chart-line text-info"></i>
                     </div>
-                    <div>
-                        <p class="text-muted small mb-0 text-uppercase fw-semibold">Gastos Fijos</p>
-                        <span class="text-success fw-semibold">Sin vencimientos pendientes este mes</span>
-                    </div>
+                    <h6 class="mb-0 fw-bold">Estadísticas</h6>
                 </div>
-            </div>
+            </a>
         </div>
-    }
-</div>
 
-<!-- ── Módulos más usados (localStorage) ── -->
-<div class="d-flex justify-content-between align-items-center mb-3"
-     data-intro="El sistema registra automáticamente cuánto usás cada módulo. Los más frecuentes aparecen acá rankeados."
-     data-step="4">
-    <h4 class="mb-0">
-        <i class="fa-solid fa-fire me-2 text-warning"></i>Módulos más usados
-    </h4>
-    <button class="btn btn-sm btn-link text-muted" onclick="dashboardResetUsage()" title="Resetear contadores">
-        <i class="fa-solid fa-rotate-left me-1"></i>Resetear
-    </button>
-</div>
-<div class="row g-3 mb-5" id="most-used-modules">
-    <!-- Rendered by JS -->
-</div>
-
-<!-- ── Accesos Rápidos ── -->
-<h4 class="mb-3"
-    data-intro="Todos los módulos disponibles de un clic. <span class='tut-action'>→ Tocá cualquiera para empezar a usarlo.</span>"
-    data-step="5">
-    <i class="fa-solid fa-rocket me-2"></i>Accesos Rápidos
-</h4>
-
-<div class="row g-3 mb-4">
-
-    <div class="col-6 col-md-2">
-        <a asp-controller="TmpTransaction" asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm module-link"
-           data-module="Proyección">
-            <div class="card-body text-center">
-                <div class="icon-wrapper mb-3">
-                    <i class="fa-solid fa-calculator fa-3x text-info"></i>
+        <div class="col-6 col-md-2">
+            <a asp-controller="Person" asp-action="Index"
+               class="card fin-card card-action h-100 text-decoration-none shadow-sm module-link"
+               data-module="Cuentas">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fa-solid fa-people-group text-secondary"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold">Cuentas</h6>
                 </div>
-                <h6 class="mb-0 fw-bold">Proyección</h6>
-            </div>
-        </a>
-    </div>
+            </a>
+        </div>
 
-    <div class="col-6 col-md-2">
-        <a asp-controller="CreditCardTransaction" asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm module-link"
-           data-module="Tarjetas">
-            <div class="card-body text-center">
-                <div class="icon-wrapper mb-3">
-                    <i class="fa-solid fa-credit-card fa-3x text-primary"></i>
-                </div>
-                <h6 class="mb-0 fw-bold">Calculadora TC</h6>
-            </div>
-        </a>
     </div>
-
-    <div class="col-6 col-md-2">
-        <a asp-controller="Transaction" asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm module-link"
-           data-module="Transacciones">
-            <div class="card-body text-center">
-                <div class="icon-wrapper mb-3">
-                    <i class="fa-solid fa-money-bill-transfer fa-3x text-success"></i>
-                </div>
-                <h6 class="mb-0 fw-bold">Transacciones</h6>
-            </div>
-        </a>
-    </div>
-
-    <div class="col-6 col-md-2">
-        <a asp-controller="Todo" asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm module-link"
-           data-module="Tareas">
-            <div class="card-body text-center">
-                <div class="icon-wrapper mb-3 position-relative d-inline-block">
-                    <i class="fa-solid fa-list-check fa-3x text-warning"></i>
-                    @if (Model.TareasPendientes > 0)
-                    {
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            @Model.TareasPendientes
-                        </span>
-                    }
-                </div>
-                <h6 class="mb-0 fw-bold">Tareas</h6>
-            </div>
-        </a>
-    </div>
-
-    <div class="col-6 col-md-2">
-        <a asp-controller="Transaction" asp-action="Statistics"
-           class="card card-action h-100 text-decoration-none shadow-sm module-link"
-           data-module="Estadísticas">
-            <div class="card-body text-center">
-                <div class="icon-wrapper mb-3">
-                    <i class="fas fa-chart-line fa-3x text-info"></i>
-                </div>
-                <h6 class="mb-0 fw-bold">Estadísticas</h6>
-            </div>
-        </a>
-    </div>
-
-    <div class="col-6 col-md-2">
-        <a asp-controller="Person" asp-action="Index"
-           class="card card-action h-100 text-decoration-none shadow-sm module-link"
-           data-module="Cuentas">
-            <div class="card-body text-center">
-                <div class="icon-wrapper mb-3">
-                    <i class="fa-solid fa-people-group fa-3x text-secondary"></i>
-                </div>
-                <h6 class="mb-0 fw-bold">Cuentas</h6>
-            </div>
-        </a>
-    </div>
-
 </div>
 
 @section Scripts {
