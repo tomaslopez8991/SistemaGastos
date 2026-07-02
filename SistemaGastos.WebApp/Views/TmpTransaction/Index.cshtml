@@ -6,6 +6,7 @@
 @Html.AntiForgeryToken()
 
 <div id="planning-container"
+     class="fin-dashboard"
      data-url-list="@Url.Action("GetTransactionsByMonth", "TmpTransaction")"
      data-url-form="@Url.Action("GetTmpTransactionForm", "TmpTransaction")"
      data-url-create="@Url.Action("Create", "TmpTransaction")"
@@ -252,7 +253,7 @@
 </div>
 
 @* ── Panel lateral de detalle de día ─────────────────────── *@
-<div id="cf-day-panel" class="cf-day-panel">
+<div id="cf-day-panel" class="cf-day-panel fin-dashboard">
     <div class="cf-day-panel-header">
         <div>
             <div class="fw-semibold" id="cf-panel-date-label"></div>
