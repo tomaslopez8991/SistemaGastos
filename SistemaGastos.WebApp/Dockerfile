@@ -13,7 +13,7 @@ RUN dotnet build "SistemaGastos.WebApp.csproj" -c Release -o /app/build
 
 # 2. Etapa de publicación (Publish)
 FROM build AS publish
-RUN dotnet publish "SistemaGastos.WebApp/SistemaGastos.WebApp.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "SistemaGastos.WebApp.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # 3. Etapa final (Run)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final

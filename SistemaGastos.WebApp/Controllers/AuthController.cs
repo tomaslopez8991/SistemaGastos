@@ -21,6 +21,7 @@ public class AuthController(IMediator mediator) : Controller
 
     [HttpPost]
     [AllowAnonymous]
+    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Login(string username, string password)
     {
         var usuario = await mediator.Send(new LoginUserQuery(username, password));
@@ -68,6 +69,7 @@ public class AuthController(IMediator mediator) : Controller
 
     [HttpPost]
     [AllowAnonymous]
+    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> Register(RegisterUserCommand command)
     {
         try

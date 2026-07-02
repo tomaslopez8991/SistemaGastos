@@ -13,7 +13,10 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
     public async Task<List<FixedExpenseDto>> Handle(GetAllFixedExpensesQuery request, CancellationToken cancellationToken)
     {
         var culture = new CultureInfo("es-AR");
-        decimal dolarRate = await dolarService.GetDolarBolsaAsync();
+
+        // El call HTTP al dólar corre en paralelo con las queries de DB.
+        // EF Core DbContext no es thread-safe: las queries de DB van secuenciales.
+        var dolarTask = dolarService.GetDolarBolsaAsync();
 
         var fixedExpenses = await context.FixedExpense
             .AsNoTracking()
@@ -23,7 +26,6 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
             .OrderBy(f => f.PaymentDay)
             .ToListAsync(cancellationToken);
 
-        // Gastos fijos pagados este mes vía Transaction normal → guardamos el monto real abonado
         var paidViaTransaction = await context.Transaction
             .AsNoTracking()
             .Where(t => t.FixedExpenseID != null
@@ -32,7 +34,6 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
             .Select(t => new { ExpenseID = t.FixedExpenseID!.Value, t.Amount, Currency = "ARS" })
             .ToListAsync(cancellationToken);
 
-        // Gastos fijos pagados este mes vía CreditCardTransaction
         var paidViaCreditCard = await context.CreditCardTransaction
             .AsNoTracking()
             .Where(t => t.FixedExpenseID != null
@@ -40,6 +41,8 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
                      && t.TransactionDate.Month == request.Month)
             .Select(t => new { ExpenseID = t.FixedExpenseID!.Value, t.Amount, Currency = t.Account.Currency })
             .ToListAsync(cancellationToken);
+
+        decimal dolarRate = await dolarTask;
 
         var paidIds = paidViaTransaction.Select(t => t.ExpenseID)
             .Union(paidViaCreditCard.Select(t => t.ExpenseID))

@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Categorías";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -10,20 +10,18 @@
      data-url-form="@Url.Action("GetCategoryForm", "Category")"
      data-url-save="@Url.Action("Save", "Category")"
      data-url-delete="@Url.Action("Delete", "Category")"
-     data-intro="Bienvenido al módulo de Categorías. Aquí defines las etiquetas que usarás para organizar y clasificar todos tus ingresos y gastos. Ejemplos: Comida, Transporte, Salario, Freelance, etc."
+     data-intro="Las categorías clasifican tus ingresos y gastos. Ejemplos: Comida, Transporte, Salario, Freelance."
      data-step="1">
 
-    <div class="d-flex justify-content-between align-items-center mb-4"
-         data-intro="Desde aquí puedes gestionar todas tus categorías para mantener ordenados tus movimientos financieros."
-         data-step="2">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-0">Categorías</h2>
             <p class="small">Organiza tus movimientos</p>
         </div>
         <button class="btn btn-success btn-lg shadow"
                 onclick="abrirModalCategoria()"
-                data-intro="Haz clic aquí para crear una nueva categoría. Podrás elegir un nombre, ícono, color y si es para Ingresos o Gastos."
-                data-step="3">
+                data-intro="Creá una nueva categoría desde acá. <span class='tut-action'>→ Tocá <strong>+ Nueva</strong>. Completá: <strong>Nombre</strong> (ej: Supermercado), <strong>Tipo</strong> (Gasto/Ingreso), <strong>Color</strong> y <strong>Ícono</strong> (clase FontAwesome, ej: fa-solid fa-cart-shopping). Luego Guardar.</span>"
+                data-step="2">
             <i class="fa-solid fa-plus me-2"></i> Nueva
         </button>
     </div>
@@ -31,29 +29,23 @@
     <ul class="nav nav-pills mb-4 gap-2"
         id="pills-tab"
         role="tablist"
-        data-intro="Usa estos filtros para ver solo las categorías que necesitas: todas juntas, solo las de gastos o solo las de ingresos."
-        data-step="4">
+        data-intro="Filtrá por tipo. <span class='tut-action'>→ Tocá <strong>Gastos</strong> o <strong>Ingresos</strong> para ver solo las de esa categoría.</span>"
+        data-step="3">
         <li class="nav-item">
             <button class="nav-link active rounded-pill px-4"
-                    onclick="filtrarCategorias('all')"
-                    data-intro="Ver todas las categorías sin filtrar."
-                    data-step="5">
+                    onclick="filtrarCategorias('all')">
                 Todas
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link rounded-pill px-4"
-                    onclick="filtrarCategorias('Gasto')"
-                    data-intro="Filtrar solo categorías de gastos: Comida, Transporte, Salud, Entretenimiento, etc."
-                    data-step="6">
+                    onclick="filtrarCategorias('Gasto')">
                 Gastos
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link rounded-pill px-4"
-                    onclick="filtrarCategorias('Ingreso')"
-                    data-intro="Filtrar solo categorías de ingresos: Salario, Freelance, Inversiones, Ventas, etc."
-                    data-step="7">
+                    onclick="filtrarCategorias('Ingreso')">
                 Ingresos
             </button>
         </li>
@@ -61,8 +53,8 @@
 
     <div class="row g-3"
          id="categories-grid"
-         data-intro="Aquí aparecerán todas tus categorías en formato de tarjetas. Cada una muestra su ícono, nombre, color y tipo (Ingreso/Gasto). Puedes editarlas o eliminarlas desde el menú de cada tarjeta."
-         data-step="8">
+         data-intro="Cada tarjeta muestra ícono, nombre, color y tipo. Usá el menú ⋮ para editar o eliminar."
+         data-step="4">
     </div>
 </div>
 

@@ -1,5 +1,6 @@
 using FluentValidation;
 using MediatR;
+using StackExchange.Profiling;
 using Microsoft.AspNetCore.Authentication.Cookies; // NECESARIO PARA AUTH
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides; // NECESARIO PARA SOMEE
@@ -9,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaGastos;
 using SistemaGastos.Application.Behaviors;
 using SistemaGastos.Application.Interfaces;
-using SistemaGastos.Application.Validators;
+using SistemaGastos.Application.Features.Transactions.Validators;
 using SistemaGastos.Data;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Application.Options;
@@ -28,8 +29,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, b => b.MigrationsAssembly("SistemaGastos.Infraestructure")));
 
 // 2. PERSISTENCIA DE LLAVES (DATA PROTECTION) - CR�TICO EN SOMEE
-var keysFolder = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "keys");
-if (!Directory.Exists(keysFolder)) Directory.CreateDirectory(keysFolder);
+// Use ContentRootPath directly (not nested wwwroot) so the keys folder is writable on shared hosting
+var keysFolder = Path.Combine(builder.Environment.ContentRootPath, "keys");
+try
+{
+    if (!Directory.Exists(keysFolder)) Directory.CreateDirectory(keysFolder);
+}
+catch { /* If the folder can't be created, Data Protection will use in-memory keys */ }
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
@@ -80,7 +86,7 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-builder.Services.AddScoped<IAccountInterestService, SistemaGastos.Application.Features.AccountInterest.Services.AccountInterestService>();
+builder.Services.AddScoped<IAccountInterestService, SistemaGastos.Infraestructure.Services.AccountInterestService>();
 
 builder.Services.AddScoped<IEmailTemplateHelper, EmailTemplateHelper>();
 builder.Services.AddTransient<IARCAService, ARCAServiceStub>();
@@ -94,11 +100,31 @@ builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Siste
 
 builder.Services.AddTransient<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddleware>();
 
+// MiniProfiler — visible solo para el usuario configurado en MiniProfiler:AdminUsername
+var profilerAdmin = builder.Configuration["MiniProfiler:AdminUsername"];
+if (!string.IsNullOrEmpty(profilerAdmin))
+{
+    builder.Services.AddMiniProfiler(options =>
+    {
+        options.RouteBasePath = "/profiler";
+        options.ColorScheme = ColorScheme.Dark;
+        options.PopupRenderPosition = RenderPosition.BottomLeft;
+        options.PopupShowTimeWithChildren = true;
+        options.ResultsAuthorize = req =>
+            req.HttpContext.User?.Identity?.IsAuthenticated == true &&
+            req.HttpContext.User.Identity.Name == profilerAdmin;
+        options.ResultsListAuthorize = req =>
+            req.HttpContext.User?.Identity?.IsAuthenticated == true &&
+            req.HttpContext.User.Identity.Name == profilerAdmin;
+    }).AddEntityFramework();
+}
+
 builder.Services.AddMediatR(cfg => {
     cfg.RegisterServicesFromAssembly(typeof(SistemaGastos.Application.Features.Accounts.Queries.GetAccountsQuery).Assembly);
 
     // 2. REGISTRAR EL PIPELINE (IMPORTANTE)
     // Esto le dice a MediatR: "Usa este comportamiento para validar"
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 });
 
@@ -115,8 +141,17 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 
     // Actualiza el log diario de intereses y genera el cobro mensual si corresponde
-    var accountInterestService = scope.ServiceProvider.GetRequiredService<IAccountInterestService>();
-    await accountInterestService.RunAccrualAsync();
+    // Wrapped in try-catch: a failure here must not prevent the app from starting
+    try
+    {
+        var accountInterestService = scope.ServiceProvider.GetRequiredService<IAccountInterestService>();
+        await accountInterestService.RunAccrualAsync();
+    }
+    catch (Exception ex)
+    {
+        var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        startupLogger.LogError(ex, "RunAccrualAsync failed on startup — app will continue");
+    }
 }
 
 // 6. CONFIGURACI�N DE PROXY (CR�TICO PARA HTTPS EN SOMEE)
@@ -151,6 +186,9 @@ app.UseCookiePolicy();
 app.UseMiddleware<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddleware>();
 
 app.UseRouting();
+
+if (!string.IsNullOrEmpty(builder.Configuration["MiniProfiler:AdminUsername"]))
+    app.UseMiniProfiler();
 
 // 7. EL ORDEN IMPORTA (AQU� ESTABA EL ERROR PRINCIPAL)
 // Primero Sesi�n -> Luego Autenticaci�n -> Al final Autorizaci�n

@@ -11,29 +11,27 @@
      data-url-save="@Url.Action("Save", "Todo")"
      data-url-toggle="@Url.Action("ToggleStatus", "Todo")"
      data-url-delete="@Url.Action("Delete", "Todo")"
-     data-intro="Bienvenido al Organizador de Tareas. Este módulo te ayuda a no olvidar pagos pendientes, trámites bancarios, renovaciones de servicios y cualquier compromiso financiero importante."
+     data-intro="Organizá tus pagos y compromisos pendientes. Los vencidos se destacan en rojo."
      data-step="1">
 
     <!-- Encabezado -->
-    <div class="d-flex justify-content-between align-items-center mb-3"
-         data-intro="Desde aquí puedes gestionar todas tus tareas financieras pendientes y ver las que ya completaste."
-         data-step="2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="fw-bold mb-0">Organizador</h2>
             <p class="small text-muted mb-0">No olvides tus compromisos financieros</p>
         </div>
         <button class="btn btn-success btn-lg shadow"
                 onclick="abrirModalTarea()"
-                data-intro="Haz clic aquí para crear una nueva tarea con título, descripción, prioridad, fecha límite y recordatorio opcional."
-                data-step="3">
+                data-intro="Creá una nueva tarea desde acá. <span class='tut-action'>→ Tocá <strong>+ Nueva Tarea</strong>. Completá: <strong>Título</strong> (ej: Pagar seguro auto), <strong>Prioridad</strong> (Alta/Media/Baja), <strong>Fecha vencimiento</strong> y opcionalmente <strong>Recordar desde</strong> y <strong>Descripción</strong>. Luego Guardar.</span>"
+                data-step="2">
             <i class="fa-solid fa-plus me-2"></i>Nueva Tarea
         </button>
     </div>
 
     <!-- Filtros de prioridad -->
     <div class="d-flex align-items-center gap-2 mb-4"
-         data-intro="Filtra tus tareas pendientes por prioridad para enfocarte en lo más urgente."
-         data-step="4">
+         data-intro="Filtrá las pendientes por prioridad. <span class='tut-action'>→ Tocá Alta para ver solo las más urgentes.</span>"
+         data-step="3">
         <small class="text-muted fw-semibold text-uppercase me-1">Filtrar:</small>
         <button class="btn btn-sm btn-outline-secondary active" data-filter="all">Todas</button>
         <button class="btn btn-sm btn-outline-danger" data-filter="1">
@@ -48,15 +46,11 @@
     </div>
 
     <!-- Columnas -->
-    <div class="row g-4"
-         data-intro="Las tareas se organizan en dos columnas: Pendientes (por hacer) y Completadas (ya finalizadas)."
-         data-step="5">
+    <div class="row g-4">
 
         <!-- Pendientes -->
         <div class="col-md-6">
-            <div class="d-flex align-items-center mb-3"
-                 data-intro="Tareas Pendientes: aquí aparecen las que aún no completaste. Las vencidas se destacan en rojo."
-                 data-step="6">
+            <div class="d-flex align-items-center mb-3">
                 <div class="badge bg-warning text-dark me-2 p-2 rounded-circle">
                     <i class="fa-solid fa-clock"></i>
                 </div>
@@ -64,16 +58,14 @@
                 <span class="badge bg-secondary ms-2" id="count-pending">0</span>
             </div>
             <div id="pending-list" class="task-column"
-                 data-intro="Cada tarjeta muestra título, prioridad y fecha. Haz clic en el círculo para completarla, o en la tarjeta para editarla."
-                 data-step="7">
+                 data-intro="Las tareas que todavía no completaste. <span class='tut-action'>→ Tocá el círculo ○ de una tarjeta para marcarla como completada.</span>"
+                 data-step="4">
             </div>
         </div>
 
         <!-- Completadas -->
         <div class="col-md-6">
-            <div class="d-flex align-items-center mb-3"
-                 data-intro="Tareas Completadas: aquí se mueven las tareas que marcaste como finalizadas."
-                 data-step="8">
+            <div class="d-flex align-items-center mb-3">
                 <div class="badge bg-success me-2 p-2 rounded-circle">
                     <i class="fa-solid fa-check"></i>
                 </div>
@@ -81,8 +73,8 @@
                 <span class="badge bg-secondary ms-2" id="count-completed">0</span>
             </div>
             <div id="completed-list" class="task-column opacity-75"
-                 data-intro="Las tareas completadas se conservan aquí para tu historial. Puedes reactivarlas si es necesario."
-                 data-step="9">
+                 data-intro="Historial de tareas completadas. Podés reactivar cualquiera si es necesario."
+                 data-step="5">
             </div>
         </div>
 

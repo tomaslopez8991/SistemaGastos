@@ -39,6 +39,12 @@ public record CreditCardTotalsDto(
     decimal FixedArs, decimal FixedUsd,
     decimal VariableArs, decimal VariableUsd);
 
+public record CategoryBreakdownDto(
+    string CategoryName,
+    decimal TotalArs,
+    decimal TotalUsd,
+    int Count);
+
 public record UpdateCreditCardTransactionDto(
     int ID,
     string Description,

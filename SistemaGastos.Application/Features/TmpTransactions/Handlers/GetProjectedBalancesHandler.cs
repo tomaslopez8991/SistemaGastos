@@ -14,15 +14,54 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
     public async Task<List<MonthlyBalanceDto>> Handle(GetProjectedBalancesQuery request, CancellationToken cancellationToken)
     {
         var fechaActual = DateTime.Now;
-        decimal cotizacionDolar = await dolarService.GetDolarBolsaAsync();
 
-        // ====================================================================
-        // 1. CALCULAR SALDO INICIAL
-        // ====================================================================
+        // El call HTTP al dólar corre en paralelo con las queries de DB.
+        // EF Core DbContext no es thread-safe: las queries de DB van secuenciales.
+        var dolarTask = dolarService.GetDolarBolsaAsync();
+
         var accounts = await context.Account
             .Where(a => a.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
+        var manualProjections = await context.TmpTransaction
+            .Include(t => t.Category)
+            .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
+            .ToListAsync(cancellationToken);
+
+        var cardTransactions = await context.CreditCardTransaction
+            .Include(t => t.Account)
+            .Include(t => t.Category)
+            .Where(t => t.Account.UserID == request.UserID)
+            .ToListAsync(cancellationToken);
+
+        var allFixedExpenses = await context.FixedExpense
+            .AsNoTracking()
+            .Include(f => f.Category)
+            .Where(f => f.UserID == request.UserID && f.Active)
+            .ToListAsync(cancellationToken);
+
+        var paidFixedExpenses = await context.Transaction
+            .AsNoTracking()
+            .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
+            .Select(t => new { ExpenseID = t.FixedExpenseID, Year = t.Date.Year, Month = t.Date.Month })
+            .ToListAsync(cancellationToken);
+
+        var allFixedIncomes = await context.FixedIncome
+            .AsNoTracking()
+            .Where(f => f.UserID == request.UserID && f.Active)
+            .ToListAsync(cancellationToken);
+
+        var receivedFixedIncomes = await context.Transaction
+            .AsNoTracking()
+            .Where(t => t.Account.UserID == request.UserID && t.FixedIncomeID != null)
+            .Select(t => new { IncomeID = t.FixedIncomeID, Year = t.Date.Year, Month = t.Date.Month })
+            .ToListAsync(cancellationToken);
+
+        decimal cotizacionDolar = await dolarTask;
+
+        // ====================================================================
+        // 1. CALCULAR SALDO INICIAL
+        // ====================================================================
         var saldoLiquidezARS = accounts
             .Where(a => a.Type != AccountType.TarjetaCredito && a.Currency == "ARS")
             .Sum(a => a.Balance);
@@ -45,60 +84,6 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
             .Sum(a => a.Balance);
 
         decimal deudaResumenProximo = Math.Abs(deudaTarjetasArs) + (Math.Abs(deudaTarjetasUsd) * cotizacionDolar);
-
-        // ====================================================================
-        // 3. OBTENER PROYECCIONES MANUALES
-        // ====================================================================
-        var manualProjections = await context.TmpTransaction
-            .Include(t => t.Category)
-            .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
-            .ToListAsync(cancellationToken);
-
-        // ====================================================================
-        // 4. OBTENER TRANSACCIONES DE TARJETA
-        // ====================================================================
-        var cardTransactions = await context.CreditCardTransaction
-            .Include(t => t.Account)
-            .Include(t => t.Category)
-            .Where(t => t.Account.UserID == request.UserID)
-            .ToListAsync(cancellationToken);
-
-        // ====================================================================
-        // 5. OBTENER GASTOS FIJOS ACTIVOS
-        // ====================================================================
-        var allFixedExpenses = await context.FixedExpense
-            .AsNoTracking()
-            .Include(f => f.Category)
-            .Where(f => f.UserID == request.UserID && f.Active)
-            .ToListAsync(cancellationToken);
-
-        var paidFixedExpenses = await context.Transaction
-            .AsNoTracking()
-            .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
-            .Select(t => new {
-                ExpenseID = t.FixedExpenseID,
-                Year = t.Date.Year,
-                Month = t.Date.Month
-            })
-            .ToListAsync(cancellationToken);
-
-        // ====================================================================
-        // 5b. OBTENER INGRESOS FIJOS ACTIVOS
-        // ====================================================================
-        var allFixedIncomes = await context.FixedIncome
-            .AsNoTracking()
-            .Where(f => f.UserID == request.UserID && f.Active)
-            .ToListAsync(cancellationToken);
-
-        var receivedFixedIncomes = await context.Transaction
-            .AsNoTracking()
-            .Where(t => t.Account.UserID == request.UserID && t.FixedIncomeID != null)
-            .Select(t => new {
-                IncomeID = t.FixedIncomeID,
-                Year = t.Date.Year,
-                Month = t.Date.Month
-            })
-            .ToListAsync(cancellationToken);
 
         // ====================================================================
         // 6. CALCULAR BALANCES MENSUALES (12 MESES)

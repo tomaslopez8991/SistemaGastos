@@ -1,18 +1,16 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.Features.Dashboard.Queries;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Application.DTOs;
-// Asegúrate de importar tu DolarService o su Interfaz
 
 namespace SistemaGastos.Application.Features.Dashboard.Handlers;
 
-public class GetDashboardMetricsHandler(IApplicationDbContext context, IDolarService dolarService, IAccountInterestService accountInterestService)
+public class GetDashboardMetricsHandler(IApplicationDbContext context, IDolarService dolarService)
     : IRequestHandler<GetDashboardMetricsQuery, DashboardVM>
 {
     public async Task<DashboardVM> Handle(GetDashboardMetricsQuery request, CancellationToken cancellationToken)
     {
-        // 1. Obtener ID del usuario
         var userId = await context.Login
             .AsNoTracking()
             .Where(u => u.Username == request.Username)
@@ -21,22 +19,16 @@ public class GetDashboardMetricsHandler(IApplicationDbContext context, IDolarSer
 
         if (userId == 0) return new DashboardVM();
 
-        // 2. Preparar fechas
         var hoy = DateTime.Now;
         var inicioMes = new DateTime(hoy.Year, hoy.Month, 1);
 
-        // 3. EJECUCIÓN SECUENCIAL (Uno por uno para evitar error de hilos en DbContext)
+        var dolarTask = dolarService.GetDolarBolsaAsync();
 
-        // A. Cotización Dólar (Este sí es externo, pero lo esperamos igual por orden)
-        decimal cotizacionDolar = await dolarService.GetDolarBolsaAsync();
-
-        // B. Saldo
         var saldo = await context.Account
             .AsNoTracking()
             .Where(a => a.UserID == userId && !a.Name.Contains("crédito"))
             .SumAsync(a => a.Balance, cancellationToken);
 
-        // C. Gastos del Mes
         var gastos = await context.Transaction
             .AsNoTracking()
             .Where(t => t.Account.Login.ID == userId
@@ -44,37 +36,50 @@ public class GetDashboardMetricsHandler(IApplicationDbContext context, IDolarSer
                         && t.Category.Type == "Gasto")
             .SumAsync(t => t.Amount, cancellationToken);
 
-        // D. Deuda ARS
+        var ingresos = await context.Transaction
+            .AsNoTracking()
+            .Where(t => t.Account.Login.ID == userId
+                        && t.Date >= inicioMes
+                        && t.Category.Type == "Ingreso")
+            .SumAsync(t => t.Amount, cancellationToken);
+
         var deudaArs = await context.CreditCardTransaction
             .AsNoTracking()
             .Where(t => t.Account.Login.ID == userId && t.Account.Currency == "ARS")
             .SumAsync(t => t.Amount, cancellationToken);
 
-        // E. Deuda USD/USDT
         var deudaUsd = await context.CreditCardTransaction
             .AsNoTracking()
             .Where(t => t.Account.Login.ID == userId && (t.Account.Currency == "USD" || t.Account.Currency == "USDT"))
             .SumAsync(t => t.Amount, cancellationToken);
 
-        // F. Tareas Pendientes
         var tareas = await context.TodoTask
             .AsNoTracking()
             .CountAsync(t => t.Login.ID == userId && !t.IsCompleted, cancellationToken);
 
-        // F2. Intereses acumulados (cuentas con cálculo de intereses habilitado)
-        var interesesAcumulados = await accountInterestService.GetTotalAccruedInterestAsync(userId, cancellationToken);
+        var mesActualStr = hoy.ToString("yyyy-MM");
+        var proximosGastos = await context.FixedExpense
+            .AsNoTracking()
+            .Where(fe => fe.UserID == userId
+                         && fe.Active
+                         && fe.PaymentDay >= hoy.Day
+                         && (fe.PausedMonths == null || !fe.PausedMonths.Contains(mesActualStr)))
+            .OrderBy(fe => fe.PaymentDay)
+            .Take(5)
+            .Select(fe => new ProximoGastoFijoDto(fe.Name, fe.Amount, fe.Currency, fe.PaymentDay, fe.LogoUrl))
+            .ToListAsync(cancellationToken);
 
-        // 4. Calcular Totales
+        decimal cotizacionDolar = await dolarTask;
         decimal deudaTotal = deudaArs + (deudaUsd * cotizacionDolar);
 
-        // 5. Retornar DTO
         return new DashboardVM
         {
             SaldoTotal = saldo,
             GastosMes = gastos,
+            IngresosMes = ingresos,
             DeudaTarjetas = deudaTotal,
             TareasPendientes = tareas,
-            InteresesAcumulados = interesesAcumulados
+            ProximosGastosFijos = proximosGastos
         };
     }
 }

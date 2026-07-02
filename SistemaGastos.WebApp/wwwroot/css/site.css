@@ -1994,6 +1994,21 @@ input.gridjs-input {
     font-size: 0.9rem !important;
     line-height: 1.65 !important;
     min-height: 60px !important;
+    min-width: 300px !important;
+    max-width: 380px !important;
+}
+
+/* Bloque de acción dentro del tooltip */
+.introjs-tooltiptext .tut-action {
+    display: block;
+    margin-top: 10px;
+    padding: 7px 11px;
+    background: rgba(var(--bs-primary-rgb), 0.10);
+    border-left: 3px solid rgb(var(--bs-primary-rgb));
+    border-radius: 0 6px 6px 0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgb(var(--bs-primary-rgb));
 }
 
 /* ── Botones ──────────────────────────────────────── */
@@ -3008,6 +3023,17 @@ input.gridjs-input {
 
 /* Botones de acción (reusan .tx-btn-action de Transactions) */
 
+/* Indicador de gasto compartido en la grilla */
+.cc-shared-badge {
+    font-size: 10px;
+    color: var(--bs-info);
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
 /* ── Responsive ────────────────────────────── */
 @media (max-width: 768px) {
     .cc-stat-row {
@@ -3021,6 +3047,144 @@ input.gridjs-input {
     .cc-debt-legend {
         flex-direction: column;
         gap: 8px;
+    }
+}
+
+/* ── Breakdown por categoría ───────────────── */
+.cc-breakdown-card {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 1.25rem;
+}
+
+.cc-breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    user-select: none;
+}
+
+.cc-breakdown-subtitle {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+}
+
+.cc-breakdown-chevron {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+    transition: transform .2s ease;
+}
+
+.cc-breakdown-body {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.cc-breakdown-chart-wrap {
+    flex-shrink: 0;
+    width: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cc-breakdown-list {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.cc-cat-row {
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: background .15s;
+}
+
+.cc-cat-row:hover {
+    background: var(--bs-secondary-bg);
+}
+
+.cc-cat-row.cc-cat-active {
+    background: rgba(var(--bs-primary-rgb), .08);
+    border: 1px solid rgba(var(--bs-primary-rgb), .25);
+}
+
+.cc-cat-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--bs-body-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cc-cat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.cc-cat-ars {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bs-body-color);
+}
+
+.cc-cat-usd {
+    font-size: 11px;
+    color: #378ADD;
+    font-weight: 500;
+}
+
+.cc-cat-count {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+}
+
+.cc-cat-bar-track {
+    height: 4px;
+    background: var(--bs-secondary-bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.cc-cat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .4s ease;
+}
+
+.cc-breakdown-hint {
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: rgba(var(--bs-primary-rgb), .06);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--bs-secondary-color);
+    border: 1px solid rgba(var(--bs-primary-rgb), .15);
+}
+
+@media (max-width: 768px) {
+    .cc-breakdown-body {
+        flex-direction: column;
+    }
+    .cc-breakdown-chart-wrap {
+        width: 100%;
+    }
+    .cc-breakdown-list {
+        max-height: 200px;
     }
 }
 
@@ -3637,6 +3801,7 @@ input.gridjs-input {
     color: #000 !important;
 }
 
+/* Transacciones reales (días históricos) — versión desaturada de income/expense */
 .cf-evt-hist-income {
     background-color: color-mix(in srgb, var(--bs-success) 55%, var(--bs-secondary)) !important;
     border-color:     color-mix(in srgb, var(--bs-success) 55%, var(--bs-secondary)) !important;
@@ -4342,6 +4507,295 @@ input.gridjs-input {
     .cf-day-panel {
         width: 100vw;
         right: -100vw;
+    }
+}
+
+/* ============================================
+   MÓDULO: SYSTEM ALERTS
+   ============================================ */
+.sa-stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.sa-handler-name {
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-body-color);
+}
+
+.sa-ms-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--bs-body-color);
+    font-variant-numeric: tabular-nums;
+}
+
+.sa-badge-slow {
+    background: rgba(239, 159, 39, .15);
+    color: #EF9F27;
+    border: 1px solid rgba(239, 159, 39, .3);
+}
+
+.sa-badge-warning {
+    background: rgba(239, 68, 68, .12);
+    color: #EF4444;
+    border: 1px solid rgba(239, 68, 68, .25);
+}
+
+.sa-badge-critical {
+    background: rgba(139, 0, 0, .18);
+    color: #ff6b6b;
+    border: 1px solid rgba(139, 0, 0, .35);
+}
+
+.sa-payload {
+    font-size: 11px;
+    color: var(--bs-secondary-color);
+    word-break: break-all;
+    white-space: pre-wrap;
+    cursor: help;
+}
+
+@media (max-width: 768px) {
+    .sa-stat-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   FINANCIAL DARK MODE — DASHBOARD
+   ============================================ */
+
+.fin-dashboard {
+    --fin-font: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-family: var(--fin-font);
+}
+
+    .fin-dashboard h1,
+    .fin-dashboard h2,
+    .fin-dashboard h3,
+    .fin-dashboard h4,
+    .fin-dashboard h5,
+    .fin-dashboard h6 {
+        font-family: var(--fin-font);
+        letter-spacing: -0.02em;
+    }
+
+[data-bs-theme="dark"] .fin-dashboard {
+    --fin-bg-surface: #020617;
+    --fin-bg-elevated: #0f172a;
+    --fin-border: rgba(148, 163, 184, 0.14);
+}
+
+.fin-num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+/* ── Header ── */
+.fin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.fin-header-eyebrow {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--bs-info);
+}
+
+.fin-date-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .55rem .95rem;
+    border-radius: 999px;
+    background: rgba(var(--bs-secondary-rgb), .08);
+    border: 1px solid var(--bs-border-color);
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--bs-secondary);
+    white-space: nowrap;
+}
+
+/* ── Hero balance card ── */
+.fin-hero {
+    position: relative;
+    overflow: hidden;
+    padding: 2rem;
+    border-radius: 24px;
+}
+
+[data-bs-theme="dark"] .fin-hero {
+    background: radial-gradient(circle at 0% 0%, rgba(99, 102, 241, .14), transparent 55%), linear-gradient(160deg, var(--fin-bg-elevated) 0%, var(--fin-bg-surface) 100%);
+    border: 1px solid var(--fin-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+
+.fin-hero-glow {
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: .35;
+    top: -90px;
+    right: -60px;
+    pointer-events: none;
+}
+
+.fin-hero-glow.positive {
+    background: #22c55e;
+}
+
+.fin-hero-glow.negative {
+    background: #ef4444;
+}
+
+.fin-hero-value {
+    font-size: clamp(2.3rem, 4vw, 3.1rem);
+    font-weight: 800;
+}
+
+.fin-hero-sub {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .fin-hero-sub {
+    border-top-color: var(--fin-border);
+}
+
+.fin-hero-sub-item {
+    min-width: 130px;
+}
+
+.fin-hero-sub-label {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: var(--bs-secondary);
+    margin-bottom: .35rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+.fin-hero-sub-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.fin-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .35rem .7rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* ── Surface cards (stats, gastos fijos, módulos, accesos) ── */
+[data-bs-theme="dark"] .fin-dashboard .card-glass-modern,
+[data-bs-theme="dark"] .fin-dashboard .card-action {
+    background: var(--fin-bg-elevated);
+    border-color: var(--fin-border) !important;
+}
+
+[data-bs-theme="dark"] .fin-dashboard .card-glass-modern:hover,
+[data-bs-theme="dark"] .fin-dashboard .card-action:hover {
+    border-color: rgba(var(--bs-primary-rgb), .4) !important;
+}
+
+/* Tinted icon chips for quick-access cards, matched to their semantic color */
+.fin-dashboard .icon-wrapper {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    background: rgba(var(--bs-secondary-rgb), .08);
+    transition: transform .3s ease;
+}
+
+    .fin-dashboard .icon-wrapper i {
+        font-size: 1.35rem !important;
+    }
+
+.fin-dashboard .icon-wrapper:has(.text-primary) {
+    background: rgba(var(--bs-primary-rgb), .12);
+}
+
+.fin-dashboard .icon-wrapper:has(.text-success) {
+    background: rgba(var(--bs-success-rgb), .12);
+}
+
+.fin-dashboard .icon-wrapper:has(.text-danger) {
+    background: rgba(var(--bs-danger-rgb), .12);
+}
+
+.fin-dashboard .icon-wrapper:has(.text-warning) {
+    background: rgba(var(--bs-warning-rgb), .12);
+}
+
+.fin-dashboard .icon-wrapper:has(.text-info) {
+    background: rgba(var(--bs-info-rgb), .12);
+}
+
+.fin-dashboard .icon-wrapper:has(.text-secondary) {
+    background: rgba(var(--bs-secondary-rgb), .12);
+}
+
+/* Próximos gastos fijos — filas */
+.fin-expense-row {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+    padding: .65rem .9rem;
+    border-radius: 12px;
+    background: rgba(var(--bs-secondary-rgb), .04);
+    border: 1px solid transparent;
+    transition: all .2s ease;
+}
+
+[data-bs-theme="dark"] .fin-expense-row {
+    background: rgba(148, 163, 184, .05);
+}
+
+.fin-expense-row:hover {
+    border-color: var(--bs-border-color);
+    background: rgba(var(--bs-primary-rgb), .06);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .fin-hero {
+        padding: 1.5rem;
+    }
+
+    .fin-hero-value {
+        font-size: 2rem;
+    }
+
+    .fin-hero-sub {
+        gap: 1.25rem;
     }
 }
 

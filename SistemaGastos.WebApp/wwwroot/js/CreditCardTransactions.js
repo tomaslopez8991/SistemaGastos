@@ -16,7 +16,8 @@
             delete: $container.data('url-delete'),
             form: $container.data('url-form'),
             totals: $container.data('url-totals'),
-            formMultiple: $container.data('url-multiple-form')
+            formMultiple: $container.data('url-multiple-form'),
+            categoryBreakdown: $container.data('url-category-breakdown')
         },
         selectors: {
             tableContainer: '#cc-rows-container',
@@ -103,12 +104,23 @@
             {
                 id: 'monto',
                 name: 'Monto',
-                width: '120px',
-                formatter: (cell, row) => {
-                    // row.cells[8].data = currency
-                    const currency = row.cells[8]?.data || 'ARS';
+                width: '145px',
+                formatter: (cell) => {
+                    const { amount, currency, shared } = cell;
                     const cls = currency === 'USD' ? 'cc-amount-usd' : 'cc-amount-ars';
-                    return gridjs.html(`<span class="${cls}">${cell}</span>`);
+                    const mainHtml = `<span class="${cls}">${formatAmount(amount, currency)}</span>`;
+
+                    if (!shared) return gridjs.html(mainHtml);
+
+                    const fullFormatted = formatAmount(shared.full, currency);
+                    return gridjs.html(`
+                        <div>
+                            ${mainHtml}
+                            <div class="cc-shared-badge" title="Total: ${fullFormatted} · compartido con ${shared.person}">
+                                <i class="fa-solid fa-user-group"></i> ${shared.pct}% · ${shared.person}
+                            </div>
+                        </div>
+                    `);
                 }
             },
             {
@@ -168,27 +180,33 @@
                 $('#statCount').text(data.total ?? data.results?.length ?? '—');
 
                 return (data.results || []).map(t => {
-                    // ⚠️ Verificar que el DTO del backend incluya accountName.
-                    // Si no viene, agregar la propiedad en el query/DTO del backend
-                    // incluyendo: .Include(t => t.Account) y mapeando t.Account.Name → accountName
                     const accountName = t.accountName || t.account?.name || '';
                     const cuotas = (t.actualInstallment > 0)
                         ? `${String(t.actualInstallment).padStart(2, '0')}/${String(t.installments).padStart(2, '0')}`
                         : null;
 
+                    // Si hay persona asignada, calcular la parte del usuario
+                    const isShared = t.personID && t.personPercentage;
+                    const myAmount = isShared
+                        ? t.amount * (t.personPercentage / 100)
+                        : t.amount;
+                    const sharedMeta = isShared
+                        ? { pct: t.personPercentage, person: t.personName, full: t.amount }
+                        : null;
+
                     return [
-                        t.id,                           // [0] check (id)
+                        t.id,                                   // [0] check (id)
                         t.transactionDate
                             ? new Date(t.transactionDate).toLocaleDateString('es-AR')
-                            : '',                       // [1] fecha
-                        t.description || '',            // [2] descripcion
-                        t.categoryName || '—',          // [3] categoria
-                        cuotas,                         // [4] cuotas
-                        formatAmount(t.amount, t.currency), // [5] monto
-                        t.fixed ?? false,               // [6] tipo
-                        t.id,                           // [7] id oculto (acciones)
-                        t.currency || 'ARS',            // [8] currency oculta (monto formatter)
-                        accountName                     // [9] accountName oculta (descripcion formatter)
+                            : '',                               // [1] fecha
+                        t.description || '',                    // [2] descripcion
+                        t.categoryName || '—',                  // [3] categoria
+                        cuotas,                                 // [4] cuotas
+                        { amount: myAmount, currency: t.currency || 'ARS', shared: sharedMeta }, // [5] monto
+                        t.fixed ?? false,                       // [6] tipo
+                        t.id,                                   // [7] id oculto (acciones)
+                        t.currency || 'ARS',                    // [8] currency oculta
+                        accountName                             // [9] accountName oculta
                     ];
                 });
             }
@@ -556,7 +574,173 @@
         if (ids.length > 0) CreditCardManager.eliminar(ids);
     });
 
+    // =========================================================
+    // 5. BREAKDOWN POR CATEGORÍA
+    // =========================================================
+    const CHART_COLORS = [
+        '#378ADD','#EF9F27','#10B981','#EF4444','#8B5CF6',
+        '#F59E0B','#06B6D4','#EC4899','#84CC16','#F97316',
+        '#6366F1','#14B8A6','#E11D48','#A3E635','#FB923C'
+    ];
+
+    let categoryChart = null;
+    let activeCategoryFilter = null;
+
+    function renderCategoryBreakdown(data) {
+        // ---- subtítulo ----
+        const totalCats = data.length;
+        $('#breakdownSubtitle').text(totalCats ? `${totalCats} categorías` : '');
+
+        // ---- lista ----
+        const $list = $('#categoryList');
+        if (!data.length) {
+            $list.html('<div class="text-muted text-center py-3" style="font-size:13px;">Sin datos</div>');
+            return;
+        }
+
+        const maxTotal = Math.max(...data.map(d => d.totalArs + d.totalUsd));
+
+        $list.html(data.map((d, i) => {
+            const total = d.totalArs + d.totalUsd;
+            const pct = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+            const color = CHART_COLORS[i % CHART_COLORS.length];
+            const isActive = activeCategoryFilter === d.categoryName;
+            return `
+                <div class="cc-cat-row ${isActive ? 'cc-cat-active' : ''}"
+                     data-category="${d.categoryName}" style="cursor:pointer;" title="Filtrar por ${d.categoryName}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="cc-cat-name">
+                            <span class="cc-cat-dot" style="background:${color}"></span>
+                            ${d.categoryName}
+                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            ${d.totalUsd > 0 ? `<span class="cc-cat-usd">${fmtUSD.format(d.totalUsd)}</span>` : ''}
+                            <span class="cc-cat-ars">${fmtARS.format(d.totalArs)}</span>
+                            <span class="cc-cat-count">${d.count} mov.</span>
+                        </div>
+                    </div>
+                    <div class="cc-cat-bar-track">
+                        <div class="cc-cat-bar-fill" style="width:${pct}%;background:${color}"></div>
+                    </div>
+                </div>`;
+        }).join(''));
+
+        // ---- chart ----
+        const ctx = document.getElementById('categoryChart');
+        if (!ctx) return;
+
+        if (categoryChart) categoryChart.destroy();
+
+        categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(d => d.categoryName),
+                datasets: [{
+                    data: data.map(d => d.totalArs + d.totalUsd),
+                    backgroundColor: data.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+                    borderWidth: 2,
+                    borderColor: 'var(--bs-body-bg, #fff)',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '68%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const d = data[ctx.dataIndex];
+                                const parts = [` ${fmtARS.format(d.totalArs)}`];
+                                if (d.totalUsd > 0) parts.push(` ${fmtUSD.format(d.totalUsd)}`);
+                                parts.push(` · ${d.count} mov.`);
+                                return parts;
+                            }
+                        }
+                    }
+                },
+                onClick: (_, elements) => {
+                    if (elements.length) {
+                        const idx = elements[0].index;
+                        applyCategoryFilter(data[idx].categoryName);
+                    }
+                }
+            }
+        });
+    }
+
+    function applyCategoryFilter(categoryName) {
+        if (activeCategoryFilter === categoryName) {
+            clearCategoryFilter();
+            return;
+        }
+        activeCategoryFilter = categoryName;
+        $('#breakdownHintLabel').text(categoryName);
+        $('#breakdownHint').show();
+
+        // Inyectar keyword en el search de Grid.js via input
+        const searchInput = document.querySelector('#card-grid-wrapper input[type="search"]');
+        if (searchInput) {
+            searchInput.value = categoryName;
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // Re-renderizar lista para marcar activo
+        $.get(config.urls.categoryBreakdown, renderCategoryBreakdown);
+    }
+
+    function clearCategoryFilter() {
+        activeCategoryFilter = null;
+        $('#breakdownHint').hide();
+        const searchInput = document.querySelector('#card-grid-wrapper input[type="search"]');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        $.get(config.urls.categoryBreakdown, renderCategoryBreakdown);
+    }
+
+    async function fetchCategoryBreakdown() {
+        try {
+            const data = await $.get(config.urls.categoryBreakdown);
+            renderCategoryBreakdown(data);
+        } catch (e) { console.error('Error cargando breakdown:', e); }
+    }
+
+    // Toggle colapso
+    let breakdownOpen = true;
+    $('#breakdownToggle').on('click', function () {
+        breakdownOpen = !breakdownOpen;
+        if (breakdownOpen) {
+            $('#breakdownBody').slideDown(200);
+            $('#breakdownChevron').css('transform', 'rotate(0deg)');
+        } else {
+            $('#breakdownBody').slideUp(200);
+            $('#breakdownChevron').css('transform', 'rotate(-90deg)');
+        }
+    });
+
+    // Click en fila de lista
+    $(document).on('click', '.cc-cat-row', function () {
+        applyCategoryFilter($(this).data('category'));
+    });
+
+    // Limpiar filtro
+    $(document).on('click', '#clearCategoryFilter', function (e) {
+        e.stopPropagation();
+        clearCategoryFilter();
+    });
+
     // Carga inicial
     actualizarTotalesHeader();
+    fetchCategoryBreakdown();
+
+    // Recarga breakdown al guardar/eliminar
+    const _origRecargar = recargarTablaYTotales;
+    window.recargarTablaYTotales = function () {
+        _origRecargar();
+        fetchCategoryBreakdown();
+    };
 
 })();

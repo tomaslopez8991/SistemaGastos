@@ -1,0 +1,47 @@
+@{
+    ViewData["Title"] = "Alertas del sistema";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.AntiForgeryToken()
+
+<div id="system-alerts-container"
+     data-url-logs="@Url.Action("GetLogs", "SystemAlerts")">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="fw-semibold mb-0" style="font-size:22px;">
+                <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i>Alertas del sistema
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13px;">Handlers lentos registrados (umbral: 500ms)</p>
+        </div>
+        <button id="btnClearLogs" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-2">
+            <i class="fas fa-trash"></i>Limpiar logs
+        </button>
+    </div>
+
+    @* Stats *@
+    <div class="sa-stat-row mb-4">
+        <div class="cc-stat-card">
+            <div class="cc-stat-label"><i class="fas fa-triangle-exclamation me-1 text-warning"></i>Total alertas</div>
+            <div class="cc-stat-value" id="saTotalCount">—</div>
+        </div>
+        <div class="cc-stat-card">
+            <div class="cc-stat-label"><i class="fas fa-clock me-1"></i>Más lento</div>
+            <div class="cc-stat-value cc-expense" id="saMaxMs">—</div>
+        </div>
+        <div class="cc-stat-card">
+            <div class="cc-stat-label"><i class="fas fa-chart-bar me-1"></i>Promedio</div>
+            <div class="cc-stat-value" id="saAvgMs">—</div>
+        </div>
+    </div>
+
+    @* Tabla *@
+    <div class="tx-table-card">
+        <div id="alerts-grid-wrapper"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/SystemAlerts.js" asp-append-version="true"></script>
+}

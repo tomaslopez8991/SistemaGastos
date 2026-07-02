@@ -17,7 +17,7 @@ namespace SistemaGastos.Infraestructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "8.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -572,6 +572,32 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("Login");
+                });
+
+            modelBuilder.Entity("SistemaGastos.Domain.Models.PerformanceLog", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("ElapsedMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("HandlerName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequestData")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("PerformanceLog");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.Person", b =>

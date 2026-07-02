@@ -2,7 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.Features.Transactions.Queries;
 using SistemaGastos.Application.Interfaces;
-using SistemaGastos.WebApp.Models.ViewModels;
+using SistemaGastos.Application.ViewModels;
 
 namespace SistemaGastos.Application.Features.Transactions.Handlers;
 

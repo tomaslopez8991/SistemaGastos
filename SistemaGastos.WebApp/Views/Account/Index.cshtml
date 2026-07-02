@@ -14,34 +14,32 @@
      data-url-edit="@Url.Action("Edit", "Account")"
      data-url-delete="@Url.Action("Delete", "Account")"
      data-url-transfer="@Url.Action("ProcessTransfer", "Account")"
-     data-intro="Bienvenido a Mi Billetera. Este módulo te permite gestionar todas tus cuentas bancarias, efectivo, tarjetas de crédito y ver tus saldos consolidados en tiempo real."
+     data-intro="Administrá tus cuentas bancarias, efectivo y más desde acá."
      data-step="1">
 
-    <div class="d-flex justify-content-between align-items-center mb-4"
-         data-intro="Desde aquí puedes ver el resumen general de tu patrimonio líquido y agregar nuevas cuentas para controlar tu dinero."
-         data-step="2">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold mb-0">Mi Billetera</h2>
             <p class="small">Gestiona tus saldos y liquidez</p>
         </div>
         <button class="btn btn-success btn-lg shadow-lg"
                 onclick="abrirModalCuenta()"
-                data-intro="Haz clic aquí para agregar una nueva cuenta. Puedes registrar cuentas bancarias, cajas de ahorro, efectivo, tarjetas de crédito y más."
-                data-step="3">
+                data-intro="Agregá una nueva cuenta desde acá. <span class='tut-action'>→ Tocá <strong>+ Nueva Cuenta</strong>. Completá: <strong>Nombre</strong> (ej: Santander Débito), <strong>Tipo</strong> (Banco/Efectivo/Billetera Virtual), <strong>Moneda</strong> (ARS/USD) y <strong>Saldo actual</strong>. Luego Guardar.</span>"
+                data-step="2">
             <i class="fa-solid fa-plus me-2"></i> Nueva Cuenta
         </button>
     </div>
 
     <div class="row g-3 mb-5"
          id="totals-wrapper"
-         data-intro="Estas tarjetas muestran tus saldos totales agrupados por moneda (ARS, USD, EUR, etc.). Te dan una visión rápida de tu patrimonio líquido en cada divisa."
-         data-step="4">
+         data-intro="Saldo total consolidado por moneda (ARS, USD, etc.). Suma todas tus cuentas de cada divisa."
+         data-step="3">
     </div>
 
     <div class="row g-4"
          id="accounts-grid"
-         data-intro="Aquí se muestran todas tus cuentas en detalle. Cada tarjeta incluye el nombre, tipo, saldo actual y acciones rápidas como editar, eliminar o hacer transferencias."
-         data-step="5">
+         data-intro="Cada tarjeta muestra el saldo actual de la cuenta. Usá ✏ para editar, 🗑 para eliminar o el ícono de transferencia para mover fondos entre cuentas."
+         data-step="4">
     </div>
 
 </div>
