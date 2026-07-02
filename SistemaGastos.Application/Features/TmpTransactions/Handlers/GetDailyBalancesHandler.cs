@@ -456,22 +456,11 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                         decimal exp = dayTxs.Where(t => t.Category?.Type != "Ingreso").Sum(t => t.Amount);
                         running += inc - exp;
 
-                        var txItems = dayTxs.Select(t => new DailyBalanceItemDto
-                        {
-                            Description = t.Description,
-                            Amount      = t.Amount,
-                            AmountFmt   = t.Amount.ToString("C", culture),
-                            IsIncome    = t.Category?.Type == "Ingreso",
-                            SourceType  = "Transaccion",
-                            Day         = day
-                        }).ToList();
-
-                        var pendingTmp = itemsByDay.TryGetValue(day, out var pastProjList)
-                            ? pastProjList.Where(x => x.SourceType == "Planificado").ToList()
+                        // Solo TmpTransactions pendientes (sin acción) — sin chips de tx reales
+                        var pastItems = itemsByDay.TryGetValue(day, out var pastProjList)
+                            ? pastProjList.Where(x => x.SourceType == "Planificado")
+                                          .OrderBy(x => x.IsIncome ? 0 : 1).ToList()
                             : new List<DailyBalanceItemDto>();
-
-                        var pastItems = txItems.Concat(pendingTmp)
-                            .OrderBy(x => x.IsIncome ? 0 : 1).ToList();
 
                         result.Days.Add(new DailyBalanceDto
                         {
