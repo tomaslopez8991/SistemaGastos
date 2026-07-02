@@ -139,6 +139,16 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
         return Ok(Response<List<MonthlyBalanceDto>>.Ok(balances));
     }
 
+    // GET: /TmpTransaction/GetEarliestPendingMonth
+    [HttpGet]
+    [Route("GetEarliestPendingMonth")]
+    public async Task<ActionResult<Response<string?>>> GetEarliestPendingMonth()
+    {
+        var userID = currentUserService.UserId ?? 0;
+        var result = await mediator.Send(new GetEarliestPendingMonthQuery(userID));
+        return Ok(Response<string?>.Ok(result));
+    }
+
     // GET: /TmpTransaction/GetDailyBalances?year=2026&month=6
     [HttpGet]
     [Route("GetDailyBalances")]

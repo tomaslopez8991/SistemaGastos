@@ -7,8 +7,9 @@
         form:       $container.data('url-form'),
         create:     $container.data('url-create'),
         delete:     $container.data('url-delete'),
-        balances:   $container.data('url-balances'),
-        confirmDay: $container.data('url-confirm-day'),
+        balances:        $container.data('url-balances'),
+        earliestPending: $container.data('url-earliest-pending'),
+        confirmDay:      $container.data('url-confirm-day'),
         fixedList:  $container.data('url-fixed-list'),
         incomeList: $container.data('url-income-list')
     };
@@ -56,15 +57,24 @@
             renderMonthCarousel();
             actualizarInfoBar();
 
-            // Restringir navegación del calendario al rango de meses disponibles
+            // Restringir navegación: fin = último mes con proyecciones, inicio = primer mes con TmpTransactions pasadas pendientes
             if (window.cashflowCalendarSetValidRange && monthsData.length > 0) {
-                const firstKey = monthsData[0].key;
                 const lastKey  = monthsData[monthsData.length - 1].key;
                 const [ly, lm] = lastKey.split('-').map(Number);
                 const endYear  = lm === 12 ? ly + 1 : ly;
                 const endMonth = lm === 12 ? 1 : lm + 1;
                 const endStr   = `${endYear}-${String(endMonth).padStart(2, '0')}-01`;
-                window.cashflowCalendarSetValidRange(firstKey + '-01', endStr);
+
+                $.get(urls.earliestPending, function (res) {
+                    let startStr = null;
+                    if (res.success && res.data) {
+                        const [ey, em] = res.data.split('-').map(Number);
+                        startStr = `${ey}-${String(em).padStart(2, '0')}-01`;
+                    }
+                    window.cashflowCalendarSetValidRange(startStr, endStr);
+                }).fail(function () {
+                    window.cashflowCalendarSetValidRange(null, endStr);
+                });
             }
 
             const [year, month] = activeMonthKey.split('-');

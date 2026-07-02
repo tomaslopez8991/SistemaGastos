@@ -186,7 +186,7 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
         decimal acumulado = saldoInicialTotal;
 
-        for (int i = 0; i <= monthIndex; i++)
+        for (int i = loopFrom; i <= monthDiff; i++)
         {
             var m = startDate.AddMonths(i);
             var daysInMonth = DateTime.DaysInMonth(m.Year, m.Month);
@@ -320,12 +320,17 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             }
 
             // ────────────────────────────────────────────────────────────
-            // C. TOTAL TC PRÓXIMO (mes inmediato siguiente al actual)
+            // C. TOTAL TC — vencimiento inmediato por tarjeta (usa balance real)
+            // Cada cuenta tiene su propio DueMonthOffset, por lo que el mes de
+            // vencimiento se calcula individualmente: startDate + DueMonthOffset.
             // ────────────────────────────────────────────────────────────
-            if (!hasCreditCardPayment && SameMonth(m, mesProximo))
+            if (!hasCreditCardPayment)
             {
                 foreach (var cc in ccAccounts)
                 {
+                    var ccDueMonth = startDate.AddMonths(cc.DueMonthOffset ?? 1);
+                    if (!SameMonth(m, ccDueMonth)) continue;
+
                     var deuda = Math.Abs(cc.Balance);
                     if (deuda <= 0) continue;
 
@@ -335,24 +340,27 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             }
 
             // ────────────────────────────────────────────────────────────
-            // D. TOTAL TC A FUTURO (cuotas y cargos agrupados por tarjeta)
+            // D. TOTAL TC FUTURO — cuotas y cargos por tarjeta
+            // Solo para meses posteriores al vencimiento inmediato de cada cuenta.
             // ────────────────────────────────────────────────────────────
-            if (!hasCreditCardPayment && m >= mesDespuesDelPago)
+            if (!hasCreditCardPayment && m > startDate)
             {
                 var totalesPorCuenta = new Dictionary<int, decimal>();
 
                 foreach (var cardTx in cardTransactions)
                 {
+                    // Excluir el mes cubierto por Section C para esta cuenta
+                    var acctDueMonth = startDate.AddMonths(cardTx.Account.DueMonthOffset ?? 1);
+                    if (SameMonth(m, acctDueMonth)) continue;
+
                     var compraMes = new DateTime(cardTx.TransactionDate.Year, cardTx.TransactionDate.Month, 1);
 
-                    // Si la compra se hizo después del día de cierre, entra en el resumen siguiente
                     var closingDay = cardTx.Account.ClosingDay;
                     var mesesAlCierre = (closingDay.HasValue && cardTx.TransactionDate.Day > closingDay.Value) ? 1 : 0;
                     var mesResumen = compraMes.AddMonths(mesesAlCierre);
                     var vencimiento = mesResumen.AddMonths(cardTx.Account.DueMonthOffset ?? 1);
 
                     decimal montoArs = cardTx.Account.Currency == "USD" ? cardTx.Amount * cotizacionDolar : cardTx.Amount;
-                    var dueDay = cardTx.Account.DueDay ?? FallbackDueDay;
 
                     bool esFijo = cardTx.Fixed;
                     bool esCuotas = cardTx.Installments > 1;
@@ -389,7 +397,6 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
                     totalesPorCuenta.TryGetValue(cardTx.AccountID, out var acumuladoCuenta);
                     totalesPorCuenta[cardTx.AccountID] = acumuladoCuenta + monto;
-
                 }
 
                 foreach (var (accountId, total) in totalesPorCuenta)
@@ -462,7 +469,7 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 .SelectMany(items => items)
                 .Sum(item => item.IsIncome ? item.Amount : -item.Amount);
 
-            if (i == monthIndex)
+            if (i == monthDiff)
             {
                 // Mes actual: saldo inicial = balance real al comienzo del mes (no el saldo de hoy)
                 decimal startBal = viewingCurrent ? saldoMesInicio : acumulado;

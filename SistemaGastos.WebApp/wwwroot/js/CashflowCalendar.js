@@ -522,6 +522,7 @@
         if (item.sourceType === 'Transaccion')    return item.isIncome ? 'cf-evt-hist-income' : 'cf-evt-hist-expense';
         if (item.sourceType === 'TarjetaCredito') return 'cf-evt-tc';
         if (item.sourceType === 'Personas')       return 'cf-evt-personas';
+        if (item.sourceType === 'Transaccion')    return item.isIncome ? 'cf-evt-hist-income' : 'cf-evt-hist-expense';
         return item.isIncome ? 'cf-evt-income' : 'cf-evt-expense';
     }
 
