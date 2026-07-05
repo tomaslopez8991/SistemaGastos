@@ -1,10 +1,8 @@
-﻿@model SistemaGastos.Domain.Models.CreditCardTransaction
+@model SistemaGastos.Domain.Models.CreditCardTransaction
 
-@*
-    ViewBag.Accounts ya viene con SelectListGroup seteados desde GetTransactionForm()
-    — el Controller agrupa por Currency con SelectListGroup { Name = currency }.
-    Usamos asp-items directamente para que Razor renderice los <optgroup> nativamente.
-*@
+@{
+    var hasPersons = ViewBag.Persons != null && ((IEnumerable<SistemaGastos.Application.DTOs.PersonDropdownDto>)ViewBag.Persons).Any();
+}
 
 <form id="form-transaction" class="cc-single-form">
     <input type="hidden" asp-for="ID" />
@@ -96,48 +94,40 @@
         </label>
     </div>
 
-    @* ── Solicitado por ────────────────────────────────────────── *@
-    @if (ViewBag.Persons != null && ((IEnumerable<SistemaGastos.Application.DTOs.PersonDropdownDto>)ViewBag.Persons).Any())
+    @* ── Compartido con ────────────────────────────────────────── *@
+    @if (hasPersons)
     {
-        <div class="mt-3">
-            <div class="row g-2 align-items-end">
-                <div class="col-8">
-                    <label asp-for="PersonID" class="cc-label">
-                        <i class="fa-solid fa-user me-1"></i>Solicitado por
-                    </label>
-                    <select asp-for="PersonID" class="form-select" id="selectPersonCC">
-                        <option value="">— Propio (sin atribución) —</option>
-                        @foreach (var p in (IEnumerable<SistemaGastos.Application.DTOs.PersonDropdownDto>)ViewBag.Persons)
-                        {
-                            <option value="@p.ID">@p.Name</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-4" id="pctWrapperCC"
-                     style="@(Model.PersonID.HasValue ? "" : "display:none;")">
-                    <label class="cc-label">% Atribuido</label>
-                    <div class="input-group input-group-sm">
-                        <input type="number" min="1" max="100" step="1" class="form-control text-end fw-semibold"
-                               id="inputPersonPercentageCC" name="PersonPercentage"
-                               value="@(Model.PersonPercentage ?? 100)" />
-                        <span class="input-group-text">%</span>
-                    </div>
-                </div>
-            </div>
-            <small class="text-muted d-block mt-1">Asigná este gasto (o un % del mismo) a otra persona.</small>
+        <div class="mt-3" id="section-compartido-con">
+            <label class="cc-label mb-2">
+                <i class="fa-solid fa-user-group me-1"></i>Compartido con
+            </label>
+            <div id="shared-persons-list" class="d-flex flex-column gap-2"></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btn-add-shared-person">
+                <i class="fas fa-plus me-1"></i>Agregar persona
+            </button>
+            <small class="text-muted d-block mt-1">Asigná este gasto (o un % del mismo) a una o más personas.</small>
         </div>
     }
 </form>
 
+@if (hasPersons)
+{
+    var personsForForm = (IEnumerable<SistemaGastos.Application.DTOs.PersonDropdownDto>)ViewBag.Persons;
+    var existingShared = (Model?.SharedWith ?? Enumerable.Empty<SistemaGastos.Domain.Models.CreditCardTransactionPerson>())
+                         .Select(s => new { personID = s.PersonID, percentage = s.Percentage }).ToList();
+    <script>
+        window.__ccPersons = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(personsForForm.Select(p => new { id = p.ID, name = p.Name })));
+        window.__ccSharedWith = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(existingShared));
+    </script>
+}
+
 <script>
     (function () {
-        // Actualiza el símbolo de moneda ($  / U$S) según el optgroup de la tarjeta seleccionada
         var $sel = $('#selectAccountSingle');
         var $sym = $('#currencySymbolSingle');
 
         function updateSymbol() {
             var $opt = $sel.find('option:selected');
-            // El nombre del grupo es el label del optgroup padre
             var groupLabel = $opt.closest('optgroup').attr('label') || 'ARS';
             $sym.text(groupLabel === 'USD' ? 'U$S' : '$');
         }
@@ -145,28 +135,12 @@
         $sel.on('change', updateSymbol);
         updateSymbol();
 
-        // Oculta/muestra sección cuotas al marcar gasto fijo
         $('#chkFixedEdit').on('change', function () {
             $('#section-installments').toggle(!this.checked);
         });
 
-        // Estado inicial: si ya está marcado como fijo, ocultar cuotas
         if ($('#chkFixedEdit').is(':checked')) {
             $('#section-installments').hide();
         }
-
-        // Mostrar/ocultar % atribuido según persona seleccionada
-        var $selPerson = $('#selectPersonCC');
-        var $pctWrapper = $('#pctWrapperCC');
-        function togglePct() {
-            if ($selPerson.val()) {
-                $pctWrapper.show();
-            } else {
-                $pctWrapper.hide();
-                $('#inputPersonPercentageCC').val(100);
-            }
-        }
-        $selPerson.on('change', togglePct);
-        togglePct(); // estado inicial
     })();
 </script>

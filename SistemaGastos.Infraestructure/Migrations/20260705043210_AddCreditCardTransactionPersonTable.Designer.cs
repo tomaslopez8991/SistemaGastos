@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaGastos.Data;
 
@@ -11,9 +12,11 @@ using SistemaGastos.Data;
 namespace SistemaGastos.Infraestructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260705043210_AddCreditCardTransactionPersonTable")]
+    partial class AddCreditCardTransactionPersonTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -303,32 +306,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.HasIndex("PersonID");
 
                     b.ToTable("CreditCardTransaction");
-                });
-
-            modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransactionCobro", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CreditCardTransactionID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PersonID")
-                        .HasColumnType("int");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("CreditCardTransactionID");
-
-                    b.HasIndex("PersonID");
-
-                    b.ToTable("CreditCardTransactionCobro");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransactionPerson", b =>
@@ -957,25 +934,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("FixedExpense");
-                });
-
-            modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransactionCobro", b =>
-                {
-                    b.HasOne("SistemaGastos.Domain.Models.CreditCardTransaction", "CreditCardTransaction")
-                        .WithMany()
-                        .HasForeignKey("CreditCardTransactionID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
-                        .WithMany()
-                        .HasForeignKey("PersonID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreditCardTransaction");
-
-                    b.Navigation("Person");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransactionPerson", b =>

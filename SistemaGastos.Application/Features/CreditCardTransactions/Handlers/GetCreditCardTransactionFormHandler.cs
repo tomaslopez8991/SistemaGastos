@@ -4,6 +4,7 @@ using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.Transactions.Queries;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Enums;
+using SistemaGastos.Domain.Models;
 
 namespace SistemaGastos.Application.Features.Transactions.Handlers;
 
@@ -34,7 +35,9 @@ public class GetCreditCardTransactionFormHandler(IApplicationDbContext context)
 
         Domain.Models.CreditCardTransaction? transaction = null;
         if (request.Id.HasValue)
-            transaction = await context.CreditCardTransaction.FindAsync([request.Id.Value], cancellationToken);
+            transaction = await context.CreditCardTransaction
+                .Include(t => t.SharedWith).ThenInclude(s => s.Person)
+                .FirstOrDefaultAsync(t => t.ID == request.Id.Value, cancellationToken);
 
         var persons = await context.Person
             .AsNoTracking()

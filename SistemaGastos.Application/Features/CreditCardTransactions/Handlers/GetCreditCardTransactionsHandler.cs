@@ -20,7 +20,8 @@ public class GetCreditCardTransactionsHandler(IApplicationDbContext context, ICu
         var query = context.CreditCardTransaction
             .Include(t => t.Category)
             .Include(t => t.Account)
-            .Where(t => t.Account.Login.ID == user.UserId) // Usamos ID del ICurrentUserService
+            .Include(t => t.SharedWith).ThenInclude(s => s.Person)
+            .Where(t => t.Account.Login.ID == user.UserId)
             .AsQueryable();
 
         // 2. Filtro de Búsqueda (Keyword) - Lógica de tu snippet
@@ -53,9 +54,7 @@ public class GetCreditCardTransactionsHandler(IApplicationDbContext context, ICu
                 ActualInstallment = t.ActualInstallment ?? 0,
                 Installments = t.Installments ?? 1,
                 Fixed = t.Fixed,
-                PersonID = t.PersonID,
-                PersonPercentage = t.PersonPercentage,
-                PersonName = t.Person == null ? null : t.Person.Name
+                SharedWith = t.SharedWith.Select(s => new CreditCardTransactionPersonDto(s.PersonID, s.Percentage, s.Person == null ? "" : s.Person.Name)).ToList()
             })
             .ToListAsync(cancellationToken);
 

@@ -95,7 +95,7 @@ public class PersonController(IMediator mediator, ICurrentUserService currentUse
     public async Task<ActionResult<Response<bool>>> RegisterPayment([FromBody] PersonPaymentRequest req)
     {
         var userID = currentUser.UserId ?? 0;
-        var ok = await mediator.Send(new RegisterPersonPaymentCommand(req.PersonID, userID, req.AccountID, req.Amount));
+        var ok = await mediator.Send(new RegisterPersonPaymentCommand(req.PersonID, userID, req.AccountID, req.Amount, req.CreditCardTransactionID));
         return ok
             ? Ok(Response<bool>.Ok(true, "Cobro registrado correctamente"))
             : Ok(Response<bool>.Fail("No se pudo registrar el cobro"));
@@ -107,4 +107,5 @@ public class PersonPaymentRequest
     public int PersonID { get; set; }
     public int AccountID { get; set; }
     public decimal Amount { get; set; }
+    public int? CreditCardTransactionID { get; set; }
 }

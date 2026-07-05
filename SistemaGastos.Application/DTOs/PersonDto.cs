@@ -21,6 +21,8 @@ public class PersonAccountItemDto
     public decimal Percentage { get; set; } = 100;
     public DateTime Date { get; set; }
     public string DateFmt { get; set; } = string.Empty;
+    public int? TransactionID { get; set; }
+    public bool IsCobrado { get; set; }
 }
 
 public class PersonAccountDto

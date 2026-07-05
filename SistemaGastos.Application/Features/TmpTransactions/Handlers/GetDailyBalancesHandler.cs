@@ -37,7 +37,7 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
         var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
             .Include(t => t.Category)
-            .Include(t => t.Person)
+            .Include(t => t.SharedWith).ThenInclude(s => s.Person)
             .Where(t => t.Account.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
@@ -411,8 +411,8 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
                 // CC all-time
                 decimal ccBalance = cardTransactions
-                    .Where(cc => cc.PersonID == person.ID)
-                    .Sum(cc => cc.Amount * (cc.PersonPercentage ?? 100m) / 100m);
+                    .Where(cc => cc.SharedWith.Any(s => s.PersonID == person.ID))
+                    .Sum(cc => cc.Amount * (cc.SharedWith.FirstOrDefault(s => s.PersonID == person.ID)?.Percentage ?? 100m) / 100m);
 
                 // FE del mes m
                 decimal feBalance = allFixedExpenses

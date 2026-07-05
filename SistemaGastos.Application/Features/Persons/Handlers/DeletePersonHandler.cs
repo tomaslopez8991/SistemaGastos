@@ -19,10 +19,10 @@ public class DeletePersonHandler(IApplicationDbContext context)
             .ToListAsync(cancellationToken);
         foreach (var t in transactions) t.PersonID = null;
 
-        var cardTransactions = await context.CreditCardTransaction
-            .Where(t => t.PersonID == request.ID)
+        var ccAttribusions = await context.CreditCardTransactionPerson
+            .Where(s => s.PersonID == request.ID)
             .ToListAsync(cancellationToken);
-        foreach (var t in cardTransactions) t.PersonID = null;
+        context.CreditCardTransactionPerson.RemoveRange(ccAttribusions);
 
         var fixedExpenses = await context.FixedExpense
             .Where(f => f.PersonID == request.ID)
