@@ -2,6 +2,7 @@
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Models;
 using SistemaGastos.Infrastructure.Persistence.Configurations;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace SistemaGastos.Data;
 
@@ -15,6 +16,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.ApplyConfiguration(new AccountInterestSettingConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestDailyLogConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestMonthlyChargeConfiguration());
+
+        // FixedExpense tiene dos FKs a Account: AccountID (cuenta de pago) y CreditCardAccountID (TC a saldar).
+        // EF necesita configuración explícita para resolver la ambigüedad.
+        modelBuilder.Entity<FixedExpense>()
+            .HasOne(f => f.Account)
+            .WithMany(a => a.FixedExpenses)
+            .HasForeignKey(f => f.AccountID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FixedExpense>()
+            .HasOne(f => f.CreditCardAccount)
+            .WithMany()
+            .HasForeignKey(f => f.CreditCardAccountID)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     public DbSet<Account> Account { get; set; }

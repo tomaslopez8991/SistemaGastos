@@ -31,9 +31,15 @@ namespace SistemaGastos.Domain.Models
         /// <summary>Meses pausados (YYYY-MM separados por coma). Pausado = no aparece en proyecciones ese mes.</summary>
         public string? PausedMonths { get; set; }
 
+        /// <summary>Para registros auto-generados de pago de TC: ID de la cuenta TC a saldar.</summary>
+        public int? CreditCardAccountID { get; set; }
+        /// <summary>Para registros auto-generados de TC: mes al que aplica (YYYY-MM). Null = gasto recurrente normal.</summary>
+        public string? PaymentYearMonth { get; set; }
+
         public virtual Login User { get; set; } = null!;
         public virtual Account Account { get; set; } = null!;
         public virtual Category Category { get; set; } = null!;
         public virtual Person? Person { get; set; }
+        public virtual Account? CreditCardAccount { get; set; }
     }
 }

@@ -9,12 +9,14 @@
         delete: $container.data('url-fixed-delete'),
         pay: $container.data('url-fixed-pay'),
         toggle: $container.data('url-fixed-toggle'),
-        pause: $container.data('url-fixed-pause')
+        pause: $container.data('url-fixed-pause'),
+        syncCc: $container.data('url-fixed-sync-cc')
     };
 
     let expensesData = [];
     let activeYear = new Date().getFullYear();
     let activeMonth = new Date().getMonth() + 1;
+    const syncedMonths = new Set(); // Evita llamar al sync más de una vez por mes/carga
 
     init();
 
@@ -82,12 +84,32 @@
     // RENDER DE CARDS
     // =========================================================
     function loadExpenses(year, month) {
-        $.get(urls.list, { year: year, month: month }, function (response) {
-            if (!response.success || !response.data) { showError(); return; }
-            expensesData = response.data;
-            updateTabBadge();
-            applyFilters();
-        }).fail(showError);
+        const now = new Date();
+        const isCurrentMonth = (year === now.getFullYear() && month === now.getMonth() + 1);
+
+        const doLoad = () => {
+            $.get(urls.list, { year: year, month: month }, function (response) {
+                if (!response.success || !response.data) { showError(); return; }
+                expensesData = response.data;
+                updateTabBadge();
+                applyFilters();
+            }).fail(showError);
+        };
+
+        const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+
+        // Para el mes actual, sincronizar TC una sola vez por carga de página
+        if (isCurrentMonth && urls.syncCc && !syncedMonths.has(monthKey)) {
+            syncedMonths.add(monthKey);
+            $.ajax({
+                url: urls.syncCc,
+                type: 'POST',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                complete: doLoad
+            });
+        } else {
+            doLoad();
+        }
     }
 
     function showError() {
@@ -163,10 +185,11 @@
             else if (days !== null && days < 0) { logoBg = 'bg-danger-subtle'; logoIcon = 'text-danger'; }
             else if (days !== null && days <= 3) { logoBg = 'bg-warning-subtle'; logoIcon = 'text-warning-emphasis'; }
 
+            const defaultIcon = expense.isCreditCardPayment ? 'fa-credit-card' : 'fa-receipt';
             const logoHtml = expense.logoUrl
                 ? `<img src="${expense.logoUrl}" alt="${expense.name}" class="rounded" style="width:40px;height:40px;object-fit:cover;">`
                 : `<div class="rounded ${logoBg} d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
-                       <i class="fas fa-receipt ${logoIcon}"></i>
+                       <i class="fas ${defaultIcon} ${logoIcon}"></i>
                    </div>`;
 
             // Texto de estado debajo de cuenta/día
