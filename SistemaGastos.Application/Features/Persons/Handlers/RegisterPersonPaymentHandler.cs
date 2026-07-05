@@ -53,6 +53,17 @@ public class RegisterPersonPaymentHandler(IApplicationDbContext context)
         }
 
         await context.Transaction.AddAsync(payment, cancellationToken);
+
+        if (request.CreditCardTransactionID.HasValue)
+        {
+            var cobro = new CreditCardTransactionCobro
+            {
+                PersonID = request.PersonID,
+                CreditCardTransactionID = request.CreditCardTransactionID.Value
+            };
+            await context.CreditCardTransactionCobro.AddAsync(cobro, cancellationToken);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
         return true;
     }

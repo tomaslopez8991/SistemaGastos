@@ -12,14 +12,14 @@ public class MappingProfile : Profile
         CreateMap<CreditCardTransaction, CreditCardTransactionDto>()
             .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name))
             .ForMember(dest => dest.AccountName, opt => opt.MapFrom(src => src.Account.Name))
-            .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Account.Currency));
+            .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Account.Currency))
+            .ForMember(dest => dest.SharedWith, opt => opt.Ignore());
 
-        // 2. CREATE (DTO -> Entidad): Si usas este mismo DTO para crear, está bien.
-        // AutoMapper ignorará CategoryName/AccountName al escribir en la BD porque no existen en la Entidad.
-        CreateMap<CreditCardTransactionDto, CreditCardTransaction>();
+        CreateMap<CreditCardTransactionDto, CreditCardTransaction>()
+            .ForMember(dest => dest.SharedWith, opt => opt.Ignore());
 
-        // 3. UPDATE (UpdateDTO -> Entidad): FALTABA ESTA LÍNEA
-        CreateMap<UpdateCreditCardTransactionDto, CreditCardTransaction>();
+        CreateMap<UpdateCreditCardTransactionDto, CreditCardTransaction>()
+            .ForMember(dest => dest.SharedWith, opt => opt.Ignore());
 
         // === MAPEOS DE CUENTAS (ACCOUNTS) ===
 

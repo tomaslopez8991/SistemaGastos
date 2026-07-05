@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.Transactions.Commands;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Models;
@@ -41,14 +42,24 @@ public class CreateBulkCreditCardTransactionsHandler(IApplicationDbContext conte
                 if (account == null || category == null)
                     throw new Exception($"Datos inconsistentes para: {dto.Description}");
 
-                // Mapeo Automático
                 var entity = mapper.Map<CreditCardTransaction>(dto);
 
-                // Lógica de Negocio (Saldos)
                 if (category.Type == "Gasto") account.Balance -= dto.Amount;
                 else if (category.Type == "Ingreso") account.Balance += dto.Amount;
 
                 context.CreditCardTransaction.Add(entity);
+
+                if (dto.SharedWith != null)
+                {
+                    foreach (var sw in dto.SharedWith)
+                    {
+                        entity.SharedWith.Add(new CreditCardTransactionPerson
+                        {
+                            PersonID = sw.PersonID,
+                            Percentage = sw.Percentage
+                        });
+                    }
+                }
             }
 
             await context.SaveChangesAsync(cancellationToken);

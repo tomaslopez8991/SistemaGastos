@@ -41,7 +41,13 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
 
         var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
-            .Where(t => t.PersonID != null && personIds.Contains(t.PersonID.Value))
+            .Include(t => t.SharedWith)
+            .Where(t => t.SharedWith.Any(s => personIds.Contains(s.PersonID)))
+            .ToListAsync(cancellationToken);
+
+        var cobros = await context.CreditCardTransactionCobro
+            .Where(c => personIds.Contains(c.PersonID))
+            .Select(c => new { c.PersonID, c.CreditCardTransactionID })
             .ToListAsync(cancellationToken);
 
         var fixedExpenses = await context.FixedExpense
@@ -75,9 +81,9 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
                 });
             }
 
-            foreach (var cc in cardTransactions.Where(t => t.PersonID == person.ID))
+            foreach (var cc in cardTransactions.Where(t => t.SharedWith.Any(s => s.PersonID == person.ID)))
             {
-                var pct = cc.PersonPercentage ?? 100m;
+                var pct = cc.SharedWith.FirstOrDefault(s => s.PersonID == person.ID)?.Percentage ?? 100m;
 
                 string typeLabel;
                 if ((cc.Installments ?? 1) > 1)
@@ -88,6 +94,7 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
                     typeLabel = "Tarjeta de crédito";
 
                 var attributed = cc.Amount * pct / 100m;
+                var isCobrado = cobros.Any(c => c.PersonID == person.ID && c.CreditCardTransactionID == cc.ID);
                 items.Add(new PersonAccountItemDto
                 {
                     Description    = cc.Description,
@@ -98,7 +105,9 @@ public class GetPersonAccountsHandler(IApplicationDbContext context)
                     TypeLabel      = typeLabel,
                     Percentage     = pct,
                     Date           = cc.TransactionDate,
-                    DateFmt        = cc.TransactionDate.ToString("dd/MM/yyyy")
+                    DateFmt        = cc.TransactionDate.ToString("dd/MM/yyyy"),
+                    TransactionID  = cc.ID,
+                    IsCobrado      = isCobrado
                 });
             }
 

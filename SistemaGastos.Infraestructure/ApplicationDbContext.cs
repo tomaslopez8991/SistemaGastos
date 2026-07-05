@@ -38,6 +38,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Category> Category { get; set; }
     public DbSet<TodoTask> TodoTask { get; set; }
     public DbSet<CreditCardTransaction> CreditCardTransaction { get; set; }
+    public DbSet<CreditCardTransactionPerson> CreditCardTransactionPerson { get; set; }
+    public DbSet<CreditCardTransactionCobro> CreditCardTransactionCobro { get; set; }
     public DbSet<Login> Login { get; set; }
     public DbSet<Budget> Budget { get; set; }
     public DbSet<FixedExpense> FixedExpense { get; set; }

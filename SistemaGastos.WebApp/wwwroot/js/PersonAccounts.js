@@ -84,6 +84,19 @@
                 ));
             });
 
+            grid.querySelectorAll('.btn-collect-tx').forEach(btn => {
+                btn.addEventListener('click', () => collectFromPerson(
+                    parseInt(btn.dataset.personId),
+                    btn.dataset.personName,
+                    parseFloat(btn.dataset.amount),
+                    () => {
+                        btn.parentNode.innerHTML =
+                            `<i class="fas fa-check-circle text-success" style="font-size:14px;" title="Cobrado"></i>`;
+                    },
+                    parseInt(btn.dataset.txId)
+                ));
+            });
+
             grid.querySelectorAll('.btn-expand-pa').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const el = document.getElementById(btn.dataset.target);
@@ -177,6 +190,7 @@
                   <colgroup>
                     <col style="width:80px"><col style="width:auto">
                     <col style="width:110px"><col style="width:55px"><col style="width:95px">
+                    <col style="width:40px">
                   </colgroup>
                   <thead>
                     <tr>
@@ -185,6 +199,7 @@
                       <th class="text-muted fw-normal small">Tipo</th>
                       <th class="text-muted fw-normal small text-end">%</th>
                       <th class="text-muted fw-normal small text-end">Monto</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -198,6 +213,19 @@
                         </td>
                         <td class="small text-end text-muted text-nowrap">${i.percentage}%</td>
                         <td class="small text-end fw-semibold text-nowrap">${i.amountFmt}</td>
+                        <td class="text-center">${i.transactionID != null
+                            ? i.isCobrado
+                                ? `<i class="fas fa-check-circle text-success" style="font-size:14px;" title="Cobrado"></i>`
+                                : `<button class="btn btn-outline-success btn-collect-tx py-0 px-1"
+                                    style="font-size:11px;line-height:1.6;"
+                                    data-person-id="${account.personID}"
+                                    data-person-name="${escHtml(account.personName)}"
+                                    data-amount="${i.amount}"
+                                    data-tx-id="${i.transactionID}"
+                                    title="Cobrar ${escHtml(i.description)}">
+                                    <i class="fas fa-hand-holding-dollar"></i>
+                                   </button>`
+                            : ''}</td>
                       </tr>`).join('')}
                   </tbody>
                 </table>
@@ -325,7 +353,7 @@
     }
 
     // ── Cobrar a persona ─────────────────────────────────────────
-    async function collectFromPerson(personId, personName, netOwed) {
+    async function collectFromPerson(personId, personName, netOwed, onSuccess = null, creditCardTransactionID = null) {
         let accounts = [];
         try {
             const res = await fetch(URL_PAYMENT_ACCOUNTS);
@@ -383,16 +411,21 @@
                     'RequestVerificationToken': antiForgery()
                 },
                 body: JSON.stringify({
-                    personID:  personId,
-                    accountID: formValues.accountId,
-                    amount:    formValues.amount
+                    personID:               personId,
+                    accountID:              formValues.accountId,
+                    amount:                 formValues.amount,
+                    creditCardTransactionID: creditCardTransactionID
                 })
             });
             const json = await res.json();
             if (json.success) {
                 Swal.fire({ title: 'Cobro registrado', icon: 'success', timer: 1500, showConfirmButton: false });
-                accountsLoaded = false;
-                loadAccounts();
+                if (onSuccess) {
+                    onSuccess();
+                } else {
+                    accountsLoaded = false;
+                    loadAccounts();
+                }
                 if (window.reloadCashflowCalendar) window.reloadCashflowCalendar();
                 if (window.reloadCashflowBalances) window.reloadCashflowBalances();
             } else {

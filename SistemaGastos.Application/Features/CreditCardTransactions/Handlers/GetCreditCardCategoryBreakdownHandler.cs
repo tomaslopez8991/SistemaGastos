@@ -11,20 +11,23 @@ public class GetCreditCardCategoryBreakdownHandler(IApplicationDbContext context
 {
     public async Task<List<CategoryBreakdownDto>> Handle(GetCreditCardCategoryBreakdownQuery request, CancellationToken cancellationToken)
     {
-        var rows = await context.CreditCardTransaction
+        var txList = await context.CreditCardTransaction
             .AsNoTracking()
+            .Include(t => t.Category)
+            .Include(t => t.Account)
             .Where(t => t.Account.UserID == request.UserId)
-            .GroupBy(t => new { t.Category.Name, t.Account.Currency })
+            .ToListAsync(cancellationToken);
+
+        var rows = txList
+            .GroupBy(t => new { Name = t.Category?.Name ?? "", Currency = t.Account?.Currency ?? "ARS" })
             .Select(g => new
             {
                 g.Key.Name,
                 g.Key.Currency,
-                Total = g.Sum(t => t.PersonID != null && t.PersonPercentage != null
-                    ? t.Amount * (t.PersonPercentage.Value / 100m)
-                    : t.Amount),
+                Total = g.Sum(t => t.Amount),
                 Count = g.Count()
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return rows
             .GroupBy(r => r.Name)
