@@ -88,6 +88,18 @@ builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequir
 
 builder.Services.AddScoped<IAccountInterestService, SistemaGastos.Infraestructure.Services.AccountInterestService>();
 
+builder.Services.AddHttpClient<SistemaGastos.Infraestructure.Services.ClaudeService>();
+builder.Services.AddHttpClient<SistemaGastos.Infraestructure.Services.OllamaService>();
+builder.Services.AddScoped<IAiService>(provider =>
+{
+    var defaultProvider = builder.Configuration["AiProviders:Default"] ?? "ollama";
+    return defaultProvider switch
+    {
+        "claude" => provider.GetRequiredService<SistemaGastos.Infraestructure.Services.ClaudeService>(),
+        _ => provider.GetRequiredService<SistemaGastos.Infraestructure.Services.OllamaService>()
+    };
+});
+
 builder.Services.AddScoped<IEmailTemplateHelper, EmailTemplateHelper>();
 builder.Services.AddTransient<IARCAService, ARCAServiceStub>();
 builder.Services.Configure<FiscalConfigOptions>(builder.Configuration.GetSection("FiscalConfig"));
