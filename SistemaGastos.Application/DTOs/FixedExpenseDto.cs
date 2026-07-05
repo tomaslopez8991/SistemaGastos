@@ -28,4 +28,7 @@ public class FixedExpenseDto
     public string? ExcludedDays { get; set; }
     public bool IsPausedThisMonth { get; set; }
     public string? PausedMonths { get; set; }
+    public int? CreditCardAccountID { get; set; }
+    public string? PaymentYearMonth { get; set; }
+    public bool IsCreditCardPayment => CreditCardAccountID.HasValue;
 }

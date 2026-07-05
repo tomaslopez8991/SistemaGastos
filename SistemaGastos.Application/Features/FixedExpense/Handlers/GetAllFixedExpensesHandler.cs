@@ -18,11 +18,14 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
         // EF Core DbContext no es thread-safe: las queries de DB van secuenciales.
         var dolarTask = dolarService.GetDolarBolsaAsync();
 
+        var currentMonthKey = $"{request.Year}-{request.Month:D2}";
+
         var fixedExpenses = await context.FixedExpense
             .AsNoTracking()
             .Include(f => f.Category)
             .Include(f => f.Account)
-            .Where(f => f.UserID == request.UserID)
+            .Where(f => f.UserID == request.UserID
+                     && (f.PaymentYearMonth == null || f.PaymentYearMonth == currentMonthKey))
             .OrderBy(f => f.PaymentDay)
             .ToListAsync(cancellationToken);
 
@@ -60,8 +63,6 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
         // Capitalizar primera letra
         if (!string.IsNullOrEmpty(monthName))
             monthName = char.ToUpper(monthName[0]) + monthName[1..];
-
-        var currentMonthKey = $"{request.Year}-{request.Month:D2}";
 
         return fixedExpenses.Select(f =>
         {
@@ -107,7 +108,9 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
                 PaidAmount = paidAmount,
                 PaidAmountFormatted = paidAmountFmt,
                 IsPausedThisMonth = isPaused,
-                PausedMonths = f.PausedMonths
+                PausedMonths = f.PausedMonths,
+                CreditCardAccountID = f.CreditCardAccountID,
+                PaymentYearMonth = f.PaymentYearMonth
             };
         }).ToList();
     }

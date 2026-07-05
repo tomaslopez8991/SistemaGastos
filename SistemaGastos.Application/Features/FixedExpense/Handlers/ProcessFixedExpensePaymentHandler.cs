@@ -16,6 +16,7 @@ public class ProcessFixedExpensePaymentHandler(IApplicationDbContext context)
         var expense = await context.FixedExpense
             .Include(x => x.Account)
             .Include(x => x.Category)
+            .Include(x => x.CreditCardAccount)
             .FirstOrDefaultAsync(x => x.ID == request.FixedExpenseID && x.UserID == request.UserID, cancellationToken);
 
         if (expense == null)
@@ -25,8 +26,30 @@ public class ProcessFixedExpensePaymentHandler(IApplicationDbContext context)
         int transactionID;
         string message;
 
-        // ✅ LÓGICA: Decisión según tipo de cuenta
-        if (expense.Account.Type == AccountType.TarjetaCredito)
+        // ✅ LÓGICA: Pago de resumen de TC (auto-generado: debita banco + acredita TC)
+        if (expense.CreditCardAccountID.HasValue && expense.CreditCardAccount != null)
+        {
+            var transaction = new Transaction
+            {
+                Description = $"Pago TC: {expense.CreditCardAccount.Name}",
+                Amount = expense.Amount,
+                Date = paymentDate,
+                AccountID = expense.AccountID,
+                CategoryID = expense.CategoryID,
+                FixedExpenseID = expense.ID
+            };
+
+            expense.Account.Balance -= expense.Amount;
+            expense.CreditCardAccount.Balance += expense.Amount;
+
+            await context.Transaction.AddAsync(transaction, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+
+            transactionID = transaction.ID;
+            message = $"Pago de TC registrado y descontado de {expense.Account.Name}";
+        }
+        // LÓGICA: Decisión según tipo de cuenta del gasto fijo
+        else if (expense.Account.Type == AccountType.TarjetaCredito)
         {
             // Crear transacción de tarjeta de crédito (1 cuota)
             var creditCardTransaction = new CreditCardTransaction

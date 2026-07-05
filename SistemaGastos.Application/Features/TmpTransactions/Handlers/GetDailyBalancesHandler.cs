@@ -48,6 +48,13 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             .Where(f => f.UserID == request.UserID && f.Active)
             .ToListAsync(cancellationToken);
 
+        // Cuentas TC que ya tienen un registro de pago generado para un mes específico.
+        // Clave: "{ccAccountId}_{YYYY-MM}" — usada en Section C para no duplicar en el calendario.
+        var closedTcKeys = allFixedExpenses
+            .Where(f => f.CreditCardAccountID.HasValue && !string.IsNullOrEmpty(f.PaymentYearMonth))
+            .Select(f => $"{f.CreditCardAccountID}_{f.PaymentYearMonth}")
+            .ToHashSet();
+
         var paidFixedExpenses = await context.Transaction
             .AsNoTracking()
             .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
@@ -234,7 +241,8 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                          && f.PaymentDay <= daysInMonth
                          && !paidThisMonthIds.Contains(f.ID)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
-                         && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey)))
+                         && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey))
+                         && (f.PaymentYearMonth == null || f.PaymentYearMonth == monthKey))
                 .ToList();
 
             foreach (var fe in fixedExpensesOfMonth)
@@ -295,6 +303,10 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 {
                     var ccDueMonth = startDate.AddMonths(cc.DueMonthOffset ?? 1);
                     if (!SameMonth(m, ccDueMonth)) continue;
+
+                    // Si ya se generó el FixedExpense de cierre para este mes, el calendario no
+                    // muestra la TC aquí — aparece en la Section B como GastoFijo.
+                    if (closedTcKeys.Contains($"{cc.ID}_{m.Year}-{m.Month:D2}")) continue;
 
                     var deuda = Math.Abs(cc.Balance);
                     if (deuda <= 0) continue;

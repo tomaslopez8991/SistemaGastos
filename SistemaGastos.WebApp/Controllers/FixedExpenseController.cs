@@ -16,6 +16,17 @@ public class FixedExpenseController(IMediator mediator, ICurrentUserService curr
     [HttpGet]
     public IActionResult Index() => View();
 
+    [HttpPost("SyncCreditCard")]
+    [ValidateAntiForgeryToken]
+    public async Task<ActionResult<Response<int>>> SyncCreditCard([FromQuery] int? year, [FromQuery] int? month)
+    {
+        int userID = currentUser.UserId ?? 0;
+        var now = DateTime.Now;
+        var cmd = new SyncCreditCardFixedExpensesCommand(userID, year ?? now.Year, month ?? now.Month);
+        var created = await mediator.Send(cmd);
+        return Ok(Response<int>.Ok(created));
+    }
+
     [HttpGet("GetList")]
     public async Task<ActionResult<Response<List<FixedExpenseDto>>>> GetList(int? year, int? month)
     {
