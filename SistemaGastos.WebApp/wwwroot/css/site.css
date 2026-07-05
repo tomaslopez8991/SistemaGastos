@@ -4572,6 +4572,7 @@ input.gridjs-input {
 .fin-dashboard {
     --fin-font: 'Inter', 'Segoe UI', system-ui, sans-serif;
     font-family: var(--fin-font);
+    font-variant-numeric: tabular-nums;
 }
 
     .fin-dashboard h1,
@@ -4588,6 +4589,18 @@ input.gridjs-input {
     --fin-bg-surface: #020617;
     --fin-bg-elevated: #0f172a;
     --fin-border: rgba(148, 163, 184, 0.14);
+
+    /* Propaga la paleta OLED a cualquier componente hijo que use tokens de Bootstrap
+       (cards, tabs, dropdowns, FullCalendar, grid.js) sin tener que sobreescribir cada selector */
+    --bs-body-bg: var(--fin-bg-surface);
+    --bs-body-bg-rgb: 2, 6, 23;
+    --bs-secondary-bg: var(--fin-bg-elevated);
+    --bs-secondary-bg-rgb: 15, 23, 42;
+    --bs-tertiary-bg: #111a2e;
+    --bs-tertiary-bg-rgb: 17, 26, 46;
+    --bs-border-color: var(--fin-border);
+    --bs-border-color-translucent: rgba(148, 163, 184, 0.1);
+    --bs-dropdown-bg: var(--fin-bg-elevated);
 }
 
 .fin-num {
@@ -4797,6 +4810,81 @@ input.gridjs-input {
     .fin-hero-sub {
         gap: 1.25rem;
     }
+}
+
+/* ============================================
+   FINANCIAL DARK MODE — PROYECCIÓN / TMPTRANSACTION
+   ============================================ */
+
+/* Carrusel de meses — glow activo consistente con el hero del dashboard */
+[data-bs-theme="dark"] .fin-dashboard .month-card-slim.active {
+    background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), .18), rgba(var(--bs-primary-rgb), .06));
+    box-shadow: 0 0 0 1px rgba(var(--bs-primary-rgb), .25), 0 8px 20px rgba(0, 0, 0, .35);
+}
+
+/* Barra de info del mes y card de tabla — superficie elevada consistente */
+[data-bs-theme="dark"] .fin-dashboard .month-info-bar {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
+}
+
+[data-bs-theme="dark"] .fin-dashboard .tx-table-card {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .3);
+}
+
+/* FullCalendar — shell y toolbar */
+.fin-dashboard #financialCalendar {
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+[data-bs-theme="dark"] .fin-dashboard #financialCalendar {
+    border: 1px solid var(--fin-border);
+}
+
+.fin-dashboard .fc .fc-toolbar-title {
+    color: var(--bs-body-color);
+    font-family: var(--fin-font);
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.fin-dashboard .fc .fc-button-primary {
+    background: rgba(var(--bs-secondary-rgb), .1);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+    box-shadow: none !important;
+    text-transform: capitalize;
+}
+
+    .fin-dashboard .fc .fc-button-primary:hover {
+        background: rgba(var(--bs-primary-rgb), .15);
+        border-color: var(--bs-primary);
+        color: var(--bs-primary);
+    }
+
+    .fin-dashboard .fc .fc-button-primary:disabled {
+        opacity: .4;
+    }
+
+    .fin-dashboard .fc .fc-button-primary:not(:disabled).fc-button-active {
+        background: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: #fff;
+    }
+
+.fin-dashboard .fc-daygrid-day-number {
+    color: var(--bs-body-color);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.fin-dashboard .fc-day-today .fc-daygrid-day-number {
+    color: var(--bs-primary);
+}
+
+/* Panel lateral de detalle de día */
+[data-bs-theme="dark"] .cf-day-panel.fin-dashboard {
+    box-shadow: -12px 0 40px rgba(0, 0, 0, .5);
 }
 
 /* ============================================
