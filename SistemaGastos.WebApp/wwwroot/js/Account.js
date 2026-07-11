@@ -152,6 +152,12 @@
                         <div class="acc-balance mt-2 ${colorClass}">
                             ${formatMoney(acc.balance, acc.currency)}
                         </div>
+
+                        ${(acc.type === 'TarjetaCredito' || acc.type === 4) && acc.effectiveMinimumPayment ? `
+                        <div class="small text-warning mt-1">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i>
+                            Pago mínimo: ${formatMoney(acc.effectiveMinimumPayment, acc.currency)}
+                        </div>` : ''}
                     </div>
 
                     <div class="acc-actions">
@@ -266,6 +272,8 @@
                     const closingInput = $('#ClosingDay').val();
                     const dueInput = $('#DueDay').val();
                     const dueMonthOffsetInput = $('#DueMonthOffset').val();
+                    const minPaymentPctInput = $('#MinimumPaymentPercentage').val();
+                    const minPaymentOverrideInput = $('#MinimumPaymentManualOverride').val();
 
                     var data = {
                         ID: parseInt($('#ID').val()) || 0,
@@ -275,7 +283,9 @@
                         Balance: parseFloat($('#Balance').val()) || 0,
                         ClosingDay: closingInput ? parseInt(closingInput) : null,
                         DueDay: dueInput ? parseInt(dueInput) : null,
-                        DueMonthOffset: dueMonthOffsetInput !== undefined && dueMonthOffsetInput !== '' ? parseInt(dueMonthOffsetInput) : null
+                        DueMonthOffset: dueMonthOffsetInput !== undefined && dueMonthOffsetInput !== '' ? parseInt(dueMonthOffsetInput) : null,
+                        MinimumPaymentPercentage: minPaymentPctInput ? parseFloat(minPaymentPctInput) : null,
+                        MinimumPaymentManualOverride: minPaymentOverrideInput ? parseFloat(minPaymentOverrideInput) : null
                     };
 
                     if (!data.Name || !data.Currency || !data.Type) {
@@ -297,6 +307,8 @@
                         data.ClosingDay = null;
                         data.DueDay = null;
                         data.DueMonthOffset = null;
+                        data.MinimumPaymentPercentage = null;
+                        data.MinimumPaymentManualOverride = null;
                     }
 
                     return { payload: data, isEdit: isEdit };

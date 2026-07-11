@@ -45,8 +45,12 @@ public class GetDebtFlatteningAdviceHandler(IMediator mediator, IAiService aiSer
         {
             foreach (var card in snapshot.CardDebts)
             {
+                var minimumPaymentText = card.MinimumPaymentDue.HasValue
+                    ? $"pago mínimo {card.MinimumPaymentDue.Value.ToString("C", culture)}"
+                    : "sin pago mínimo configurado";
+
                 sb.AppendLine($"- {card.AccountName}: saldo {card.CurrentBalance.ToString("C", culture)} ({card.Currency}), " +
-                    $"próximo vencimiento {card.NextDueDate:dd/MM/yyyy}, " +
+                    $"próximo vencimiento {card.NextDueDate:dd/MM/yyyy}, {minimumPaymentText}, " +
                     $"{card.InstallmentsRemainingCount} compra(s) en cuotas por {card.RemainingInstallmentsTotal.ToString("C", culture)} restante(s).");
             }
         }
@@ -73,8 +77,11 @@ public class GetDebtFlatteningAdviceHandler(IMediator mediator, IAiService aiSer
                 Con esta información, sugerí qué pagos adelantar o qué deuda atacar primero
                 para reducir la carga del mes siguiente. Priorizá por impacto real (vencimientos
                 próximos, evitar o reducir el interés por descubierto, tarjetas con mayor saldo).
-                Dame como máximo 3 recomendaciones concretas y accionables, en español, con montos
-                aproximados. No repitas los datos crudos, andá directo a la recomendación.
+                Distinguí claramente el pago mínimo (lo obligatorio para no caer en mora o
+                recargos) del excedente disponible para aplanar la deuda más rápido pagando
+                por encima del mínimo. Dame como máximo 3 recomendaciones concretas y
+                accionables, en español, con montos aproximados. No repitas los datos crudos,
+                andá directo a la recomendación.
                 """);
         }
         else

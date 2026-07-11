@@ -21,6 +21,8 @@ public class CardDebtItemDto
     public int InstallmentsRemainingCount { get; set; }
     /// <summary>Suma de las cuotas futuras pendientes (no solo la próxima), en la moneda de la cuenta.</summary>
     public decimal RemainingInstallmentsTotal { get; set; }
+    /// <summary>Pago mínimo del próximo vencimiento (override manual o % del saldo). Null si la tarjeta no tiene configurado ninguno de los dos.</summary>
+    public decimal? MinimumPaymentDue { get; set; }
 }
 
 public class PendingFixedExpenseDto

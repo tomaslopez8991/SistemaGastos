@@ -126,7 +126,8 @@ public class GetDebtSnapshotHandler(
                 CurrentBalance = Math.Abs(account.Balance),
                 NextDueDate = nextDueDate,
                 InstallmentsRemainingCount = remainingCount,
-                RemainingInstallmentsTotal = remainingTotal
+                RemainingInstallmentsTotal = remainingTotal,
+                MinimumPaymentDue = account.EffectiveMinimumPayment
             });
         }
 

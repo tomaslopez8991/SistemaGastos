@@ -76,6 +76,18 @@
                 <small class="text-muted" style="font-size: 0.7em;">Ej: cierre día 25, vencimiento día 10 del mes siguiente.</small>
             </div>
         </div>
+        <div class="row mt-2">
+            <div class="col-6">
+                <label asp-for="MinimumPaymentPercentage" class="form-label fw-bold small">Pago Mínimo (%)</label>
+                <input asp-for="MinimumPaymentPercentage" type="number" step="0.01" min="0" max="100" class="form-control" placeholder="Ej: 15" />
+                <small class="text-muted" style="font-size: 0.7em;">% del saldo usado para calcular el pago mínimo sugerido.</small>
+            </div>
+            <div class="col-6">
+                <label asp-for="MinimumPaymentManualOverride" class="form-label fw-bold small">Pago Mínimo Manual</label>
+                <input asp-for="MinimumPaymentManualOverride" type="number" step="0.01" min="0" class="form-control" placeholder="Opcional" />
+                <small class="text-muted" style="font-size: 0.7em;">Si el resumen indica otro monto, cargalo acá y pisa el cálculo automático.</small>
+            </div>
+        </div>
     </div>
 
 </form>
