@@ -31,6 +31,17 @@ namespace SistemaGastos.Domain.Models
         /// <summary>Meses entre el cierre del resumen y su vencimiento (0 = mismo mes, 1 = mes siguiente, etc). Default: 1.</summary>
         public int? DueMonthOffset { get; set; }
 
+        /// <summary>Porcentaje del saldo usado para calcular el pago mínimo sugerido (ej. 15 = 15%).</summary>
+        public decimal? MinimumPaymentPercentage { get; set; }
+
+        /// <summary>Monto de pago mínimo cargado manualmente, pisa el cálculo automático cuando tiene valor.</summary>
+        public decimal? MinimumPaymentManualOverride { get; set; }
+
+        /// <summary>Pago mínimo efectivo: usa el override manual si está cargado, o lo calcula como % del saldo.</summary>
+        public decimal? EffectiveMinimumPayment =>
+            MinimumPaymentManualOverride
+            ?? (MinimumPaymentPercentage.HasValue ? Math.Abs(Balance) * MinimumPaymentPercentage.Value / 100m : null);
+
         public ICollection<CreditCardTransaction> CreditCardTransactions { get; set; } = new List<CreditCardTransaction>();
         public ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
         public ICollection<FixedExpense> FixedExpenses { get; set; } = new List<FixedExpense>();

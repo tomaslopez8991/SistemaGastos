@@ -14,6 +14,9 @@ public record AccountDto
     public int? ClosingDay {  get; init; }
     public int? DueDay { get; init; }
     public int? DueMonthOffset { get; init; }
+    public decimal? MinimumPaymentPercentage { get; init; }
+    public decimal? MinimumPaymentManualOverride { get; init; }
+    public decimal? EffectiveMinimumPayment { get; init; }
 }
 
 public record CreateAccountDto(
@@ -25,7 +28,9 @@ public record CreateAccountDto(
     AccountType Type,
     int? ClosingDay,
     int? DueDay,
-    int? DueMonthOffset
+    int? DueMonthOffset,
+    decimal? MinimumPaymentPercentage,
+    decimal? MinimumPaymentManualOverride
 );
 
 public record UpdateAccountDto(
@@ -38,7 +43,9 @@ public record UpdateAccountDto(
     AccountType Type,
     int? ClosingDay,
     int? DueDay,
-    int? DueMonthOffset
+    int? DueMonthOffset,
+    decimal? MinimumPaymentPercentage,
+    decimal? MinimumPaymentManualOverride
 );
 
 public record AccountTotalDto(string Currency, decimal Total);

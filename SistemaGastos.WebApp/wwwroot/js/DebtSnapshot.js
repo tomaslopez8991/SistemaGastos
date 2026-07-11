@@ -181,10 +181,15 @@
                             <h3 class="fw-bold mb-2 fin-num text-danger" style="font-size: 1.5rem;">
                                 ${fmt(c.currentBalance, c.currency)}
                             </h3>
-                            <p class="text-muted small mb-0">
+                            <p class="text-muted small mb-1">
                                 <i class="fa-solid fa-layer-group me-1"></i>
                                 ${c.installmentsRemainingCount} compra(s) en cuotas · restan ${fmt(c.remainingInstallmentsTotal, c.currency)}
                             </p>
+                            ${c.minimumPaymentDue ? `
+                            <p class="text-warning small mb-0 fw-semibold">
+                                <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                Pago mínimo: ${fmt(c.minimumPaymentDue, c.currency)}
+                            </p>` : ''}
                         </div>
                     </div>
                 </div>

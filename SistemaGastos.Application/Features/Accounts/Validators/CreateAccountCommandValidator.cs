@@ -17,5 +17,13 @@ public class CreateAccountCommandValidator : AbstractValidator<CreateAccountComm
 
         RuleFor(x => x.Dto.Balance)
             .NotNull().WithMessage("El saldo es obligatorio.");
+
+        RuleFor(x => x.Dto.MinimumPaymentPercentage)
+            .InclusiveBetween(0, 100).WithMessage("El porcentaje de pago mínimo debe estar entre 0 y 100.")
+            .When(x => x.Dto.MinimumPaymentPercentage.HasValue);
+
+        RuleFor(x => x.Dto.MinimumPaymentManualOverride)
+            .GreaterThanOrEqualTo(0).WithMessage("El pago mínimo manual no puede ser negativo.")
+            .When(x => x.Dto.MinimumPaymentManualOverride.HasValue);
     }
 }
