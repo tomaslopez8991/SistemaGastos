@@ -29,12 +29,16 @@ public class AuthController(IMediator mediator) : Controller
         if (usuario != null && usuario.Active)
         {
             var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.Name, usuario.Username),
-            new Claim(ClaimTypes.Email, usuario.Email),
-            new Claim(ClaimTypes.Role, usuario.Role),
-            new Claim("Id", usuario.ID.ToString())
-        };
+            {
+                new(ClaimTypes.Name, usuario.Username),
+                new("Id", usuario.ID.ToString())
+            };
+
+            if (!string.IsNullOrWhiteSpace(usuario.Email))
+                claims.Add(new Claim(ClaimTypes.Email, usuario.Email));
+
+            if (!string.IsNullOrWhiteSpace(usuario.Role))
+                claims.Add(new Claim(ClaimTypes.Role, usuario.Role));
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new AuthenticationProperties { IsPersistent = true };
