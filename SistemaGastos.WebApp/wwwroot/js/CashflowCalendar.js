@@ -8,6 +8,7 @@
     const urlIncomeReceive         = $container.data('url-income-receive');
     const urlConfirmDay            = $container.data('url-confirm-day');
     const urlPersonRegisterPayment = $container.data('url-person-register-payment');
+    const urlPayTc                 = $container.data('url-pay-tc');
     const urlPersonPaymentAccounts = $container.data('url-person-payment-accounts');
     const fmtCompact = new Intl.NumberFormat('es-AR', {
         style: 'currency', currency: 'ARS', notation: 'compact', maximumFractionDigits: 1
@@ -19,6 +20,7 @@
         IngresoFijo:   'Ingreso fijo',
         TarjetaCredito:'Tarjeta de crédito',
         Personas:      'A cobrar (persona)',
+        InteresEstimado:'Cuentas y obligaciones',
         Transaccion:   'Transacción registrada'
     };
 
@@ -44,11 +46,14 @@
             dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)
         );
 
-        const balClass = day.balance >= 0 ? 'text-success' : 'text-danger';
-        $('#cf-panel-balance-label')
-            .removeClass('text-success text-danger')
-            .addClass(balClass)
-            .text('Saldo del día: ' + day.balanceFmt);
+        const $balLabel = $('#cf-panel-balance-label');
+        if (day.balanceFmt) {
+            const balClass = day.balance >= 0 ? 'text-success' : 'text-danger';
+            $balLabel.removeClass('text-success text-danger').addClass(balClass)
+                .text('Saldo del día: ' + day.balanceFmt).show();
+        } else {
+            $balLabel.hide();
+        }
 
         renderPanelItems(day);
         $panel.addClass('open');
@@ -102,6 +107,28 @@
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>`;
+            } else if (item.sourceType === 'GastoFijo' && item.sourceId && item.tcAccountId) {
+                // GastoFijo TC: tres botones de pago
+                const minBtn = item.tcMinimumAmount > 0
+                    ? `<button class="btn btn-xs btn-outline-warning cf-panel-tc-pay"
+                               data-tc-id="${item.tcAccountId}" data-amount="${item.tcMinimumAmount}" data-label="Pagar mínimo">
+                           <i class="fas fa-minus-circle me-1"></i>Mínimo
+                       </button>`
+                    : '';
+                actions = `
+                <div class="cf-panel-item-actions d-flex gap-1 mt-2 flex-wrap">
+                    <button class="btn btn-xs btn-outline-danger cf-panel-tc-pay"
+                            data-tc-id="${item.tcAccountId}" data-fixed-expense-id="${item.sourceId}"
+                            data-amount="${item.tcTotalAmount || item.amount}" data-label="Pagar total">
+                        <i class="fas fa-credit-card me-1"></i>Total
+                    </button>
+                    ${minBtn}
+                    <button class="btn btn-xs btn-outline-secondary cf-panel-tc-pay-custom"
+                            data-tc-id="${item.tcAccountId}" data-fixed-expense-id="${item.sourceId}"
+                            data-suggested="${item.amount}">
+                        <i class="fas fa-pen me-1"></i>Personalizado
+                    </button>
+                </div>`;
             } else if (item.sourceType === 'GastoFijo' && item.sourceId) {
                 actions = `
                 <div class="cf-panel-item-actions d-flex gap-1 mt-2">
@@ -115,8 +142,28 @@
                 actions = `
                 <div class="cf-panel-item-actions d-flex gap-1 mt-2">
                     <button class="btn btn-xs btn-outline-success cf-panel-receive-fi"
-                            data-id="${item.sourceId}" data-amount="${amt}" title="Registrar cobro">
+                            data-id="${item.sourceId}" data-amount="${amt}"
+                            data-person-collection="${item.isAutomaticPersonCollection ? 'true' : 'false'}"
+                            title="Registrar cobro">
                         <i class="fas fa-check me-1"></i>Cobrar
+                    </button>
+                </div>`;
+            } else if (item.sourceType === 'TarjetaCredito' && item.tcAccountId) {
+                const minBtn = item.tcMinimumAmount > 0
+                    ? `<button class="btn btn-xs btn-outline-warning cf-panel-tc-pay"
+                               data-tc-id="${item.tcAccountId}"
+                               data-amount="${item.tcMinimumAmount}"
+                               data-label="Pago mínimo">
+                           <i class="fas fa-minus-circle me-1"></i>Pagar mínimo
+                       </button>`
+                    : '';
+                actions = `
+                <div class="cf-panel-item-actions d-flex gap-1 mt-2 flex-wrap">
+                    ${minBtn}
+                    <button class="btn btn-xs btn-outline-danger cf-panel-tc-pay-custom"
+                            data-tc-id="${item.tcAccountId}"
+                            data-suggested="${item.amount}">
+                        <i class="fas fa-credit-card me-1"></i>Pagar otro monto
                     </button>
                 </div>`;
             } else if (item.sourceType === 'Personas' && item.sourceId) {
@@ -292,26 +339,56 @@
     });
 
     // Cobrar ingreso fijo desde panel
-    $(document).on('click', '.cf-panel-receive-fi', function () {
+    $(document).on('click', '.cf-panel-receive-fi', async function () {
         const id = parseInt($(this).data('id'));
         const rawAmt = $(this).data('amount');
         const amount = rawAmt !== '' && rawAmt != null ? parseFloat(rawAmt) : null;
+        const isPersonCollection = String($(this).data('person-collection')).toLowerCase() === 'true';
         closePanel();
+
+        let accountSelector = '';
+        if (isPersonCollection) {
+            try {
+                const res = await fetch(urlPersonPaymentAccounts, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const json = await res.json();
+                const accounts = json.data || [];
+                if (!accounts.length) {
+                    Swal.fire('Sin cuentas', 'No hay cuentas disponibles para acreditar el cobro.', 'warning');
+                    return;
+                }
+                accountSelector = `<div class="text-start mt-3">
+                    <label class="form-label small fw-semibold">Acreditar en cuenta</label>
+                    <select id="cf-fi-receipt-account" class="form-select">
+                        ${accounts.map(a => `<option value="${a.id}">${a.name} (${a.currency})</option>`).join('')}
+                    </select>
+                </div>`;
+            } catch {
+                Swal.fire('Error', 'No se pudieron cargar las cuentas disponibles para acreditar el cobro.', 'error');
+                return;
+            }
+        }
+
         Swal.fire({
             title: '¿Registrar cobro?',
-            text: 'Se registrará el ingreso en la cuenta asociada.',
+            html: isPersonCollection
+                ? `Se registrará el ingreso en la cuenta seleccionada.${accountSelector}`
+                : 'Se registrará el ingreso en la cuenta asociada.',
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Sí, cobrar',
             cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#198754'
+            confirmButtonColor: '#198754',
+            preConfirm: () => isPersonCollection
+                ? parseInt(document.getElementById('cf-fi-receipt-account').value) || null
+                : null
         }).then(result => {
             if (!result.isConfirmed) return;
             $.ajax({
                 url: urlIncomeReceive,
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ id, amount }),
+                data: JSON.stringify({ id, amount, accountID: result.value }),
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                 success: response => {
                     if (response.success) {
@@ -321,6 +398,10 @@
                     } else {
                         Swal.fire('Error', response.message || 'No se pudo registrar el cobro', 'error');
                     }
+                },
+                error: xhr => {
+                    const message = xhr.responseJSON?.message || 'No se pudo registrar el cobro.';
+                    Swal.fire('Error', message, 'error');
                 }
             });
         });
@@ -335,10 +416,14 @@
 
         let accounts = [];
         try {
-            const res  = await fetch(urlPersonPaymentAccounts);
+            const res  = await fetch(urlPersonPaymentAccounts, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const json = await res.json();
             accounts   = json.data || [];
-        } catch {}
+        } catch {
+            Swal.fire('Error', 'No se pudieron cargar las cuentas disponibles para acreditar el cobro.', 'error');
+            return;
+        }
 
         if (!accounts.length) {
             Swal.fire('Sin cuentas', 'No hay cuentas disponibles para acreditar el cobro.', 'warning');
@@ -393,9 +478,123 @@
                 } else {
                     Swal.fire('Error', response.message || 'No se pudo registrar el cobro', 'error');
                 }
+            },
+            error: xhr => {
+                const message = xhr.responseJSON?.message || 'No se pudo registrar el cobro.';
+                Swal.fire('Error', message, 'error');
             }
         });
     });
+
+    // Pagar mínimo TC (monto pre-fijado)
+    $(document).on('click', '.cf-panel-tc-pay', async function () {
+        const tcId  = parseInt($(this).data('tc-id'));
+        const amount = parseFloat($(this).data('amount'));
+        const label  = $(this).data('label') || 'Pago';
+        const fixedExpenseId = parseInt($(this).data('fixed-expense-id')) || null;
+        const paymentDate = currentPanelDate?.date || new Date().toISOString().slice(0, 10);
+        closePanel();
+        await openTcPayModal(tcId, amount, label, false, fixedExpenseId, paymentDate);
+    });
+
+    // Pagar otro monto TC (monto editable)
+    $(document).on('click', '.cf-panel-tc-pay-custom', async function () {
+        const tcId     = parseInt($(this).data('tc-id'));
+        const suggested = parseFloat($(this).data('suggested')) || 0;
+        const fixedExpenseId = parseInt($(this).data('fixed-expense-id')) || null;
+        const paymentDate = currentPanelDate?.date || new Date().toISOString().slice(0, 10);
+        closePanel();
+        await openTcPayModal(tcId, suggested, 'Pagar otro monto', true, fixedExpenseId, paymentDate);
+    });
+
+    async function openTcPayModal(tcId, amount, label, editable = false, fixedExpenseId = null, paymentDate = null) {
+        let accounts = [];
+        try {
+            const res  = await fetch(urlPersonPaymentAccounts);
+            const json = await res.json();
+            accounts   = json.data || [];
+        } catch {}
+
+        if (!accounts.length) {
+            Swal.fire('Sin cuentas', 'No hay cuentas disponibles para debitar el pago.', 'warning');
+            return;
+        }
+
+        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+        const accountOptions = accounts.map(a => `<option value="${a.id}">${a.name} (${a.currency})</option>`).join('');
+        const defaultPaymentDate = paymentDate || new Date().toISOString().slice(0, 10);
+        const maxPaymentDate = new Date().toISOString().slice(0, 10);
+        const amountInput = editable
+            ? `<input id="cf-tc-amount" type="number" step="0.01" min="0.01"
+                      class="form-control text-end fw-bold" value="${amount.toFixed(2)}" />`
+            : `<div class="form-control-plaintext fw-bold text-danger">${fmt.format(amount)}</div>
+               <input type="hidden" id="cf-tc-amount" value="${amount.toFixed(2)}" />`;
+
+        const { value: formValues, isConfirmed } = await Swal.fire({
+            title: label,
+            html: `<div class="text-start">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Monto a pagar</label>
+                    ${amountInput}
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Débitar de cuenta</label>
+                    <select id="cf-tc-account" class="form-select">${accountOptions}</select>
+                </div>
+                <div class="mt-3">
+                    <label class="form-label small fw-semibold">Fecha del pago</label>
+                    <input id="cf-tc-payment-date" type="date" class="form-control"
+                           value="${defaultPaymentDate}" max="${maxPaymentDate}" />
+                </div>
+            </div>`,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check me-1"></i>Confirmar pago',
+            confirmButtonColor: '#dc3545',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const paymentDate = document.getElementById('cf-tc-payment-date').value;
+                if (!paymentDate) {
+                    Swal.showValidationMessage('Seleccioná la fecha real del pago.');
+                    return false;
+                }
+                return {
+                    amount: parseFloat(document.getElementById('cf-tc-amount').value) || 0,
+                    accountId: parseInt(document.getElementById('cf-tc-account').value) || 0,
+                    paymentDate
+                };
+            }
+        });
+
+        if (!isConfirmed || !formValues || formValues.amount <= 0) return;
+
+        $.ajax({
+            url: urlPayTc,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                tcAccountId: tcId,
+                sourceAccountId: formValues.accountId,
+                amount: formValues.amount,
+                paymentDate: formValues.paymentDate,
+                fixedExpenseId
+            }),
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            success: response => {
+                if (response.success) {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Pago registrado', showConfirmButton: false, timer: 2500 });
+                    if (window.reloadCashflowCalendar) window.reloadCashflowCalendar();
+                    if (window.reloadCashflowBalances) window.reloadCashflowBalances();
+                    if (window.cargarCuentas) window.cargarCuentas();
+                } else {
+                    Swal.fire('Error', response.message || 'No se pudo registrar el pago', 'error');
+                }
+            },
+            error: xhr => {
+                const message = xhr.responseJSON?.message || 'No se pudo registrar el pago en el servidor';
+                Swal.fire('Error', message, 'error');
+            }
+        });
+    }
 
     // Agregar en el día del panel
     $('#cf-panel-add-btn').on('click', function () {
@@ -497,8 +696,30 @@
     }
 
     function renderMonth(data) {
+        // Mes anterior sin ítems pendientes → volver al mes actual
+        if (data.isPastMonth && !data.hasPendingItems) {
+            calendar.today();
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'info',
+                title: 'No hay movimientos pendientes en ' + data.monthLabel,
+                showConfirmButton: false, timer: 3000
+            });
+            return;
+        }
+
         balancesByDate = {};
         const events = [];
+
+        // Banner informativo para meses pasados con ítems
+        $('#cf-past-month-banner').remove();
+        if (data.isPastMonth) {
+            const banner = `<div id="cf-past-month-banner" class="alert alert-warning alert-dismissible d-flex align-items-center gap-2 mb-2 py-2 px-3" role="alert">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Ítems pendientes de <strong>${data.monthLabel}</strong>. Solo se muestran los movimientos sin acción.</span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>`;
+            $('#financialCalendar').before(banner);
+        }
 
         data.days.forEach(function (day) {
             balancesByDate[day.date] = day;
@@ -515,7 +736,9 @@
         calendar.removeAllEvents();
         calendar.addEventSource(events);
 
-        setTimeout(function () { injectDayBalances(data.days); }, 60);
+        if (!data.isPastMonth) {
+            setTimeout(function () { injectDayBalances(data.days); }, 60);
+        }
     }
 
     function eventClassFor(item) {

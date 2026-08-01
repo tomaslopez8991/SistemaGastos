@@ -56,6 +56,7 @@ public class GetDebtSnapshotHandler(
             .AsNoTracking()
             .Where(t => t.Account.UserID == request.UserID
                         && t.FixedExpenseID != null
+                        && (t.FixedExpense!.CreditCardAccountID == null || t.FixedExpense.Amount <= 0)
                         && t.Date.Year == currentMonthStart.Year
                         && t.Date.Month == currentMonthStart.Month)
             .Select(t => t.FixedExpenseID!.Value)

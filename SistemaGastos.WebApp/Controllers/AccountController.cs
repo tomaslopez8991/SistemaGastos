@@ -1,14 +1,18 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.Accounts.Commands;
 using SistemaGastos.Application.Features.Accounts.Queries;
+using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Application.Wrappers;
+using SistemaGastos.Domain.Enums;
 
 namespace SistemaGastos.Controllers;
 
 [Authorize]
-public class AccountController(IMediator mediator) : Controller
+public class AccountController(IMediator mediator, ICurrentUserService currentUser) : Controller
 {
     public IActionResult Index()
     {
@@ -89,4 +93,27 @@ public class AccountController(IMediator mediator) : Controller
         var result = await mediator.Send(new TransferMoneyCommand(dto));
         return Ok(new Response<bool>(result, "Saldo transferido correctamente."));
     }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PayCreditCard([FromBody] PayCreditCardRequest req)
+    {
+        var userId = currentUser.UserId ?? 0;
+        var command = new PayCreditCardCommand(
+            req.TcAccountId,
+            req.SourceAccountId,
+            req.Amount,
+            req.PaymentDate,
+            userId,
+            req.FixedExpenseId);
+        var result = await mediator.Send(command);
+        return Ok(Response<PaymentResultDto>.Ok(result, result.Message));
+    }
 }
+
+public record PayCreditCardRequest(
+    int TcAccountId,
+    int SourceAccountId,
+    decimal Amount,
+    DateTime PaymentDate,
+    int? FixedExpenseId);

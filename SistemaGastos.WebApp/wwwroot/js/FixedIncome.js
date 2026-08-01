@@ -9,7 +9,8 @@
         receive: $container.data('url-income-receive'),
         delete:  $container.data('url-income-delete'),
         toggle:  $container.data('url-income-toggle'),
-        pause:   $container.data('url-income-pause')
+        pause:   $container.data('url-income-pause'),
+        paymentAccounts: $container.data('url-person-payment-accounts')
     };
 
     let incomesData = [];
@@ -181,7 +182,10 @@
                         </button>
                     </div>`;
             } else if (effectivelyActive) {
-                actionsHtml = `
+                actionsHtml = income.isAutomaticPersonCollection ? `
+                    <button class="btn btn-success btn-sm w-100 fw-bold" onclick="receiveIncome(${income.id})">
+                        <i class="fas fa-hand-holding-dollar me-1"></i>Cobrar
+                    </button>` : `
                     <div class="d-flex gap-2">
                         <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="receiveIncome(${income.id})">
                             <i class="fas fa-check me-1"></i>Cobrar
@@ -265,29 +269,60 @@
     // ── Funciones globales (onclick en HTML) ────────────────────
     window.editIncome = id => openModal(id);
 
-    window.receiveIncome = function (id) {
+    window.receiveIncome = async function (id) {
         const income = incomesData.find(e => e.id === id);
         if (!income) return;
         const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+        let accountSelector = '';
+        if (income.isAutomaticPersonCollection) {
+            try {
+                const response = await fetch(urls.paymentAccounts);
+                const json = await response.json();
+                const accounts = json.data || [];
+                if (!accounts.length) {
+                    Swal.fire('Sin cuentas', 'No hay cuentas disponibles para acreditar el cobro.', 'warning');
+                    return;
+                }
+                accountSelector = `
+                    <div class="mt-3">
+                        <label class="form-label fw-semibold">Acreditar en cuenta</label>
+                        <select id="fi-receipt-account" class="form-select">
+                            ${accounts.map(a => `<option value="${a.id}">${a.name} (${a.currency})</option>`).join('')}
+                        </select>
+                    </div>`;
+            } catch {
+                Swal.fire('Error', 'No se pudieron cargar las cuentas disponibles.', 'error');
+                return;
+            }
+        }
         Swal.fire({
             title: '¿Confirmar cobro?',
             html: `<div class="text-start">
                     <p><strong>Ingreso:</strong> ${income.name}</p>
                     <p><strong>Monto:</strong> ${income.amountFormatted || fmt.format(income.amount)}</p>
-                    <p><strong>Cuenta:</strong> ${income.accountName}</p>
+                    ${income.isAutomaticPersonCollection ? '' : `<p><strong>Cuenta:</strong> ${income.accountName}</p>`}
+                    ${accountSelector}
                    </div>`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Sí, cobrar',
             cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#198754'
+            confirmButtonColor: '#198754',
+            preConfirm: () => income.isAutomaticPersonCollection
+                ? parseInt(document.getElementById('fi-receipt-account').value)
+                : null
         }).then(result => {
             if (!result.isConfirmed) return;
             $.ajax({
                 url: urls.receive,
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ id }),
+                data: JSON.stringify({
+                    id,
+                    accountID: income.isAutomaticPersonCollection
+                        ? result.value
+                        : null
+                }),
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                 success: response => {
                     if (response.success) {

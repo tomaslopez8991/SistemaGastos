@@ -20,6 +20,11 @@ public class FixedIncome
     public DateTime? StartDate { get; set; }
     public DateTime? LastGeneratedDate { get; set; }
 
+    /// <summary>Persona asociada cuando el ingreso fue generado desde el cierre de cuentas.</summary>
+    public int? PersonID { get; set; }
+    /// <summary>Mes único al que pertenece el cobro automático (YYYY-MM).</summary>
+    public string? CollectionYearMonth { get; set; }
+
     /// <summary>Día del mes (1-31) hasta el cual se reparte el monto. Null = sin distribución.</summary>
     public int? DistributionEndDay { get; set; }
     /// <summary>Días del mes (separados por coma) sin movimiento dentro del rango de distribución.</summary>
@@ -30,4 +35,5 @@ public class FixedIncome
     public virtual Login User { get; set; } = null!;
     public virtual Account Account { get; set; } = null!;
     public virtual Category Category { get; set; } = null!;
+    public virtual Person? Person { get; set; }
 }

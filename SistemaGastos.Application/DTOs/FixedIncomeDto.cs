@@ -25,6 +25,9 @@ public class FixedIncomeDto
     public string? ReceivedAmountFormatted { get; set; }
     public int? DistributionEndDay { get; set; }
     public string? ExcludedDays { get; set; }
+    public int? PersonID { get; set; }
+    public string? CollectionYearMonth { get; set; }
+    public bool IsAutomaticPersonCollection => PersonID.HasValue;
 }
 
 public class FixedIncomeFormDto

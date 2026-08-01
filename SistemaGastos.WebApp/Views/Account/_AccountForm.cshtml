@@ -88,6 +88,16 @@
                 <small class="text-muted" style="font-size: 0.7em;">Si el resumen indica otro monto, cargalo acá y pisa el cálculo automático.</small>
             </div>
         </div>
+        <div class="row mt-3">
+            <div class="col-12">
+                <label class="form-label fw-bold small">Proyección en cashflow</label>
+                <select asp-for="TcProjectionMode" class="form-select" id="TcProjectionMode">
+                    <option value="0">Total (saldo completo de la tarjeta)</option>
+                    <option value="1">Mínimo (calculado por % o manual)</option>
+                </select>
+                <small class="text-muted" style="font-size: 0.7em;">Qué monto se proyecta en el calendario para esta TC.</small>
+            </div>
+        </div>
     </div>
 
 </form>

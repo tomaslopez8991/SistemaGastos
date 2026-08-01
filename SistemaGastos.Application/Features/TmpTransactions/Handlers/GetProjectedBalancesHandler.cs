@@ -43,7 +43,9 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
 
         var paidFixedExpenses = await context.Transaction
             .AsNoTracking()
-            .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
+            .Where(t => t.Account.UserID == request.UserID
+                     && t.FixedExpenseID != null
+                     && (t.FixedExpense!.CreditCardAccountID == null || t.FixedExpense.Amount <= 0))
             .Select(t => new { ExpenseID = t.FixedExpenseID, Year = t.Date.Year, Month = t.Date.Month })
             .ToListAsync(cancellationToken);
 
@@ -131,6 +133,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                 .Where(f => f.PaymentDay > 0
                          && f.PaymentDay <= daysInMonth
                          && !paidThisMonthIds.Contains(f.ID)
+                         && (f.PaymentYearMonth == null || f.PaymentYearMonth == key)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m))
                 .ToList();
 
@@ -149,6 +152,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
             var fixedIncomesOfMonth = allFixedIncomes
                 .Where(f => f.ReceiptDay > 0
                          && f.ReceiptDay <= daysInMonth
+                         && (f.PersonID == null || f.CollectionYearMonth == key)
                          && !receivedThisMonthIds.Contains(f.ID)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m))
                 .ToList();

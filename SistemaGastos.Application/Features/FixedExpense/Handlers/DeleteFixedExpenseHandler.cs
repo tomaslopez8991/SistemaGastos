@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.Features.FixedExpense.Commands;
 using SistemaGastos.Application.Interfaces;
+using SistemaGastos.Application.Helpers;
 
 namespace SistemaGastos.Application.Features.FixedExpense.Handlers;
 
@@ -15,6 +16,9 @@ public class DeleteFixedExpenseHandler(IApplicationDbContext context)
 
         if (expense == null)
             throw new Exception("Gasto fijo no encontrado");
+
+        if (InterestExpenseHelper.IsAutomaticInterest(expense))
+            throw new InvalidOperationException("Los intereses se calculan automáticamente y no pueden eliminarse.");
 
         context.FixedExpense.Remove(expense);
 

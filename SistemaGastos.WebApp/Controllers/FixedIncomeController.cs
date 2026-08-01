@@ -50,7 +50,7 @@ public class FixedIncomeController(IMediator mediator, ICurrentUserService curre
     public async Task<ActionResult<Response<ReceiptResultDto>>> ReceiveNow([FromBody] ReceiveNowRequest req)
     {
         int userID = currentUser.UserId ?? 0;
-        var result = await mediator.Send(new ProcessFixedIncomeReceiptCommand(req.Id, userID, req.Amount));
+        var result = await mediator.Send(new ProcessFixedIncomeReceiptCommand(req.Id, userID, req.Amount, req.AccountID));
         return Ok(Response<ReceiptResultDto>.Ok(result, result.Message));
     }
 
@@ -95,4 +95,5 @@ public class ReceiveNowRequest
 {
     public int Id { get; set; }
     public decimal? Amount { get; set; }
+    public int? AccountID { get; set; }
 }

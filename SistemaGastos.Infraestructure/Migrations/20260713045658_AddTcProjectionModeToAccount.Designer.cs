@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaGastos.Data;
 
@@ -11,9 +12,11 @@ using SistemaGastos.Data;
 namespace SistemaGastos.Infraestructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713045658_AddTcProjectionModeToAccount")]
+    partial class AddTcProjectionModeToAccount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -503,12 +506,7 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("FixedExpense", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_FixedExpense_Amount", "[Amount] >= 0");
-
-                            t.HasCheckConstraint("CK_FixedExpense_PaymentDay", "[PaymentDay] >= 1 AND [PaymentDay] <= 31");
-                        });
+                    b.ToTable("FixedExpense");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.FixedExpenseHistory", b =>
@@ -559,10 +557,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int>("CategoryID")
                         .HasColumnType("int");
 
-                    b.Property<string>("CollectionYearMonth")
-                        .HasMaxLength(7)
-                        .HasColumnType("nvarchar(7)");
-
                     b.Property<string>("Currency")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -591,9 +585,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<string>("PausedMonths")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("PersonID")
-                        .HasColumnType("int");
-
                     b.Property<int>("ReceiptDay")
                         .HasColumnType("int");
 
@@ -610,10 +601,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.HasIndex("CategoryID");
 
                     b.HasIndex("UserID");
-
-                    b.HasIndex("PersonID", "CollectionYearMonth")
-                        .IsUnique()
-                        .HasFilter("[PersonID] IS NOT NULL AND [CollectionYearMonth] IS NOT NULL");
 
                     b.ToTable("FixedIncome", (string)null);
                 });
@@ -1101,11 +1088,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
-                        .WithMany("FixedIncomes")
-                        .HasForeignKey("PersonID")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("SistemaGastos.Domain.Models.Login", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
@@ -1115,8 +1097,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("Category");
-
-                    b.Navigation("Person");
 
                     b.Navigation("User");
                 });
@@ -1226,8 +1206,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("CreditCardTransactions");
 
                     b.Navigation("FixedExpenses");
-
-                    b.Navigation("FixedIncomes");
 
                     b.Navigation("Transactions");
                 });
