@@ -2,10 +2,12 @@
 
 namespace SistemaGastos.Application.DTOs;
 
+public record CreditCardTransactionPersonDto(int PersonID, decimal Percentage, string? PersonName = null);
+
 public record CreditCardTransactionDto
 {
     public int ID { get; init; }
-    public string Description { get; init; } = string.Empty; // Inicializamos para evitar nulos
+    public string Description { get; init; } = string.Empty;
     public decimal Amount { get; init; }
     public DateTime TransactionDate { get; init; }
     public int CategoryID { get; init; }
@@ -13,14 +15,12 @@ public record CreditCardTransactionDto
     public int? ActualInstallment { get; init; }
     public int? Installments { get; init; }
     public bool Fixed { get; init; }
-    public int? PersonID { get; init; }
-    public decimal? PersonPercentage { get; init; }
+    public List<CreditCardTransactionPersonDto> SharedWith { get; init; } = [];
 
     // Propiedades de lectura (aplanadas)
     public string CategoryName { get; init; } = string.Empty;
     public string AccountName { get; init; } = string.Empty;
     public string Currency { get; init; } = string.Empty;
-    public string PersonName { get; init; } = string.Empty;
 }
 
 public record CreditCardAccountLookupDto(int ID, string Name, string Currency);
@@ -55,6 +55,5 @@ public record UpdateCreditCardTransactionDto(
     int? Installments,
     int? ActualInstallment,
     bool Fixed,
-    int? PersonID = null,
-    decimal? PersonPercentage = null
+    List<CreditCardTransactionPersonDto>? SharedWith = null
 );

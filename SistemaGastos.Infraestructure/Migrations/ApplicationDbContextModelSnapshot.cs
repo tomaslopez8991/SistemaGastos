@@ -46,9 +46,21 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int?>("DueMonthOffset")
                         .HasColumnType("int");
 
+                    b.Property<decimal?>("MinimumPaymentManualOverride")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MinimumPaymentPercentage")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("TcCustomPaymentAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TcProjectionMode")
+                        .HasColumnType("int");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -289,9 +301,6 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int?>("PersonID")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("PersonPercentage")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("datetime2");
 
@@ -306,6 +315,58 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.HasIndex("PersonID");
 
                     b.ToTable("CreditCardTransaction");
+                });
+
+            modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransactionCobro", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CreditCardTransactionID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PersonID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CreditCardTransactionID");
+
+                    b.HasIndex("PersonID");
+
+                    b.ToTable("CreditCardTransactionCobro");
+                });
+
+            modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransactionPerson", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<int>("CreditCardTransactionID")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Percentage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PersonID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("CreditCardTransactionID");
+
+                    b.HasIndex("PersonID");
+
+                    b.ToTable("CreditCardTransactionPerson");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.DebtPlanSettings", b =>
@@ -386,6 +447,9 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int>("CategoryID")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CreditCardAccountID")
+                        .HasColumnType("int");
+
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -412,6 +476,9 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int>("PaymentDay")
                         .HasColumnType("int");
 
+                    b.Property<string>("PaymentYearMonth")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("PersonID")
                         .HasColumnType("int");
 
@@ -430,11 +497,18 @@ namespace SistemaGastos.Infraestructure.Migrations
 
                     b.HasIndex("CategoryID");
 
+                    b.HasIndex("CreditCardAccountID");
+
                     b.HasIndex("PersonID");
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("FixedExpense");
+                    b.ToTable("FixedExpense", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FixedExpense_Amount", "[Amount] >= 0");
+
+                            t.HasCheckConstraint("CK_FixedExpense_PaymentDay", "[PaymentDay] >= 1 AND [PaymentDay] <= 31");
+                        });
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.FixedExpenseHistory", b =>
@@ -485,6 +559,10 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<int>("CategoryID")
                         .HasColumnType("int");
 
+                    b.Property<string>("CollectionYearMonth")
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
                     b.Property<string>("Currency")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -513,6 +591,9 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Property<string>("PausedMonths")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("PersonID")
+                        .HasColumnType("int");
+
                     b.Property<int>("ReceiptDay")
                         .HasColumnType("int");
 
@@ -529,6 +610,10 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.HasIndex("CategoryID");
 
                     b.HasIndex("UserID");
+
+                    b.HasIndex("PersonID", "CollectionYearMonth")
+                        .IsUnique()
+                        .HasFilter("[PersonID] IS NOT NULL AND [CollectionYearMonth] IS NOT NULL");
 
                     b.ToTable("FixedIncome", (string)null);
                 });
@@ -891,7 +976,7 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .WithMany()
                         .HasForeignKey("FixedExpenseID");
 
-                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
+                    b.HasOne("SistemaGastos.Domain.Models.Person", null)
                         .WithMany("CreditCardTransactions")
                         .HasForeignKey("PersonID");
 
@@ -900,6 +985,42 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("FixedExpense");
+                });
+
+            modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransactionCobro", b =>
+                {
+                    b.HasOne("SistemaGastos.Domain.Models.CreditCardTransaction", "CreditCardTransaction")
+                        .WithMany()
+                        .HasForeignKey("CreditCardTransactionID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreditCardTransaction");
+
+                    b.Navigation("Person");
+                });
+
+            modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransactionPerson", b =>
+                {
+                    b.HasOne("SistemaGastos.Domain.Models.CreditCardTransaction", "CreditCardTransaction")
+                        .WithMany("SharedWith")
+                        .HasForeignKey("CreditCardTransactionID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreditCardTransaction");
 
                     b.Navigation("Person");
                 });
@@ -929,6 +1050,11 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("SistemaGastos.Domain.Models.Account", "CreditCardAccount")
+                        .WithMany()
+                        .HasForeignKey("CreditCardAccountID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
                         .WithMany("FixedExpenses")
                         .HasForeignKey("PersonID");
@@ -942,6 +1068,8 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("Category");
+
+                    b.Navigation("CreditCardAccount");
 
                     b.Navigation("Person");
 
@@ -973,6 +1101,11 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("SistemaGastos.Domain.Models.Person", "Person")
+                        .WithMany("FixedIncomes")
+                        .HasForeignKey("PersonID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SistemaGastos.Domain.Models.Login", "User")
                         .WithMany()
                         .HasForeignKey("UserID")
@@ -982,6 +1115,8 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("Account");
 
                     b.Navigation("Category");
+
+                    b.Navigation("Person");
 
                     b.Navigation("User");
                 });
@@ -1081,11 +1216,18 @@ namespace SistemaGastos.Infraestructure.Migrations
                     b.Navigation("Transactions");
                 });
 
+            modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransaction", b =>
+                {
+                    b.Navigation("SharedWith");
+                });
+
             modelBuilder.Entity("SistemaGastos.Domain.Models.Person", b =>
                 {
                     b.Navigation("CreditCardTransactions");
 
                     b.Navigation("FixedExpenses");
+
+                    b.Navigation("FixedIncomes");
 
                     b.Navigation("Transactions");
                 });

@@ -139,6 +139,43 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
         return Ok(Response<List<MonthlyBalanceDto>>.Ok(balances));
     }
 
+    // GET: /TmpTransaction/GetDebtSnapshot
+    [HttpGet]
+    [Route("GetDebtSnapshot")]
+    public async Task<ActionResult<Response<DebtSnapshotDto>>> GetDebtSnapshot()
+    {
+        var userID = currentUserService.UserId ?? 0;
+        var snapshot = await mediator.Send(new GetDebtSnapshotQuery(userID));
+        return Ok(Response<DebtSnapshotDto>.Ok(snapshot));
+    }
+
+    // GET: /TmpTransaction/GetDebtAdvice
+    [HttpGet]
+    [Route("GetDebtAdvice")]
+    public async Task<ActionResult<Response<DebtAdviceDto>>> GetDebtAdvice(string? question = null)
+    {
+        var userID = currentUserService.UserId ?? 0;
+        try
+        {
+            var advice = await mediator.Send(new GetDebtFlatteningAdviceQuery(userID, question));
+            return Ok(Response<DebtAdviceDto>.Ok(advice));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Ok(Response<DebtAdviceDto>.Fail(ex.Message));
+        }
+    }
+
+    // GET: /TmpTransaction/GetEarliestPendingMonth
+    [HttpGet]
+    [Route("GetEarliestPendingMonth")]
+    public async Task<ActionResult<Response<string?>>> GetEarliestPendingMonth()
+    {
+        var userID = currentUserService.UserId ?? 0;
+        var result = await mediator.Send(new GetEarliestPendingMonthQuery(userID));
+        return Ok(Response<string?>.Ok(result));
+    }
+
     // GET: /TmpTransaction/GetDailyBalances?year=2026&month=6
     [HttpGet]
     [Route("GetDailyBalances")]

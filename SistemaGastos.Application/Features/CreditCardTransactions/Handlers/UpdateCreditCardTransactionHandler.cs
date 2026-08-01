@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.Transactions.Queries;
 using SistemaGastos.Application.Interfaces;
+using SistemaGastos.Domain.Models;
 
 namespace SistemaGastos.Application.Features.Transactions.Handlers;
 
@@ -19,6 +20,7 @@ public class UpdateCreditCardTransactionHandler(IApplicationDbContext context, I
             var existing = await context.CreditCardTransaction
                 .Include(t => t.Account)
                 .Include(t => t.Category)
+                .Include(t => t.SharedWith)
                 .FirstOrDefaultAsync(t => t.ID == dto.ID, cancellationToken);
 
             if (existing == null) return false;
@@ -36,8 +38,22 @@ public class UpdateCreditCardTransactionHandler(IApplicationDbContext context, I
                 }
             }
 
-            // 2. ACTUALIZAR CAMPOS (Mapper sobrescribe la entidad con los datos nuevos)
+            // 2. ACTUALIZAR CAMPOS
             mapper.Map(dto, existing);
+
+            // Reemplazar atribuciones a personas
+            existing.SharedWith.Clear();
+            if (dto.SharedWith != null)
+            {
+                foreach (var sw in dto.SharedWith)
+                {
+                    existing.SharedWith.Add(new CreditCardTransactionPerson
+                    {
+                        PersonID = sw.PersonID,
+                        Percentage = sw.Percentage
+                    });
+                }
+            }
 
             // 3. APLICAR NUEVO SALDO
             // Necesitamos recargar Cuenta/Categoria por si el usuario las cambió en el Edit

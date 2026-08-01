@@ -6,12 +6,16 @@
 @Html.AntiForgeryToken()
 
 <div id="planning-container"
+     class="fin-dashboard"
      data-url-list="@Url.Action("GetTransactionsByMonth", "TmpTransaction")"
      data-url-form="@Url.Action("GetTmpTransactionForm", "TmpTransaction")"
      data-url-create="@Url.Action("Create", "TmpTransaction")"
      data-url-delete="@Url.Action("Delete", "TmpTransaction")"
      data-url-balances="@Url.Action("GetBalances", "TmpTransaction")"
+     data-url-debt-snapshot="@Url.Action("GetDebtSnapshot", "TmpTransaction")"
+     data-url-debt-advice="@Url.Action("GetDebtAdvice", "TmpTransaction")"
      data-url-daily-balances="@Url.Action("GetDailyBalances", "TmpTransaction")"
+     data-url-earliest-pending="@Url.Action("GetEarliestPendingMonth", "TmpTransaction")"
      data-url-confirm-day="@Url.Action("ConfirmDay", "TmpTransaction")"
      data-url-fixed-list="@Url.Action("GetList", "FixedExpense")"
      data-url-fixed-form="@Url.Action("GetForm", "FixedExpense")"
@@ -20,6 +24,7 @@
      data-url-fixed-delete="@Url.Action("Delete", "FixedExpense")"
      data-url-fixed-toggle="@Url.Action("ToggleActive", "FixedExpense")"
      data-url-fixed-pause="@Url.Action("TogglePause", "FixedExpense")"
+     data-url-fixed-sync-cc="@Url.Action("SyncCreditCard", "FixedExpense")"
      data-url-income-list="@Url.Action("GetList", "FixedIncome")"
      data-url-income-form="@Url.Action("GetForm", "FixedIncome")"
      data-url-income-save="@Url.Action("Save", "FixedIncome")"
@@ -39,6 +44,7 @@
      data-url-person-delete="@Url.Action("Delete", "Person")"
      data-url-person-payment-accounts="@Url.Action("GetPaymentAccounts", "Person")"
      data-url-person-register-payment="@Url.Action("RegisterPayment", "Person")"
+     data-url-pay-tc="@Url.Action("PayCreditCard", "Account")"
      data-intro="Proyectá tu liquidez futura mes a mes. Acá planificás ingresos, gastos y ves cuánto dinero vas a tener."
      data-step="1">
 
@@ -173,6 +179,15 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link tmp-tab-btn"
+                            id="deudas-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#deudas"
+                            type="button" role="tab">
+                        <i class="fa-solid fa-scale-balanced me-2 text-danger"></i>Deudas
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link tmp-tab-btn"
                             id="cuentas-tab"
                             data-bs-toggle="tab"
                             data-bs-target="#cuentas"
@@ -227,6 +242,43 @@
                 </div>
             </div>
 
+            @* Tab: Deudas (snapshot para aplanar deudas) *@
+            <div class="tab-pane fade p-4" id="deudas" role="tabpanel">
+                <div id="debt-snapshot-summary" class="row g-3 mb-4">
+                    <div class="col-12 text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-danger" role="status"></div>
+                        <span class="ms-2 small">Calculando snapshot de deudas...</span>
+                    </div>
+                </div>
+                <div id="debt-snapshot-cards" class="row g-3 mb-4"></div>
+
+                <div class="card fin-card border-0" id="debt-advice-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-semibold mb-0">
+                                <i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>Recomendación con IA
+                            </h5>
+                            <button class="btn btn-sm btn-outline-primary" id="btnGenerateDebtAdvice">
+                                <i class="fa-solid fa-sparkles me-1"></i>Generar recomendación
+                            </button>
+                        </div>
+                        <div id="debt-advice-content" class="text-muted small mb-3">
+                            Tocá "Generar recomendación" para que la IA sugiera qué pagos adelantar en base al snapshot de arriba, o escribí tu propia pregunta abajo.
+                        </div>
+                        <div class="input-group">
+                            <input type="text"
+                                   class="form-control"
+                                   id="debtAdviceQuestion"
+                                   placeholder="Ej: ¿me conviene adelantar el pago de la tarjeta Visa este mes?"
+                                   maxlength="500">
+                            <button class="btn btn-primary" id="btnAskDebtAdvice">
+                                <i class="fa-solid fa-paper-plane me-1"></i>Preguntar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             @* Tab: Cuentas por persona *@
             <div class="tab-pane fade p-4" id="cuentas" role="tabpanel">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -251,7 +303,7 @@
 </div>
 
 @* ── Panel lateral de detalle de día ─────────────────────── *@
-<div id="cf-day-panel" class="cf-day-panel">
+<div id="cf-day-panel" class="cf-day-panel fin-dashboard">
     <div class="cf-day-panel-header">
         <div>
             <div class="fw-semibold" id="cf-panel-date-label"></div>
@@ -279,4 +331,5 @@
     <script src="~/js/Budget.js" asp-append-version="true"></script>
     <script src="~/js/PersonAccounts.js" asp-append-version="true"></script>
     <script src="~/js/CashflowCalendar.js" asp-append-version="true"></script>
+    <script src="~/js/DebtSnapshot.js" asp-append-version="true"></script>
 }

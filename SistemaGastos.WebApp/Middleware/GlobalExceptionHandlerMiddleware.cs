@@ -62,8 +62,11 @@ public class GlobalExceptionHandlerMiddleware(ILogger<GlobalExceptionHandlerMidd
             message = "Errores de validación detectados.";
             errors = validationEx.Errors.Select(e => new { Field = e.PropertyName, Error = e.ErrorMessage });
         }
-        // TEMP: expose message + type in all environments to diagnose production error
-        // TODO: revert to "Error interno del servidor." once root cause is identified
+        var exposeDetails = env.IsDevelopment() || statusCode != HttpStatusCode.InternalServerError;
+        if (!exposeDetails)
+        {
+            message = "Error interno del servidor.";
+        }
 
         var response = new
         {
@@ -71,8 +74,10 @@ public class GlobalExceptionHandlerMiddleware(ILogger<GlobalExceptionHandlerMidd
             statusCode = (int)statusCode,
             message = message,
             errors = errors,
-            exceptionType = exception.GetType().FullName,
-            detail = exception.Message + " | " + exception.InnerException?.Message
+            exceptionType = exposeDetails ? exception.GetType().FullName : null,
+            detail = exposeDetails
+                ? exception.Message + " | " + exception.InnerException?.Message
+                : null
         };
 
         var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

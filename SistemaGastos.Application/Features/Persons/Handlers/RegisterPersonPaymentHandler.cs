@@ -30,7 +30,9 @@ public class RegisterPersonPaymentHandler(IApplicationDbContext context)
         // Crear transacción de pago recibido, atribuida a la persona
         var payment = new Transaction
         {
-            Description = $"Cobro: {person.Name}",
+            Description = request.CreditCardTransactionID.HasValue
+                ? $"Cobro consumo: {person.Name}"
+                : $"Cobro: {person.Name}",
             Amount = request.Amount,
             Date = DateTime.Now,
             AccountID = request.AccountID,
@@ -41,18 +43,32 @@ public class RegisterPersonPaymentHandler(IApplicationDbContext context)
         // Acreditar en la cuenta
         account.Balance += request.Amount;
 
-        // Marcar el mes actual como cobrado en la persona
-        var currentMonthKey = $"{DateTime.Now.Year}-{DateTime.Now.Month:D2}";
-        var existingMonths = string.IsNullOrEmpty(person.CollectedMonths)
-            ? new List<string>()
-            : person.CollectedMonths.Split(',').Select(s => s.Trim()).ToList();
-        if (!existingMonths.Contains(currentMonthKey))
+        // Un consumo individual no liquida toda la cuenta mensual.
+        if (!request.CreditCardTransactionID.HasValue)
         {
-            existingMonths.Add(currentMonthKey);
-            person.CollectedMonths = string.Join(',', existingMonths);
+            var currentMonthKey = $"{DateTime.Now.Year}-{DateTime.Now.Month:D2}";
+            var existingMonths = string.IsNullOrEmpty(person.CollectedMonths)
+                ? new List<string>()
+                : person.CollectedMonths.Split(',').Select(s => s.Trim()).ToList();
+            if (!existingMonths.Contains(currentMonthKey))
+            {
+                existingMonths.Add(currentMonthKey);
+                person.CollectedMonths = string.Join(',', existingMonths);
+            }
         }
 
         await context.Transaction.AddAsync(payment, cancellationToken);
+
+        if (request.CreditCardTransactionID.HasValue)
+        {
+            var cobro = new CreditCardTransactionCobro
+            {
+                PersonID = request.PersonID,
+                CreditCardTransactionID = request.CreditCardTransactionID.Value
+            };
+            await context.CreditCardTransactionCobro.AddAsync(cobro, cancellationToken);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
         return true;
     }

@@ -31,6 +31,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
         var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
             .Include(t => t.Category)
+            .Include(t => t.SharedWith)
             .Where(t => t.Account.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
@@ -42,7 +43,9 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
 
         var paidFixedExpenses = await context.Transaction
             .AsNoTracking()
-            .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
+            .Where(t => t.Account.UserID == request.UserID
+                     && t.FixedExpenseID != null
+                     && (t.FixedExpense!.CreditCardAccountID == null || t.FixedExpense.Amount <= 0))
             .Select(t => new { ExpenseID = t.FixedExpenseID, Year = t.Date.Year, Month = t.Date.Month })
             .ToListAsync(cancellationToken);
 
@@ -130,6 +133,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                 .Where(f => f.PaymentDay > 0
                          && f.PaymentDay <= daysInMonth
                          && !paidThisMonthIds.Contains(f.ID)
+                         && (f.PaymentYearMonth == null || f.PaymentYearMonth == key)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m))
                 .ToList();
 
@@ -148,6 +152,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
             var fixedIncomesOfMonth = allFixedIncomes
                 .Where(f => f.ReceiptDay > 0
                          && f.ReceiptDay <= daysInMonth
+                         && (f.PersonID == null || f.CollectionYearMonth == key)
                          && !receivedThisMonthIds.Contains(f.ID)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m))
                 .ToList();
@@ -231,7 +236,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
             // E2. Transacciones TC con persona atribuida (solo meses futuros, mirror del loop C/D)
             if (!hasCreditCardPayment && m >= mesDespuesDelPago)
             {
-                foreach (var cardTx in cardTransactions.Where(t => t.PersonID != null))
+                foreach (var cardTx in cardTransactions.Where(t => t.SharedWith.Any()))
                 {
                     if (cardTx.TransactionDate == null) continue;
 
@@ -242,7 +247,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                     if (cardTx.Account.Currency == "USD")
                         montoArsP *= cotizacionDolar;
 
-                    decimal pctP = cardTx.PersonPercentage ?? 100m;
+                    decimal pctP = cardTx.SharedWith.Sum(s => s.Percentage);
                     bool esFijoP = cardTx.Fixed;
                     bool esCuotasP = cardTx.Installments > 1;
                     bool esVariableP = !esFijoP && !esCuotasP;

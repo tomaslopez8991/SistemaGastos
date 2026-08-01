@@ -13,6 +13,12 @@ public class DailyCalendarDto
     /// <summary>Cotización dólar MEP usada para convertir montos en USD.</summary>
     public decimal DolarRate { get; set; }
 
+    /// <summary>True si el mes solicitado es anterior al mes actual.</summary>
+    public bool IsPastMonth { get; set; }
+
+    /// <summary>True si existe al menos un ítem pendiente en el mes pasado solicitado.</summary>
+    public bool HasPendingItems { get; set; }
+
     public List<DailyBalanceDto> Days { get; set; } = new();
 }
 
@@ -47,4 +53,11 @@ public class DailyBalanceItemDto
     public int Day { get; set; }
     /// <summary>True si el TmpTransaction tiene distribución activa (dist.Count > 1).</summary>
     public bool IsDistributed { get; set; }
+    /// <summary>ID de la cuenta TC (para items de pago de TC).</summary>
+    public int? TcAccountId { get; set; }
+    /// <summary>Saldo total de la TC en ARS (para botón "Pagar total").</summary>
+    public decimal? TcTotalAmount { get; set; }
+    /// <summary>Pago mínimo en ARS (null si no configurado).</summary>
+    public decimal? TcMinimumAmount { get; set; }
+    public bool IsAutomaticPersonCollection { get; set; }
 }

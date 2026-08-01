@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.Features.FixedExpense.Commands;
 using SistemaGastos.Application.Interfaces;
+using SistemaGastos.Application.Helpers;
 using SistemaGastos.Domain.Models;
 
 namespace SistemaGastos.Application.Features.FixedExpense.Handlers;
@@ -16,6 +17,9 @@ public class UpdateFixedExpenseHandler(IApplicationDbContext context)
 
         if (expense == null)
             return false;
+
+        if (InterestExpenseHelper.IsAutomaticInterest(expense))
+            throw new InvalidOperationException("Los intereses se calculan automáticamente y no pueden editarse.");
 
         // ✅ AUDITORÍA: Detectar cambio de precio
         if (expense.Amount != request.Amount)

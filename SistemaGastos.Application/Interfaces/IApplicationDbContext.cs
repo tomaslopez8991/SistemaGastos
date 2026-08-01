@@ -10,6 +10,8 @@ public interface IApplicationDbContext
     DbSet<Login> Login { get; }
     // Listamos SOLO las tablas que necesitamos tocar desde la lógica
     DbSet<CreditCardTransaction> CreditCardTransaction { get; }
+    DbSet<CreditCardTransactionPerson> CreditCardTransactionPerson { get; set; }
+    DbSet<CreditCardTransactionCobro> CreditCardTransactionCobro { get; set; }
     DbSet<Transaction> Transaction { get; }
     DbSet<TmpTransaction> TmpTransaction { get; }
     DbSet<Account> Account { get; }

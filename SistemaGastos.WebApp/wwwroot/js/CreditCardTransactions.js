@@ -113,11 +113,15 @@
                     if (!shared) return gridjs.html(mainHtml);
 
                     const fullFormatted = formatAmount(shared.full, currency);
+                    const namesTitle = shared.persons.map(s => `${s.personName} (${s.percentage}%)`).join(', ');
+                    const badgeText = shared.persons.length === 1
+                        ? `${shared.persons[0].percentage}% · ${shared.persons[0].personName}`
+                        : `${shared.persons.length} personas`;
                     return gridjs.html(`
                         <div>
                             ${mainHtml}
-                            <div class="cc-shared-badge" title="Total: ${fullFormatted} · compartido con ${shared.person}">
-                                <i class="fa-solid fa-user-group"></i> ${shared.pct}% · ${shared.person}
+                            <div class="cc-shared-badge" title="Total: ${fullFormatted} · compartido con ${namesTitle}">
+                                <i class="fa-solid fa-user-group"></i> ${badgeText}
                             </div>
                         </div>
                     `);
@@ -185,14 +189,12 @@
                         ? `${String(t.actualInstallment).padStart(2, '0')}/${String(t.installments).padStart(2, '0')}`
                         : null;
 
-                    // Si hay persona asignada, calcular la parte del usuario
-                    const isShared = t.personID && t.personPercentage;
-                    const myAmount = isShared
-                        ? t.amount * (t.personPercentage / 100)
-                        : t.amount;
-                    const sharedMeta = isShared
-                        ? { pct: t.personPercentage, person: t.personName, full: t.amount }
-                        : null;
+                    const sharedList = t.sharedWith || [];
+                    const isShared = sharedList.length > 0;
+                    const totalPct = isShared ? sharedList.reduce((sum, s) => sum + s.percentage, 0) : 0;
+                    const myPct = isShared ? Math.max(0, 100 - totalPct) : 100;
+                    const myAmount = isShared ? t.amount * (myPct / 100) : t.amount;
+                    const sharedMeta = isShared ? { persons: sharedList, full: t.amount } : null;
 
                     return [
                         t.id,                                   // [0] check (id)
@@ -444,8 +446,9 @@
                     cancelButtonText: 'Cancelar',
                     didOpen: () => {
                         _bindSingleCalculator();
-                        const scriptEl = $(html).filter('script');
-                        if (scriptEl.length > 0) $.globalEval(scriptEl.text());
+                        const scriptEls = $(html).filter('script');
+                        scriptEls.each(function () { $.globalEval($(this).text()); });
+                        _initSharedPersonsUI();
                     },
                     preConfirm: () => _getSingleFormData(isEditMode)
                 }).then((res) => {
@@ -483,6 +486,107 @@
             }
         }
 
+        function _buildPersonRow(personID, percentage) {
+            const persons = window.__ccPersons || [];
+            const total = parseFloat($(config.selectors.formTransaction).find('[name="Amount"]').val()) || 0;
+            const initialPercentage = percentage || 100;
+            const initialAmount = total * initialPercentage / 100;
+            const opts = persons.map(p =>
+                `<option value="${p.id}" ${p.id === personID ? 'selected' : ''}>${p.name}</option>`
+            ).join('');
+            return $(`
+                <div class="d-flex flex-wrap gap-2 align-items-center shared-person-row" data-mode="percentage">
+                    <select class="form-select form-select-sm flex-grow-1 sp-person-select">
+                        <option value="">— Seleccionar —</option>
+                        ${opts}
+                    </select>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Modo de división">
+                        <button type="button" class="btn btn-primary sp-mode-btn" data-mode="percentage" title="Asignar por porcentaje">%</button>
+                        <button type="button" class="btn btn-outline-secondary sp-mode-btn" data-mode="amount" title="Asignar un monto fijo">$</button>
+                    </div>
+                    <div class="input-group input-group-sm" style="width:120px;flex-shrink:0;">
+                        <input type="number" min="0.01" max="100" step="0.01"
+                               class="form-control text-end sp-pct-input"
+                               value="${initialPercentage}" />
+                        <span class="input-group-text">%</span>
+                    </div>
+                    <div class="input-group input-group-sm sp-amount-group d-none" style="width:150px;flex-shrink:0;">
+                        <span class="input-group-text">$</span>
+                        <input type="number" min="0.01" step="0.01"
+                               class="form-control text-end sp-amount-input"
+                               value="${initialAmount.toFixed(2)}" />
+                    </div>
+                    <small class="text-body-secondary sp-calculated-pct d-none" style="min-width:90px;">${initialPercentage}% del gasto</small>
+                    <button type="button" class="btn btn-sm btn-outline-danger sp-remove-btn" style="flex-shrink:0;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `);
+        }
+
+        function _initSharedPersonsUI() {
+            const $list = $('#shared-persons-list');
+            if (!$list.length) return;
+
+            $list.empty();
+            const existing = window.__ccSharedWith || [];
+            existing.forEach(s => $list.append(_buildPersonRow(s.personID, s.percentage)));
+
+            $('#btn-add-shared-person').off('click').on('click', () => {
+                $list.append(_buildPersonRow(null, 100));
+            });
+
+            $list.off('click', '.sp-remove-btn').on('click', '.sp-remove-btn', function () {
+                $(this).closest('.shared-person-row').remove();
+            });
+
+            $list.off('click', '.sp-mode-btn').on('click', '.sp-mode-btn', function () {
+                const $row = $(this).closest('.shared-person-row');
+                const mode = $(this).data('mode');
+                $row.attr('data-mode', mode);
+                $row.find('.sp-mode-btn').removeClass('btn-primary').addClass('btn-outline-secondary');
+                $(this).removeClass('btn-outline-secondary').addClass('btn-primary');
+                $row.find('.sp-pct-input').closest('.input-group').toggleClass('d-none', mode !== 'percentage');
+                $row.find('.sp-amount-group').toggleClass('d-none', mode !== 'amount');
+                $row.find('.sp-calculated-pct').toggleClass('d-none', mode !== 'amount');
+                _syncSharedPersonRow($row, mode === 'amount' ? 'percentage' : 'amount');
+            });
+
+            $list.off('input', '.sp-pct-input').on('input', '.sp-pct-input', function () {
+                _syncSharedPersonRow($(this).closest('.shared-person-row'), 'percentage');
+            });
+
+            $list.off('input', '.sp-amount-input').on('input', '.sp-amount-input', function () {
+                _syncSharedPersonRow($(this).closest('.shared-person-row'), 'amount');
+            });
+
+            $(config.selectors.formTransaction).find('[name="Amount"]')
+                .off('input.sharedPersons')
+                .on('input.sharedPersons', function () {
+                    $list.find('.shared-person-row').each(function () {
+                        const $row = $(this);
+                        _syncSharedPersonRow($row, $row.attr('data-mode') || 'percentage');
+                    });
+                });
+        }
+
+        function _syncSharedPersonRow($row, source) {
+            const total = parseFloat($(config.selectors.formTransaction).find('[name="Amount"]').val()) || 0;
+            const $percentage = $row.find('.sp-pct-input');
+            const $amount = $row.find('.sp-amount-input');
+
+            if (source === 'amount') {
+                const amount = parseFloat($amount.val()) || 0;
+                $percentage.val(total > 0 ? (amount * 100 / total).toFixed(2) : '0');
+            } else {
+                const percentage = parseFloat($percentage.val()) || 0;
+                $amount.val((total * percentage / 100).toFixed(2));
+            }
+
+            const calculatedPercentage = parseFloat($percentage.val()) || 0;
+            $row.find('.sp-calculated-pct').text(`${calculatedPercentage.toFixed(2)}% del gasto`);
+        }
+
         function _getSingleFormData(isEditMode) {
             const form = document.querySelector(config.selectors.formTransaction);
             const data = Object.fromEntries(new FormData(form).entries());
@@ -492,10 +596,23 @@
             data.CategoryID = parseInt(data.CategoryID) || 0;
             data.ActualInstallment = parseInt(data.ActualInstallment) || null;
             data.Installments = parseInt(data.Installments) || null;
-            data.PersonID = parseInt(data.PersonID) || null;
-            data.PersonPercentage = data.PersonID ? (parseFloat(data.PersonPercentage) || 100) : null;
             const monto = parseFloat(data.Amount) || 0;
             data.Amount = monto;
+
+            const sharedWith = [];
+            let invalidSharedAmount = false;
+            $('#shared-persons-list .shared-person-row').each(function () {
+                const personID = parseInt($(this).find('.sp-person-select').val());
+                const pct = parseFloat($(this).find('.sp-pct-input').val()) || 0;
+                if (personID && (pct <= 0 || pct > 100)) invalidSharedAmount = true;
+                if (personID) sharedWith.push({ personID, percentage: pct });
+            });
+
+            if (invalidSharedAmount) {
+                Swal.showValidationMessage('El monto atribuido debe ser mayor a cero y no puede superar el total del gasto.');
+                return false;
+            }
+            data.SharedWith = sharedWith.length > 0 ? sharedWith : null;
 
             if (!isEditMode && data.Installments > 1 && monto > 0) {
                 data.Amount = monto / data.Installments;

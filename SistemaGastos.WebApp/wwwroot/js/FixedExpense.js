@@ -9,12 +9,16 @@
         delete: $container.data('url-fixed-delete'),
         pay: $container.data('url-fixed-pay'),
         toggle: $container.data('url-fixed-toggle'),
-        pause: $container.data('url-fixed-pause')
+        pause: $container.data('url-fixed-pause'),
+        syncCc: $container.data('url-fixed-sync-cc'),
+        payTc: $container.data('url-pay-tc'),
+        personPaymentAccounts: $container.data('url-person-payment-accounts')
     };
 
     let expensesData = [];
     let activeYear = new Date().getFullYear();
     let activeMonth = new Date().getMonth() + 1;
+    const syncedMonths = new Set(); // Evita llamar al sync más de una vez por mes/carga
 
     init();
 
@@ -82,12 +86,32 @@
     // RENDER DE CARDS
     // =========================================================
     function loadExpenses(year, month) {
-        $.get(urls.list, { year: year, month: month }, function (response) {
-            if (!response.success || !response.data) { showError(); return; }
-            expensesData = response.data;
-            updateTabBadge();
-            applyFilters();
-        }).fail(showError);
+        const now = new Date();
+        const isCurrentMonth = (year === now.getFullYear() && month === now.getMonth() + 1);
+
+        const doLoad = () => {
+            $.get(urls.list, { year: year, month: month }, function (response) {
+                if (!response.success || !response.data) { showError(); return; }
+                expensesData = response.data;
+                updateTabBadge();
+                applyFilters();
+            }).fail(showError);
+        };
+
+        const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+
+        // Para el mes actual, sincronizar TC una sola vez por carga de página
+        if (isCurrentMonth && urls.syncCc && !syncedMonths.has(monthKey)) {
+            syncedMonths.add(monthKey);
+            $.ajax({
+                url: urls.syncCc,
+                type: 'POST',
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                complete: doLoad
+            });
+        } else {
+            doLoad();
+        }
     }
 
     function showError() {
@@ -163,10 +187,11 @@
             else if (days !== null && days < 0) { logoBg = 'bg-danger-subtle'; logoIcon = 'text-danger'; }
             else if (days !== null && days <= 3) { logoBg = 'bg-warning-subtle'; logoIcon = 'text-warning-emphasis'; }
 
+            const defaultIcon = expense.isCreditCardPayment ? 'fa-credit-card' : 'fa-receipt';
             const logoHtml = expense.logoUrl
                 ? `<img src="${expense.logoUrl}" alt="${expense.name}" class="rounded" style="width:40px;height:40px;object-fit:cover;">`
                 : `<div class="rounded ${logoBg} d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
-                       <i class="fas fa-receipt ${logoIcon}"></i>
+                       <i class="fas ${defaultIcon} ${logoIcon}"></i>
                    </div>`;
 
             // Texto de estado debajo de cuenta/día
@@ -205,6 +230,15 @@
             let actionsHtml = '';
             if (isPaid) {
                 // Footer strip reemplaza los botones
+            } else if (expense.isSystemGenerated) {
+                actionsHtml = `
+                    <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="payExpense(${expense.id})">
+                        <i class="fas fa-check me-1"></i>Pagar
+                    </button>
+                    <span class="btn btn-sm btn-outline-secondary disabled" title="Calculado automáticamente por el sistema">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                `;
             } else if (isPausedThisMonth) {
                 actionsHtml = `
                     <button class="btn btn-warning btn-sm flex-fill fw-bold" onclick="pauseExpense(${expense.id})">
@@ -218,20 +252,45 @@
                     </button>
                 `;
             } else if (effectivelyActive) {
-                actionsHtml = `
-                    <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="payExpense(${expense.id})">
-                        <i class="fas fa-check me-1"></i>Pagar
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button class="btn btn-outline-warning btn-sm" onclick="pauseExpense(${expense.id})" title="Pausar este mes">
-                        <i class="fas fa-calendar-minus"></i>
-                    </button>
-                    <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                `;
+                if (expense.isCreditCardPayment) {
+                    const tcId    = expense.creditCardAccountID;
+                    const tcTotal = expense.tcTotalAmount || expense.amount;
+                    const minBtn  = expense.tcMinimumAmount > 0
+                        ? `<button class="btn btn-warning btn-sm" onclick="payTcFromFe(${tcId}, ${expense.tcMinimumAmount}, 'Pagar mínimo', false)" title="Pagar mínimo">
+                               <i class="fas fa-minus me-1"></i>Mínimo
+                           </button>`
+                        : '';
+                    actionsHtml = `
+                        <button class="btn btn-danger btn-sm flex-fill fw-bold" onclick="payTcFromFe(${tcId}, ${tcTotal}, 'Pagar total', false)">
+                            <i class="fas fa-check me-1"></i>Total
+                        </button>
+                        ${minBtn}
+                        <button class="btn btn-outline-secondary btn-sm" onclick="payTcFromFe(${tcId}, ${tcTotal}, 'Pago personalizado', true)" title="Personalizado">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                } else {
+                    actionsHtml = `
+                        <button class="btn btn-success btn-sm flex-fill fw-bold" onclick="payExpense(${expense.id})">
+                            <i class="fas fa-check me-1"></i>Pagar
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="editExpense(${expense.id})" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="pauseExpense(${expense.id})" title="Pausar este mes">
+                            <i class="fas fa-calendar-minus"></i>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteExpense(${expense.id})" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                }
             } else if (notStartedYet) {
                 // Aún no comenzó: solo editar y eliminar (no tiene sentido reanudar/pausar)
                 actionsHtml = `
@@ -261,7 +320,9 @@
             const displayAmount = isPaid && expense.paidAmountFormatted
                 ? expense.paidAmountFormatted
                 : (expense.amountFormatted || culture.format(expense.amount));
-            const amountLabel = isPaid ? 'Monto pagado' : 'Monto mensual';
+            const amountLabel = isPaid
+                ? 'Monto pagado'
+                : (expense.isSystemGenerated ? 'Interés acumulado' : 'Monto mensual');
 
             // Footer para gastos pagados (reemplaza los botones)
             const paidFooter = isPaid
@@ -530,6 +591,69 @@
             });
         });
     }
+
+    window.payTcFromFe = async function (tcId, amount, label, editable) {
+        let accounts = [];
+        try {
+            const res  = await fetch(urls.personPaymentAccounts);
+            const json = await res.json();
+            accounts   = json.data || [];
+        } catch {}
+
+        if (!accounts.length) {
+            Swal.fire('Sin cuentas', 'No hay cuentas disponibles para debitar el pago.', 'warning');
+            return;
+        }
+
+        const fmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+        const accountOptions = accounts.map(a => `<option value="${a.id}">${a.name} (${a.currency})</option>`).join('');
+        const amountInput = editable
+            ? `<input id="fe-tc-amount" type="number" step="0.01" min="0.01"
+                      class="form-control text-end fw-bold" value="${(+amount).toFixed(2)}" />`
+            : `<div class="form-control-plaintext fw-bold text-danger">${fmt.format(amount)}</div>
+               <input type="hidden" id="fe-tc-amount" value="${(+amount).toFixed(2)}" />`;
+
+        const { value: formValues, isConfirmed } = await Swal.fire({
+            title: label,
+            html: `<div class="text-start">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Monto a pagar</label>
+                    ${amountInput}
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Débitar de cuenta</label>
+                    <select id="fe-tc-account" class="form-select">${accountOptions}</select>
+                </div>
+            </div>`,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check me-1"></i>Confirmar pago',
+            confirmButtonColor: '#dc3545',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => ({
+                amount:    parseFloat(document.getElementById('fe-tc-amount').value) || 0,
+                accountId: parseInt(document.getElementById('fe-tc-account').value) || 0
+            })
+        });
+
+        if (!isConfirmed || !formValues || formValues.amount <= 0) return;
+
+        $.ajax({
+            url: urls.payTc,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ tcAccountId: tcId, sourceAccountId: formValues.accountId, amount: formValues.amount }),
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            success: response => {
+                if (response.success) {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: response.message || 'Pago registrado', showConfirmButton: false, timer: 2500 });
+                    notifyDashboardChanged();
+                } else {
+                    Swal.fire('Error', response.message || 'No se pudo registrar el pago', 'error');
+                }
+            },
+            error: () => Swal.fire('Error', 'No se pudo conectar con el servidor', 'error')
+        });
+    };
 
     function saveExpense(data) {
         if (!data.Name || data.Amount <= 0) {

@@ -1,4 +1,5 @@
 ﻿using SistemaGastos.Domain.Enums;
+using TcProjectionMode = SistemaGastos.Domain.Enums.TcProjectionMode;
 
 namespace SistemaGastos.Application.DTOs;
 
@@ -14,6 +15,11 @@ public record AccountDto
     public int? ClosingDay {  get; init; }
     public int? DueDay { get; init; }
     public int? DueMonthOffset { get; init; }
+    public decimal? MinimumPaymentPercentage { get; init; }
+    public decimal? MinimumPaymentManualOverride { get; init; }
+    public decimal? EffectiveMinimumPayment { get; init; }
+    public TcProjectionMode TcProjectionMode { get; init; }
+    public decimal? TcCustomPaymentAmount { get; init; }
 }
 
 public record CreateAccountDto(
@@ -25,7 +31,11 @@ public record CreateAccountDto(
     AccountType Type,
     int? ClosingDay,
     int? DueDay,
-    int? DueMonthOffset
+    int? DueMonthOffset,
+    decimal? MinimumPaymentPercentage,
+    decimal? MinimumPaymentManualOverride,
+    TcProjectionMode TcProjectionMode = TcProjectionMode.Total,
+    decimal? TcCustomPaymentAmount = null
 );
 
 public record UpdateAccountDto(
@@ -38,7 +48,11 @@ public record UpdateAccountDto(
     AccountType Type,
     int? ClosingDay,
     int? DueDay,
-    int? DueMonthOffset
+    int? DueMonthOffset,
+    decimal? MinimumPaymentPercentage,
+    decimal? MinimumPaymentManualOverride,
+    TcProjectionMode TcProjectionMode = TcProjectionMode.Total,
+    decimal? TcCustomPaymentAmount = null
 );
 
 public record AccountTotalDto(string Currency, decimal Total);

@@ -2,6 +2,7 @@
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Models;
 using SistemaGastos.Infrastructure.Persistence.Configurations;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace SistemaGastos.Data;
 
@@ -15,6 +16,27 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.ApplyConfiguration(new AccountInterestSettingConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestDailyLogConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestMonthlyChargeConfiguration());
+
+        // FixedExpense tiene dos FKs a Account: AccountID (cuenta de pago) y CreditCardAccountID (TC a saldar).
+        // EF necesita configuración explícita para resolver la ambigüedad.
+        modelBuilder.Entity<FixedExpense>()
+            .HasOne(f => f.Account)
+            .WithMany(a => a.FixedExpenses)
+            .HasForeignKey(f => f.AccountID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FixedExpense>()
+            .HasOne(f => f.CreditCardAccount)
+            .WithMany()
+            .HasForeignKey(f => f.CreditCardAccountID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FixedExpense>()
+            .ToTable("FixedExpense", table =>
+            {
+                table.HasCheckConstraint("CK_FixedExpense_Amount", "[Amount] >= 0");
+                table.HasCheckConstraint("CK_FixedExpense_PaymentDay", "[PaymentDay] >= 1 AND [PaymentDay] <= 31");
+            });
     }
 
     public DbSet<Account> Account { get; set; }
@@ -23,6 +45,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Category> Category { get; set; }
     public DbSet<TodoTask> TodoTask { get; set; }
     public DbSet<CreditCardTransaction> CreditCardTransaction { get; set; }
+    public DbSet<CreditCardTransactionPerson> CreditCardTransactionPerson { get; set; }
+    public DbSet<CreditCardTransactionCobro> CreditCardTransactionCobro { get; set; }
     public DbSet<Login> Login { get; set; }
     public DbSet<Budget> Budget { get; set; }
     public DbSet<FixedExpense> FixedExpense { get; set; }

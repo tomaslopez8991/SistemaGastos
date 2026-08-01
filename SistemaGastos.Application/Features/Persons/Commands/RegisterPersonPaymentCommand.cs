@@ -6,5 +6,6 @@ public record RegisterPersonPaymentCommand(
     int PersonID,
     int UserID,
     int AccountID,
-    decimal Amount
+    decimal Amount,
+    int? CreditCardTransactionID = null
 ) : IRequest<bool>;

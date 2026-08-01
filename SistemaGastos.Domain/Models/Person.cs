@@ -22,5 +22,6 @@ namespace SistemaGastos.Domain.Models
         public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();
         public virtual ICollection<CreditCardTransaction> CreditCardTransactions { get; set; } = new List<CreditCardTransaction>();
         public virtual ICollection<FixedExpense> FixedExpenses { get; set; } = new List<FixedExpense>();
+        public virtual ICollection<FixedIncome> FixedIncomes { get; set; } = new List<FixedIncome>();
     }
 }

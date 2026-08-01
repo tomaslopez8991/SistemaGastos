@@ -10,7 +10,10 @@ using System.Text.Json;
 
 namespace SistemaGastos.Application.Features.TmpTransactions.Handlers;
 
-public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarService dolarService)
+public class GetDailyBalancesHandler(
+    IApplicationDbContext context,
+    IDolarService dolarService,
+    IAccountInterestService accountInterestService)
     : IRequestHandler<GetDailyBalancesQuery, DailyCalendarDto>
 {
     /// <summary>Día de vencimiento a usar cuando la cuenta de TC no tiene DueDay configurado.</summary>
@@ -18,12 +21,36 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
     public async Task<DailyCalendarDto> Handle(GetDailyBalancesQuery request, CancellationToken cancellationToken)
     {
+        await accountInterestService.RunAccrualAsync(cancellationToken);
         var fechaActual = DateTime.Now;
         var culture = new CultureInfo("es-AR");
 
         // El call HTTP al dólar corre en paralelo con las queries de DB.
         // EF Core DbContext no es thread-safe: las queries de DB van secuenciales.
         var dolarTask = dolarService.GetDolarBolsaAsync();
+
+        // Opción A: avanzar GastoFijo TC con PaymentDay anterior a hoy al día actual.
+        // Esto implementa el rolling automático: si ayer no se pagó, el ítem aparece hoy.
+        var todayForRoll = DateTime.Today;
+        if (request.Year == todayForRoll.Year && request.Month == todayForRoll.Month)
+        {
+            var monthKey = $"{todayForRoll.Year}-{todayForRoll.Month:D2}";
+            var staleFeList = await context.FixedExpense
+                .Where(f => f.UserID == request.UserID
+                         && f.CreditCardAccountID != null
+                         && f.PaymentYearMonth == monthKey
+                         && f.PaymentDay < todayForRoll.Day
+                         && f.Amount > 0
+                         && f.Active)
+                .ToListAsync(cancellationToken);
+
+            if (staleFeList.Count > 0)
+            {
+                foreach (var fe in staleFeList)
+                    fe.PaymentDay = todayForRoll.Day;
+                await context.SaveChangesAsync(cancellationToken);
+            }
+        }
 
         var accounts = await context.Account
             .Where(a => a.UserID == request.UserID)
@@ -37,7 +64,7 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
         var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
             .Include(t => t.Category)
-            .Include(t => t.Person)
+            .Include(t => t.SharedWith).ThenInclude(s => s.Person)
             .Where(t => t.Account.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
@@ -48,9 +75,18 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             .Where(f => f.UserID == request.UserID && f.Active)
             .ToListAsync(cancellationToken);
 
+        // Cuentas TC que ya tienen un registro de pago generado para un mes específico.
+        // Clave: "{ccAccountId}_{YYYY-MM}" — usada en Section C para no duplicar en el calendario.
+        var closedTcKeys = allFixedExpenses
+            .Where(f => f.CreditCardAccountID.HasValue && !string.IsNullOrEmpty(f.PaymentYearMonth))
+            .Select(f => $"{f.CreditCardAccountID}_{f.PaymentYearMonth}")
+            .ToHashSet();
+
         var paidFixedExpenses = await context.Transaction
             .AsNoTracking()
-            .Where(t => t.Account.UserID == request.UserID && t.FixedExpenseID != null)
+            .Where(t => t.Account.UserID == request.UserID
+                     && t.FixedExpenseID != null
+                     && (t.FixedExpense!.CreditCardAccountID == null || t.FixedExpense.Amount <= 0))
             .Select(t => new { ExpenseID = t.FixedExpenseID, Year = t.Date.Year, Month = t.Date.Month })
             .ToListAsync(cancellationToken);
 
@@ -61,6 +97,11 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
         var personsWithCollection = await context.Person
             .Where(p => p.UserID == request.UserID && p.Active && p.CollectionDay != null)
+            .ToListAsync(cancellationToken);
+
+        var interestSettings = await context.AccountInterestSetting
+            .AsNoTracking()
+            .Where(s => s.UserID == request.UserID && s.Enabled)
             .ToListAsync(cancellationToken);
 
         var receivedFixedIncomes = await context.Transaction
@@ -83,6 +124,10 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             .Sum(a => a.Balance);
 
         decimal saldoInicialTotal = saldoLiquidezARS + (saldoLiquidezUSD * cotizacionDolar);
+        var projectedInterestBalances = interestSettings.ToDictionary(
+            s => s.AccountID,
+            s => accounts.FirstOrDefault(a => a.ID == s.AccountID)?.Balance ?? 0m);
+        var projectedInterestDue = new Dictionary<(int AccountID, int Year, int Month), decimal>();
 
         var ccAccounts = accounts.Where(a => a.Type == AccountType.TarjetaCredito).ToList();
 
@@ -99,6 +144,12 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                          && t.Account.UserID == request.UserID)
                 .ToListAsync(cancellationToken);
         }
+
+        var personCreditCardCollections = personsWithCollection.Count == 0
+            ? new List<Domain.Models.CreditCardTransactionCobro>()
+            : await context.CreditCardTransactionCobro
+                .Where(c => personsWithCollection.Select(p => p.ID).Contains(c.PersonID))
+                .ToListAsync(cancellationToken);
 
         // ====================================================================
         // 3. TRANSACCIONES REALES (días pasados/mes actual)
@@ -129,70 +180,38 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 .Where(t => t.Date.Year == requestedDate.Year && t.Date.Month == requestedDate.Month)
                 .ToList();
 
-            // Saldo al inicio del mes visto = saldo actual − neto de todas las tx desde ese mes hasta hoy
+            // Saldo al inicio del mes visto = saldo actual − neto de tx desde ese mes hasta HOY (inclusive).
+            // Se excluyen transacciones con fecha futura para no distorsionar el punto de partida.
             decimal netDelta = allTxsFromViewed
+                .Where(t => t.Date.Date <= fechaActual.Date)
                 .Sum(t => (t.Category?.Type == "Ingreso" ? 1m : -1m) * t.Amount);
             saldoMesInicio = saldoInicialTotal - netDelta;
         }
 
-        // ────────────────────────────────────────────────────────────────────
-        // CAMINO RÁPIDO: mes pasado — construir resultado solo desde tx reales
-        // ────────────────────────────────────────────────────────────────────
         var result = new DailyCalendarDto
         {
-            Year       = requestedDate.Year,
-            Month      = requestedDate.Month,
-            MonthLabel = requestedDate.ToString("MMMM yyyy", culture),
-            DolarRate  = cotizacionDolar
+            Year         = requestedDate.Year,
+            Month        = requestedDate.Month,
+            MonthLabel   = requestedDate.ToString("MMMM yyyy", culture),
+            DolarRate    = cotizacionDolar,
+            IsPastMonth  = viewingPast
         };
-
-        if (viewingPast)
-        {
-            var mp           = requestedDate;
-            var daysInMonthP = DateTime.DaysInMonth(mp.Year, mp.Month);
-
-            result.StartingBalance    = saldoMesInicio;
-            result.StartingBalanceFmt = saldoMesInicio.ToString("C", culture);
-
-            decimal runningP = saldoMesInicio;
-            for (int day = 1; day <= daysInMonthP; day++)
-            {
-                var dayTxs = actualMonthTxs.Where(t => t.Date.Day == day).ToList();
-                decimal incomeP  = dayTxs.Where(t => t.Category?.Type == "Ingreso").Sum(t => t.Amount);
-                decimal expenseP = dayTxs.Where(t => t.Category?.Type != "Ingreso").Sum(t => t.Amount);
-                runningP += incomeP - expenseP;
-
-                result.Days.Add(new DailyBalanceDto
-                {
-                    Day        = day,
-                    Date       = new DateTime(mp.Year, mp.Month, day).ToString("yyyy-MM-dd"),
-                    Income     = incomeP,
-                    Expense    = expenseP,
-                    Balance    = runningP,
-                    BalanceFmt = runningP.ToString("C", culture),
-                    Items      = new List<DailyBalanceItemDto>()
-                });
-            }
-            return result;
-        }
 
         // ====================================================================
         // 4. RECORRER MESES HASTA EL MES SOLICITADO, ACUMULANDO SALDO
         // ====================================================================
-        var monthIndex = Math.Max(0, MonthDiff(startDate, requestedDate));
+        int monthDiff = MonthDiff(startDate, requestedDate);
+        int loopFrom  = viewingPast ? monthDiff : 0;
 
-        var mesProximo = startDate.AddMonths(1);
-        var mesDespuesDelPago = startDate.AddMonths(2);
+        decimal acumulado = viewingPast ? saldoMesInicio : saldoInicialTotal;
 
-        decimal acumulado = saldoInicialTotal;
-
-        for (int i = 0; i <= monthIndex; i++)
+        for (int i = loopFrom; i <= monthDiff; i++)
         {
             var m = startDate.AddMonths(i);
             var daysInMonth = DateTime.DaysInMonth(m.Year, m.Month);
             var itemsByDay = new Dictionary<int, List<DailyBalanceItemDto>>();
 
-            void AddItem(int day, string description, decimal amount, bool isIncome, string sourceType, long? sourceId = null, bool isDistributed = false)
+            void AddItem(int day, string description, decimal amount, bool isIncome, string sourceType, long? sourceId = null, bool isDistributed = false, int? tcAccountId = null, decimal? tcMinimumAmount = null, decimal? tcTotalAmount = null, bool isAutomaticPersonCollection = false)
             {
                 if (amount <= 0) return;
 
@@ -212,7 +231,11 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                     IsIncome = isIncome,
                     SourceType = sourceType,
                     Day = day,
-                    IsDistributed = isDistributed
+                    IsDistributed = isDistributed,
+                    TcAccountId = tcAccountId,
+                    TcTotalAmount = tcTotalAmount,
+                    IsAutomaticPersonCollection = isAutomaticPersonCollection,
+                    TcMinimumAmount = tcMinimumAmount
                 });
             }
 
@@ -269,12 +292,32 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                          && f.PaymentDay <= daysInMonth
                          && !paidThisMonthIds.Contains(f.ID)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
-                         && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey)))
+                         && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey))
+                         && (f.PaymentYearMonth == null || f.PaymentYearMonth == monthKey))
                 .ToList();
 
             foreach (var fe in fixedExpensesOfMonth)
             {
                 decimal amountArs = fe.Currency == "USD" ? fe.Amount * cotizacionDolar : fe.Amount;
+
+                // Metadatos TC para GastoFijo que representa el pago de una TC
+                int? feTcAccountId = null;
+                decimal? feTcMinimumAmount = null;
+                decimal? feTcTotalAmount = null;
+                string? feTcCurrency = null;
+                if (fe.CreditCardAccountID.HasValue)
+                {
+                    var ccForFe = ccAccounts.FirstOrDefault(a => a.ID == fe.CreditCardAccountID.Value);
+                    if (ccForFe != null)
+                    {
+                        feTcAccountId  = ccForFe.ID;
+                        feTcCurrency   = ccForFe.Currency;
+                        feTcMinimumAmount = ccForFe.EffectiveMinimumPayment.HasValue
+                            ? (ccForFe.Currency == "USD" ? ccForFe.EffectiveMinimumPayment.Value * cotizacionDolar : ccForFe.EffectiveMinimumPayment.Value)
+                            : null;
+                        feTcTotalAmount = amountArs;
+                    }
+                }
 
                 var excludedDays = DistributionHelper.ParseExcludedDays(fe.ExcludedDays);
                 var dist = DistributionHelper.Distribute(amountArs, fe.PaymentDay, fe.DistributionEndDay, excludedDays, daysInMonth)
@@ -282,8 +325,12 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
                 foreach (var (kv, idx) in dist.Select((kv, idx) => (kv, idx)))
                 {
-                    var desc = dist.Count > 1 ? $"{fe.Name} (día {idx + 1}/{dist.Count})" : fe.Name;
-                    AddItem(kv.Key, desc, kv.Value, false, "GastoFijo", (long)fe.ID);
+                    var baseName = feTcCurrency != null
+                        ? $"{fe.Name} ({feTcCurrency})"
+                        : fe.Name;
+                    var desc = dist.Count > 1 ? $"{baseName} (día {idx + 1}/{dist.Count})" : baseName;
+                    AddItem(kv.Key, desc, kv.Value, false, "GastoFijo", (long)fe.ID,
+                        tcAccountId: feTcAccountId, tcMinimumAmount: feTcMinimumAmount, tcTotalAmount: feTcTotalAmount);
                 }
 
             }
@@ -299,7 +346,9 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             var fixedIncomesOfMonth = allFixedIncomes
                 .Where(f => f.ReceiptDay > 0
                          && f.ReceiptDay <= daysInMonth
+                         && (f.PersonID == null || f.CollectionYearMonth == monthKey)
                          && !receivedThisMonthIds.Contains(f.ID)
+                         && !(f.PersonID.HasValue && f.LastGeneratedDate.HasValue)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
                          && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey)))
                 .ToList();
@@ -315,44 +364,68 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                 foreach (var (kv, idx) in dist.Select((kv, idx) => (kv, idx)))
                 {
                     var desc = dist.Count > 1 ? $"{fi.Name} (día {idx + 1}/{dist.Count})" : fi.Name;
-                    AddItem(kv.Key, desc, kv.Value, true, "IngresoFijo", (long)fi.ID, dist.Count > 1);
+                    AddItem(kv.Key, desc, kv.Value, true, "IngresoFijo", (long)fi.ID,
+                        dist.Count > 1, isAutomaticPersonCollection: fi.PersonID.HasValue);
                 }
             }
 
             // ────────────────────────────────────────────────────────────
-            // C. TOTAL TC PRÓXIMO (mes inmediato siguiente al actual)
+            // C. TOTAL TC — mes de vencimiento inmediato de cada cuenta.
+            // Usa el balance actual de la cuenta TC (saldo real acumulado),
+            // que es exactamente lo que el usuario deberá pagar el próximo vencimiento.
             // ────────────────────────────────────────────────────────────
-            if (!hasCreditCardPayment && SameMonth(m, mesProximo))
+            if (!hasCreditCardPayment)
             {
                 foreach (var cc in ccAccounts)
                 {
-                    var deuda = Math.Abs(cc.Balance);
-                    if (deuda <= 0) continue;
+                    var ccDueMonth = startDate.AddMonths(cc.DueMonthOffset ?? 1);
+                    if (!SameMonth(m, ccDueMonth)) continue;
+                    if (closedTcKeys.Contains($"{cc.ID}_{m.Year}-{m.Month:D2}")) continue;
 
-                    decimal amountArs = cc.Currency == "USD" ? deuda * cotizacionDolar : deuda;
-                    AddItem(cc.DueDay ?? FallbackDueDay, $"Total TC - {cc.Name}", amountArs, false, "TarjetaCredito");
+                    decimal balanceArs = cc.Currency == "USD"
+                        ? cc.EffectiveTcProjection * cotizacionDolar
+                        : cc.EffectiveTcProjection;
+
+                    if (balanceArs <= 0) continue;
+                    var tcLabel = cc.TcProjectionMode == Domain.Enums.TcProjectionMode.Total
+                        ? $"Total TC - {cc.Name} ({cc.Currency})"
+                        : cc.TcProjectionMode == Domain.Enums.TcProjectionMode.Minimo
+                            ? $"Mínimo TC - {cc.Name} ({cc.Currency})"
+                            : $"Pago TC - {cc.Name} ({cc.Currency})";
+                    decimal? minArs = cc.EffectiveMinimumPayment.HasValue
+                        ? (cc.Currency == "USD" ? cc.EffectiveMinimumPayment.Value * cotizacionDolar : cc.EffectiveMinimumPayment.Value)
+                        : null;
+                    decimal totalArs = cc.Currency == "USD" ? Math.Abs(cc.Balance) * cotizacionDolar : Math.Abs(cc.Balance);
+                    AddItem(cc.DueDay ?? FallbackDueDay, tcLabel, balanceArs, false, "TarjetaCredito",
+                        tcAccountId: cc.ID, tcMinimumAmount: minArs, tcTotalAmount: totalArs);
                 }
             }
 
             // ────────────────────────────────────────────────────────────
-            // D. TOTAL TC A FUTURO (cuotas y cargos agrupados por tarjeta)
+            // D. TOTAL TC FUTURO — cuotas y cargos por tarjeta
+            // Solo para meses posteriores al vencimiento inmediato de cada cuenta.
             // ────────────────────────────────────────────────────────────
-            if (!hasCreditCardPayment && m >= mesDespuesDelPago)
+            if (!hasCreditCardPayment && m > startDate)
             {
                 var totalesPorCuenta = new Dictionary<int, decimal>();
 
                 foreach (var cardTx in cardTransactions)
                 {
+                    if (cardTx.Account is null) continue;
+                    var cardAccount = cardTx.Account;
+
+                    // Excluir el mes cubierto por Section C para esta cuenta
+                    var acctDueMonth = startDate.AddMonths(cardAccount.DueMonthOffset ?? 1);
+                    if (SameMonth(m, acctDueMonth)) continue;
+
                     var compraMes = new DateTime(cardTx.TransactionDate.Year, cardTx.TransactionDate.Month, 1);
 
-                    // Si la compra se hizo después del día de cierre, entra en el resumen siguiente
-                    var closingDay = cardTx.Account.ClosingDay;
+                    var closingDay = cardAccount.ClosingDay;
                     var mesesAlCierre = (closingDay.HasValue && cardTx.TransactionDate.Day > closingDay.Value) ? 1 : 0;
                     var mesResumen = compraMes.AddMonths(mesesAlCierre);
-                    var vencimiento = mesResumen.AddMonths(cardTx.Account.DueMonthOffset ?? 1);
+                    var vencimiento = mesResumen.AddMonths(cardAccount.DueMonthOffset ?? 1);
 
-                    decimal montoArs = cardTx.Account.Currency == "USD" ? cardTx.Amount * cotizacionDolar : cardTx.Amount;
-                    var dueDay = cardTx.Account.DueDay ?? FallbackDueDay;
+                    decimal montoArs = cardAccount.Currency == "USD" ? cardTx.Amount * cotizacionDolar : cardTx.Amount;
 
                     bool esFijo = cardTx.Fixed;
                     bool esCuotas = cardTx.Installments > 1;
@@ -389,7 +462,6 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
                     totalesPorCuenta.TryGetValue(cardTx.AccountID, out var acumuladoCuenta);
                     totalesPorCuenta[cardTx.AccountID] = acumuladoCuenta + monto;
-
                 }
 
                 foreach (var (accountId, total) in totalesPorCuenta)
@@ -397,7 +469,11 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                     var cc = ccAccounts.FirstOrDefault(a => a.ID == accountId);
                     if (cc == null) continue;
 
-                    AddItem(cc.DueDay ?? FallbackDueDay, $"Total TC - {cc.Name}", total, false, "TarjetaCredito");
+                    decimal? minArsD = cc.EffectiveMinimumPayment.HasValue
+                        ? (cc.Currency == "USD" ? cc.EffectiveMinimumPayment.Value * cotizacionDolar : cc.EffectiveMinimumPayment.Value)
+                        : null;
+                    AddItem(cc.DueDay ?? FallbackDueDay, $"Total TC - {cc.Name} ({cc.Currency})", total, false, "TarjetaCredito",
+                        tcAccountId: cc.ID, tcMinimumAmount: minArsD, tcTotalAmount: total);
                 }
             }
 
@@ -410,6 +486,12 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             // ────────────────────────────────────────────────────────────
             foreach (var person in personsWithCollection)
             {
+                // Cuando el cierre ya congeló la cuenta como ingreso mensual,
+                // ese snapshot reemplaza al cálculo dinámico del calendario.
+                if (allFixedIncomes.Any(f => f.PersonID == person.ID
+                                          && f.CollectionYearMonth == monthKey))
+                    continue;
+
                 // Respetar mes de inicio configurado
                 if (!string.IsNullOrEmpty(person.CollectionFrom))
                 {
@@ -421,19 +503,41 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
                         continue;
                 }
 
-                if (!string.IsNullOrEmpty(person.CollectedMonths) &&
-                    person.CollectedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey))
+                var monthWasCollected = !string.IsNullOrEmpty(person.CollectedMonths)
+                    && person.CollectedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey);
+                var collectionCutoff = personAttributedTx
+                    .Where(t => t.PersonID == person.ID
+                             && t.Date < m.AddMonths(1)
+                             && t.Category?.Type == "Ingreso"
+                             && t.Description.StartsWith("Cobro:", StringComparison.OrdinalIgnoreCase)
+                             && !personCreditCardCollections.Any(c => c.PersonID == person.ID
+                                                                   && Math.Abs((c.CreatedAt - t.Date).TotalSeconds) <= 5))
+                    .Select(t => (DateTime?)t.Date)
+                    .Max();
+
+                // Compatibilidad con cobros antiguos que sólo marcaron el mes.
+                if (monthWasCollected && !collectionCutoff.HasValue)
                     continue;
 
                 // CC all-time
                 decimal ccBalance = cardTransactions
-                    .Where(cc => cc.PersonID == person.ID)
-                    .Sum(cc => cc.Amount * (cc.PersonPercentage ?? 100m) / 100m);
+                    .Where(cc => cc.SharedWith.Any(s => s.PersonID == person.ID)
+                              && PersonCreditCardBalanceHelper.ShouldInclude(
+                                  cc,
+                                  m,
+                                  collectionCutoff,
+                                  personCreditCardCollections
+                                      .Where(c => c.PersonID == person.ID && c.CreditCardTransactionID == cc.ID)
+                                      .Select(c => c.CreatedAt)))
+                    .Sum(cc => (cc.Account?.Currency == "USD" ? cc.Amount * cotizacionDolar : cc.Amount)
+                             * (cc.SharedWith.FirstOrDefault(s => s.PersonID == person.ID)?.Percentage ?? 100m) / 100m);
 
                 // FE del mes m
                 decimal feBalance = allFixedExpenses
                     .Where(f => f.PersonID == person.ID
+                             && (f.PaymentYearMonth == null || f.PaymentYearMonth == monthKey)
                              && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
+                             && (!collectionCutoff.HasValue || (f.StartDate.HasValue && f.StartDate.Value > collectionCutoff.Value))
                              && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey)))
                     .Sum(f => {
                         decimal amtArs = f.Currency == "USD" ? f.Amount * cotizacionDolar : f.Amount;
@@ -442,14 +546,21 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
                 // Transacciones del mes m: gastos suman, cobros (ingresos) restan
                 var monthPersonTx = personAttributedTx
-                    .Where(t => t.PersonID == person.ID && t.Date.Year == m.Year && t.Date.Month == m.Month);
+                    .Where(t => t.PersonID == person.ID
+                             && t.Date.Year == m.Year && t.Date.Month == m.Month
+                             && (!collectionCutoff.HasValue || t.Date > collectionCutoff.Value));
                 decimal txExpenses = monthPersonTx.Where(t => t.Category?.Type != "Ingreso")
                     .Sum(t => t.Amount * (t.PersonPercentage ?? 100m) / 100m);
                 decimal txPayments = monthPersonTx.Where(t => t.Category?.Type == "Ingreso")
                     .Sum(t => t.Amount * (t.PersonPercentage ?? 100m) / 100m);
 
                 decimal personBalance = ccBalance + feBalance + txExpenses - txPayments;
-                decimal netOwed = personBalance - (person.DiscountAmount ?? 0m);
+                var hasPriorFullCollection = personAttributedTx.Any(t =>
+                    t.PersonID == person.ID
+                    && t.Date < m
+                    && t.Category?.Type == "Ingreso"
+                    && t.Description.StartsWith("Cobro:", StringComparison.OrdinalIgnoreCase));
+                decimal netOwed = personBalance - (hasPriorFullCollection ? 0m : person.DiscountAmount ?? 0m);
                 if (netOwed <= 0) continue;
 
                 AddItem(person.CollectionDay!.Value, $"Cobro: {person.Name}", netOwed, true, "Personas", (long)person.ID);
@@ -458,67 +569,155 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
             // ────────────────────────────────────────────────────────────
             // TOTAL DEL MES Y ACUMULADO
             // ────────────────────────────────────────────────────────────
+            if (m > startDate)
+            {
+                foreach (var setting in interestSettings)
+                {
+                    projectedInterestBalances.TryGetValue(setting.AccountID, out var projectedBalance);
+                    var account = accounts.FirstOrDefault(a => a.ID == setting.AccountID);
+                    if (account == null) continue;
+                    projectedInterestDue.TryGetValue((setting.AccountID, m.Year, m.Month), out var dueInterest);
+                    if (dueInterest > 0)
+                        AddItem(7, $"Intereses estimados - {account.Name}", dueInterest, false, "InteresEstimado");
+
+                    decimal estimatedInterest = 0m;
+                    decimal? previousBalance = null;
+                    int sameBalanceDays = 0;
+
+                    for (int day = 1; day <= daysInMonth; day++)
+                    {
+                        var fixedIncomeDelta = allFixedIncomes
+                            .Where(f => f.AccountID == setting.AccountID
+                                     && f.PersonID == null
+                                     && f.ReceiptDay == day
+                                     && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
+                                     && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(x => x.Trim()).Contains(monthKey)))
+                            .Sum(f => f.Currency == "USD" ? f.Amount * cotizacionDolar : f.Amount);
+                        var fixedExpenseDelta = allFixedExpenses
+                            .Where(f => f.AccountID == setting.AccountID
+                                     && f.PaymentDay == day
+                                     && (f.PaymentYearMonth == null || f.PaymentYearMonth == monthKey)
+                                     && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
+                                     && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(x => x.Trim()).Contains(monthKey)))
+                            .Sum(f => f.Currency == "USD" ? f.Amount * cotizacionDolar : f.Amount);
+                        var manualIncomeDelta = monthTrans
+                            .Where(t => t.AccountID == setting.AccountID && t.DateTransaction!.Value.Day == day && t.Category.Type == "Ingreso")
+                            .Sum(t => t.Currency == "USD" ? t.Amount * cotizacionDolar : t.Amount);
+                        var manualExpenseDelta = monthTrans
+                            .Where(t => t.AccountID == setting.AccountID && t.DateTransaction!.Value.Day == day && t.Category.Type != "Ingreso")
+                            .Sum(t => t.Currency == "USD" ? t.Amount * cotizacionDolar : t.Amount);
+
+                        var estimatedInterestPayment = day == 7 ? dueInterest : 0m;
+                        projectedBalance += fixedIncomeDelta + manualIncomeDelta
+                                          - fixedExpenseDelta - manualExpenseDelta - estimatedInterestPayment;
+                        sameBalanceDays = previousBalance.HasValue && projectedBalance == previousBalance.Value
+                            ? sameBalanceDays + 1
+                            : 1;
+                        previousBalance = projectedBalance;
+
+                        if (projectedBalance < 0)
+                            estimatedInterest += Math.Round(Math.Abs(projectedBalance) * setting.InterestRate * sameBalanceDays / 365m, 2);
+                    }
+
+                    estimatedInterest = Math.Round(estimatedInterest, 2);
+                    if (estimatedInterest > 0)
+                    {
+                        var nextMonth = m.AddMonths(1);
+                        projectedInterestDue[(setting.AccountID, nextMonth.Year, nextMonth.Month)] = estimatedInterest;
+                    }
+
+                    projectedInterestBalances[setting.AccountID] = projectedBalance;
+                }
+            }
+
             decimal netoDelMes = itemsByDay.Values
                 .SelectMany(items => items)
                 .Sum(item => item.IsIncome ? item.Amount : -item.Amount);
 
-            if (i == monthIndex)
+            if (i == monthDiff)
             {
-                // Mes actual: saldo inicial = balance real al comienzo del mes (no el saldo de hoy)
-                decimal startBal = viewingCurrent ? saldoMesInicio : acumulado;
-                result.StartingBalance    = startBal;
-                result.StartingBalanceFmt = startBal.ToString("C", culture);
-
-                decimal running = startBal;
-                var todayDate = fechaActual.Date;
-
-                for (int day = 1; day <= daysInMonth; day++)
+                if (viewingPast)
                 {
-                    List<DailyBalanceItemDto> items;
-
-                    if (viewingCurrent && new DateTime(m.Year, m.Month, day).Date <= todayDate)
+                    // Mes anterior: solo días con ítems pendientes (sin cálculo de saldo).
+                    foreach (var kvp in itemsByDay.OrderBy(kv => kv.Key))
                     {
-                        // Días transcurridos (incluyendo hoy): balance calculado desde tx reales,
-                        // sin exponer los items individuales (no se muestran chips en el calendario)
-                        var dayTxs = actualMonthTxs.Where(t => t.Date.Day == day).ToList();
-                        decimal inc = dayTxs.Where(t => t.Category?.Type == "Ingreso").Sum(t => t.Amount);
-                        decimal exp = dayTxs.Where(t => t.Category?.Type != "Ingreso").Sum(t => t.Amount);
-                        running += inc - exp;
+                        var dayItems = kvp.Value.OrderBy(x => x.IsIncome ? 0 : 1).ToList();
+                        result.Days.Add(new DailyBalanceDto
+                        {
+                            Day        = kvp.Key,
+                            Date       = new DateTime(m.Year, m.Month, kvp.Key).ToString("yyyy-MM-dd"),
+                            Income     = dayItems.Where(x => x.IsIncome).Sum(x => x.Amount),
+                            Expense    = dayItems.Where(x => !x.IsIncome).Sum(x => x.Amount),
+                            Balance    = 0,
+                            BalanceFmt = "",
+                            Items      = dayItems
+                        });
+                    }
+                    result.HasPendingItems = result.Days.Count > 0;
+                }
+                else
+                {
+                    // Mes actual o futuro: saldo inicial + loop día a día
+                    decimal startBal = viewingCurrent ? saldoMesInicio : acumulado;
+                    result.StartingBalance    = startBal;
+                    result.StartingBalanceFmt = startBal.ToString("C", culture);
+
+                    decimal running = startBal;
+                    var todayDate = fechaActual.Date;
+
+                    for (int day = 1; day <= daysInMonth; day++)
+                    {
+                        List<DailyBalanceItemDto> items;
+
+                        if (viewingCurrent && new DateTime(m.Year, m.Month, day).Date <= todayDate)
+                        {
+                            // Días pasados/hoy del mes actual: balance real + items proyectados no pagados
+                            var dayTxs = actualMonthTxs.Where(t => t.Date.Day == day).ToList();
+                            decimal inc = dayTxs.Where(t => t.Category?.Type == "Ingreso").Sum(t => t.Amount);
+                            decimal exp = dayTxs.Where(t => t.Category?.Type != "Ingreso").Sum(t => t.Amount);
+                            running += inc - exp;
+
+                            var pastItems = itemsByDay.TryGetValue(day, out var pastProjList)
+                                ? pastProjList.OrderBy(x => x.IsIncome ? 0 : 1).ToList()
+                                : new List<DailyBalanceItemDto>();
+
+                            decimal planInc = pastItems.Where(x => x.IsIncome).Sum(x => x.Amount);
+                            decimal planExp = pastItems.Where(x => !x.IsIncome).Sum(x => x.Amount);
+                            running += planInc - planExp;
+
+                            result.Days.Add(new DailyBalanceDto
+                            {
+                                Day        = day,
+                                Date       = new DateTime(m.Year, m.Month, day).ToString("yyyy-MM-dd"),
+                                Income     = inc + planInc,
+                                Expense    = exp + planExp,
+                                Balance    = running,
+                                BalanceFmt = running.ToString("C", culture),
+                                Items      = pastItems
+                            });
+                            continue;
+                        }
+
+                        // Días futuros: proyecciones
+                        items = itemsByDay.TryGetValue(day, out var projList)
+                            ? projList.OrderBy(x => x.IsIncome ? 0 : 1).ToList()
+                            : new List<DailyBalanceItemDto>();
+
+                        decimal income  = items.Where(x => x.IsIncome).Sum(x => x.Amount);
+                        decimal expense = items.Where(x => !x.IsIncome).Sum(x => x.Amount);
+                        running += income - expense;
 
                         result.Days.Add(new DailyBalanceDto
                         {
                             Day        = day,
                             Date       = new DateTime(m.Year, m.Month, day).ToString("yyyy-MM-dd"),
-                            Income     = inc,
-                            Expense    = exp,
+                            Income     = income,
+                            Expense    = expense,
                             Balance    = running,
                             BalanceFmt = running.ToString("C", culture),
-                            Items      = new List<DailyBalanceItemDto>()
+                            Items      = items
                         });
-                        continue;
                     }
-                    else
-                    {
-                        // Días futuros: proyecciones
-                        items = itemsByDay.TryGetValue(day, out var projList)
-                            ? projList.OrderBy(x => x.IsIncome ? 0 : 1).ToList()
-                            : new List<DailyBalanceItemDto>();
-                    }
-
-                    decimal income  = items.Where(x => x.IsIncome).Sum(x => x.Amount);
-                    decimal expense = items.Where(x => !x.IsIncome).Sum(x => x.Amount);
-                    running += income - expense;
-
-                    result.Days.Add(new DailyBalanceDto
-                    {
-                        Day        = day,
-                        Date       = new DateTime(m.Year, m.Month, day).ToString("yyyy-MM-dd"),
-                        Income     = income,
-                        Expense    = expense,
-                        Balance    = running,
-                        BalanceFmt = running.ToString("C", culture),
-                        Items      = items
-                    });
                 }
             }
 
@@ -530,4 +729,5 @@ public class GetDailyBalancesHandler(IApplicationDbContext context, IDolarServic
 
     private bool SameMonth(DateTime a, DateTime b) => a.Year == b.Year && a.Month == b.Month;
     private int MonthDiff(DateTime from, DateTime to) => (to.Year - from.Year) * 12 + (to.Month - from.Month);
+
 }
