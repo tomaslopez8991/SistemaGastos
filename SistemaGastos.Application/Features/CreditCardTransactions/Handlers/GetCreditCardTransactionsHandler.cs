@@ -21,7 +21,9 @@ public class GetCreditCardTransactionsHandler(IApplicationDbContext context, ICu
             .Include(t => t.Category)
             .Include(t => t.Account)
             .Include(t => t.SharedWith).ThenInclude(s => s.Person)
-            .Where(t => t.Account.Login.ID == user.UserId)
+            .Where(t => t.Account != null
+                     && t.Account.Login != null
+                     && t.Account.Login.ID == user.UserId)
             .AsQueryable();
 
         // 2. Filtro de Búsqueda (Keyword) - Lógica de tu snippet
