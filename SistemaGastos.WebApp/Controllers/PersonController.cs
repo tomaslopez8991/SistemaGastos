@@ -87,7 +87,7 @@ public class PersonController(IMediator mediator, ICurrentUserService currentUse
             .Where(a => a.UserID == userID && a.Type != AccountType.TarjetaCredito)
             .Select(a => new { id = a.ID, name = a.Name, currency = a.Currency, balance = a.Balance })
             .ToListAsync();
-        return Ok(Response<object>.Ok(accounts));
+        return Ok(Response<List<object>>.Ok(accounts.Cast<object>().ToList()));
     }
 
     [HttpPost("RegisterPayment")]

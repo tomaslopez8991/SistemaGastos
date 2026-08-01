@@ -31,4 +31,7 @@ public class FixedExpenseDto
     public int? CreditCardAccountID { get; set; }
     public string? PaymentYearMonth { get; set; }
     public bool IsCreditCardPayment => CreditCardAccountID.HasValue;
+    public decimal? TcMinimumAmount { get; set; }
+    public decimal? TcTotalAmount { get; set; }
+    public bool IsSystemGenerated { get; set; }
 }

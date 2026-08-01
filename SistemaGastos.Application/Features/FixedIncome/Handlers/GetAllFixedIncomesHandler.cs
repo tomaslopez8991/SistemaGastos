@@ -19,7 +19,8 @@ public class GetAllFixedIncomesHandler(IApplicationDbContext context, IDolarServ
             .AsNoTracking()
             .Include(f => f.Category)
             .Include(f => f.Account)
-            .Where(f => f.UserID == request.UserID)
+            .Where(f => f.UserID == request.UserID
+                     && (f.PersonID == null || f.CollectionYearMonth == $"{request.Year}-{request.Month:D2}"))
             .OrderBy(f => f.ReceiptDay)
             .ToListAsync(cancellationToken);
 
@@ -76,7 +77,7 @@ public class GetAllFixedIncomesHandler(IApplicationDbContext context, IDolarServ
                 CategoryID = f.CategoryID,
                 CategoryName = f.Category?.Name ?? "Sin categoría",
                 AccountID = f.AccountID,
-                AccountName = f.Account?.Name ?? "Sin cuenta",
+                AccountName = f.PersonID.HasValue ? "A elegir al cobrar" : f.Account?.Name ?? "Sin cuenta",
                 LogoUrl = f.LogoUrl,
                 Active = f.Active,
                 StartDate = f.StartDate,
@@ -86,7 +87,9 @@ public class GetAllFixedIncomesHandler(IApplicationDbContext context, IDolarServ
                 ReceivedAmount = receivedAmount,
                 ReceivedAmountFormatted = receivedAmountFmt,
                 IsPausedThisMonth = isPaused,
-                PausedMonths = f.PausedMonths
+                PausedMonths = f.PausedMonths,
+                PersonID = f.PersonID,
+                CollectionYearMonth = f.CollectionYearMonth
             };
         }).ToList();
     }

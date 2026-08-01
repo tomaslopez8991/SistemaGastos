@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.Interfaces;
+using SistemaGastos.Application.Helpers;
 using SistemaGastos.Domain.Models;
 
 namespace SistemaGastos.Infraestructure.Services;
@@ -31,6 +32,7 @@ public class AccountInterestService(IApplicationDbContext context) : IAccountInt
             }
 
             await CreateMonthlyChargesIfDueAsync(setting, cancellationToken);
+            await SyncCurrentMonthExpenseAsync(setting, cancellationToken);
         }
     }
 
@@ -63,7 +65,7 @@ public class AccountInterestService(IApplicationDbContext context) : IAccountInt
 
             if (monthStart <= yesterday)
             {
-                await BuildAndSaveLogsAsync(setting, monthStart, yesterday, previousLog?.Balance, previousLog?.DayCounter ?? 0, previousLog?.CumulativeInterest ?? 0m, cancellationToken);
+                await BuildAndSaveLogsAsync(setting, monthStart, yesterday, previousLog?.Balance, 0, 0m, cancellationToken);
             }
         }
     }
@@ -136,6 +138,13 @@ public class AccountInterestService(IApplicationDbContext context) : IAccountInt
 
         for (var d = fromDate; d <= toDate; d = d.AddDays(1))
         {
+            if (d.Day == 1)
+            {
+                dayCounter = 0;
+                cumulativeInterest = 0m;
+                prevBalance = null;
+            }
+
             var balance = Math.Round(balances[d], 2);
 
             dayCounter = (prevBalance.HasValue && balance == prevBalance.Value) ? dayCounter + 1 : 1;
@@ -178,50 +187,72 @@ public class AccountInterestService(IApplicationDbContext context) : IAccountInt
             var year = monthCursor.Year;
             var month = monthCursor.Month;
 
-            var alreadyCharged = await context.AccountInterestMonthlyCharge
-                .AnyAsync(c => c.AccountID == setting.AccountID && c.Year == year && c.Month == month, cancellationToken);
+            var monthlyCharge = await context.AccountInterestMonthlyCharge
+                .FirstOrDefaultAsync(c => c.AccountID == setting.AccountID && c.Year == year && c.Month == month, cancellationToken);
 
-            if (!alreadyCharged)
-            {
-                var totalInterest = await context.AccountInterestDailyLog
+            var totalInterest = monthlyCharge?.TotalInterest
+                ?? await context.AccountInterestDailyLog
                     .Where(l => l.AccountID == setting.AccountID && l.Date.Year == year && l.Date.Month == month)
                     .SumAsync(l => l.DailyInterest, cancellationToken);
 
-                totalInterest = Math.Round(totalInterest, 2);
+            totalInterest = Math.Round(totalInterest, 2);
 
-                int? transactionId = null;
+            if (totalInterest > 0)
+            {
+                var account = await context.Account
+                    .FirstOrDefaultAsync(a => a.ID == setting.AccountID, cancellationToken);
 
-                if (totalInterest > 0)
+                var categoryExists = await context.Category
+                    .AnyAsync(c => c.ID == InterestCategoryID, cancellationToken);
+
+                if (account != null && categoryExists)
                 {
-                    var account = await context.Account
-                        .FirstOrDefaultAsync(a => a.ID == setting.AccountID, cancellationToken);
+                    var chargeMonth = monthCursor.AddMonths(1);
+                    var chargeMonthKey = $"{chargeMonth.Year}-{chargeMonth.Month:D2}";
+                    var expenseName = $"Intereses por descubierto - {account.Name} ({monthCursor:MM/yyyy})";
+                    var fixedExpense = await context.FixedExpense
+                        .FirstOrDefaultAsync(f => f.UserID == setting.UserID
+                                               && f.AccountID == account.ID
+                                               && f.CategoryID == InterestCategoryID
+                                               && f.PaymentYearMonth == chargeMonthKey
+                                               && f.Name == expenseName,
+                            cancellationToken);
 
-                    var category = await context.Category
-                        .FirstOrDefaultAsync(c => c.ID == InterestCategoryID, cancellationToken);
-
-                    if (account != null && category != null)
+                    if (fixedExpense == null)
                     {
-                        var transaction = new Transaction
+                        fixedExpense = new FixedExpense
                         {
-                            Date = new DateTime(today.Year, today.Month, 7),
-                            Amount = totalInterest,
+                            UserID = setting.UserID,
                             AccountID = account.ID,
                             CategoryID = InterestCategoryID,
-                            Description = $"Intereses por descubierto - {account.Name} ({monthCursor:MM/yyyy})"
+                            Name = expenseName,
+                            Amount = totalInterest,
+                            Currency = account.Currency,
+                            PaymentDay = 7,
+                            Active = true,
+                            StartDate = chargeMonth,
+                            PaymentYearMonth = chargeMonthKey
                         };
-
-                        await context.Transaction.AddAsync(transaction, cancellationToken);
-
-                        if (category.Type == "Ingreso")
-                            account.Balance += totalInterest;
-                        else
-                            account.Balance -= totalInterest;
-
+                        await context.FixedExpense.AddAsync(fixedExpense, cancellationToken);
                         await context.SaveChangesAsync(cancellationToken);
-                        transactionId = transaction.ID;
+                    }
+                    else
+                    {
+                        fixedExpense.Active = true;
+                    }
+
+                    if (monthlyCharge?.TransactionID is int transactionId)
+                    {
+                        var previousTransaction = await context.Transaction
+                            .FirstOrDefaultAsync(t => t.ID == transactionId && t.FixedExpenseID == null, cancellationToken);
+                        if (previousTransaction != null)
+                            previousTransaction.FixedExpenseID = fixedExpense.ID;
                     }
                 }
+            }
 
+            if (monthlyCharge == null)
+            {
                 await context.AccountInterestMonthlyCharge.AddAsync(new AccountInterestMonthlyCharge
                 {
                     AccountID = setting.AccountID,
@@ -229,14 +260,68 @@ public class AccountInterestService(IApplicationDbContext context) : IAccountInt
                     Year = year,
                     Month = month,
                     TotalInterest = totalInterest,
-                    TransactionID = transactionId,
+                    TransactionID = null,
                     CreatedAt = DateTime.UtcNow
                 }, cancellationToken);
-
-                await context.SaveChangesAsync(cancellationToken);
             }
+
+            await context.SaveChangesAsync(cancellationToken);
 
             monthCursor = monthCursor.AddMonths(1);
         }
+    }
+
+    private async Task SyncCurrentMonthExpenseAsync(AccountInterestSetting setting, CancellationToken cancellationToken)
+    {
+        var today = DateTime.Today;
+        var monthStart = new DateTime(today.Year, today.Month, 1);
+        var dueMonth = monthStart.AddMonths(1);
+        var dueMonthKey = $"{dueMonth.Year}-{dueMonth.Month:D2}";
+        var accruedInterest = await context.AccountInterestDailyLog
+            .Where(l => l.AccountID == setting.AccountID
+                     && l.Date.Year == today.Year
+                     && l.Date.Month == today.Month)
+            .OrderByDescending(l => l.Date)
+            .Select(l => l.CumulativeInterest)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var account = await context.Account
+            .FirstOrDefaultAsync(a => a.ID == setting.AccountID, cancellationToken);
+        if (account == null) return;
+        var expenseName = $"Intereses por descubierto - {account.Name} ({monthStart:MM/yyyy})";
+
+        var candidates = await context.FixedExpense
+            .Where(f => f.UserID == setting.UserID && f.AccountID == setting.AccountID)
+            .ToListAsync(cancellationToken);
+        var interestExpenses = candidates.Where(InterestExpenseHelper.IsAutomaticInterest).ToList();
+        var currentExpense = interestExpenses
+            .FirstOrDefault(f => f.PaymentYearMonth == dueMonthKey && f.Name == expenseName);
+
+        if (currentExpense == null)
+        {
+            currentExpense = new FixedExpense
+            {
+                UserID = setting.UserID,
+                AccountID = account.ID,
+                Name = expenseName
+            };
+            await context.FixedExpense.AddAsync(currentExpense, cancellationToken);
+        }
+
+        currentExpense.Amount = Math.Round(accruedInterest, 2);
+        currentExpense.Currency = account.Currency;
+        currentExpense.CategoryID = InterestCategoryID;
+        currentExpense.PaymentDay = 7;
+        currentExpense.Active = true;
+        currentExpense.StartDate = dueMonth;
+        currentExpense.PaymentYearMonth = dueMonthKey;
+
+        foreach (var duplicate in interestExpenses.Where(f => f.ID != currentExpense.ID && f.PaymentYearMonth == dueMonthKey))
+            duplicate.Active = false;
+
+        foreach (var legacy in interestExpenses.Where(f => !f.Name.StartsWith("Intereses por descubierto -", StringComparison.OrdinalIgnoreCase)))
+            legacy.Active = false;
+
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

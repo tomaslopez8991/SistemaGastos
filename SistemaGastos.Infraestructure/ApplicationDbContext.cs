@@ -30,6 +30,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(f => f.CreditCardAccountID)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FixedExpense>()
+            .ToTable("FixedExpense", table =>
+            {
+                table.HasCheckConstraint("CK_FixedExpense_Amount", "[Amount] >= 0");
+                table.HasCheckConstraint("CK_FixedExpense_PaymentDay", "[PaymentDay] >= 1 AND [PaymentDay] <= 31");
+            });
     }
 
     public DbSet<Account> Account { get; set; }

@@ -3,16 +3,22 @@ using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.FixedExpense.Queries;
 using SistemaGastos.Application.Interfaces;
+using SistemaGastos.Application.Helpers;
+using SistemaGastos.Domain.Enums;
 using System.Globalization;
 
 namespace SistemaGastos.Application.Features.FixedExpense.Handlers;
 
-public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarService dolarService)
+public class GetAllFixedExpensesHandler(
+    IApplicationDbContext context,
+    IDolarService dolarService,
+    IAccountInterestService accountInterestService)
     : IRequestHandler<GetAllFixedExpensesQuery, List<FixedExpenseDto>>
 {
     public async Task<List<FixedExpenseDto>> Handle(GetAllFixedExpensesQuery request, CancellationToken cancellationToken)
     {
         var culture = new CultureInfo("es-AR");
+        await accountInterestService.RunAccrualAsync(cancellationToken);
 
         // El call HTTP al dólar corre en paralelo con las queries de DB.
         // EF Core DbContext no es thread-safe: las queries de DB van secuenciales.
@@ -28,6 +34,10 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
                      && (f.PaymentYearMonth == null || f.PaymentYearMonth == currentMonthKey))
             .OrderBy(f => f.PaymentDay)
             .ToListAsync(cancellationToken);
+
+        fixedExpenses = fixedExpenses
+            .Where(f => f.Active || !InterestExpenseHelper.IsAutomaticInterest(f))
+            .ToList();
 
         var paidViaTransaction = await context.Transaction
             .AsNoTracking()
@@ -47,13 +57,20 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
 
         decimal dolarRate = await dolarTask;
 
+        var ccAccounts = await context.Account
+            .AsNoTracking()
+            .Where(a => a.UserID == request.UserID && a.Type == AccountType.TarjetaCredito)
+            .ToListAsync(cancellationToken);
+        var ccById = ccAccounts.ToDictionary(a => a.ID);
+
         var paidIds = paidViaTransaction.Select(t => t.ExpenseID)
             .Union(paidViaCreditCard.Select(t => t.ExpenseID))
             .ToHashSet();
 
         // Monto real pagado por ID (prioriza Transaction normal sobre CreditCard)
         var paidAmounts = paidViaTransaction
-            .ToDictionary(t => t.ExpenseID, t => (Amount: t.Amount, Currency: t.Currency));
+            .GroupBy(t => t.ExpenseID)
+            .ToDictionary(g => g.Key, g => (Amount: g.Sum(t => t.Amount), Currency: "ARS"));
         foreach (var cc in paidViaCreditCard.Where(cc => !paidAmounts.ContainsKey(cc.ExpenseID)))
             paidAmounts[cc.ExpenseID] = (cc.Amount, cc.Currency);
 
@@ -74,7 +91,9 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
             bool isPaused = !string.IsNullOrEmpty(f.PausedMonths) &&
                 f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(currentMonthKey);
 
-            bool isPaid = paidIds.Contains(f.ID);
+            bool isPaid = f.CreditCardAccountID.HasValue
+                ? f.Amount <= 0
+                : paidIds.Contains(f.ID);
             decimal? paidAmount = null;
             string? paidAmountFmt = null;
 
@@ -85,6 +104,21 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
                 paidAmountFmt = paid.Currency == "USD"
                     ? $"USD {paid.Amount:N2} (≈ {paidArs.ToString("C", culture)})"
                     : paid.Amount.ToString("C", culture);
+            }
+
+            decimal? tcMinimumAmount = null;
+            decimal? tcTotalAmount = null;
+            if (f.CreditCardAccountID.HasValue && ccById.ContainsKey(f.CreditCardAccountID.Value))
+            {
+                var ccAcc = ccById[f.CreditCardAccountID.Value];
+                tcTotalAmount = ccAcc.Currency == "USD"
+                    ? Math.Abs(ccAcc.Balance) * dolarRate
+                    : Math.Abs(ccAcc.Balance);
+                tcMinimumAmount = ccAcc.EffectiveMinimumPayment.HasValue
+                    ? (ccAcc.Currency == "USD"
+                        ? ccAcc.EffectiveMinimumPayment.Value * dolarRate
+                        : ccAcc.EffectiveMinimumPayment.Value)
+                    : null;
             }
 
             return new FixedExpenseDto
@@ -110,7 +144,10 @@ public class GetAllFixedExpensesHandler(IApplicationDbContext context, IDolarSer
                 IsPausedThisMonth = isPaused,
                 PausedMonths = f.PausedMonths,
                 CreditCardAccountID = f.CreditCardAccountID,
-                PaymentYearMonth = f.PaymentYearMonth
+                PaymentYearMonth = f.PaymentYearMonth,
+                TcMinimumAmount = tcMinimumAmount,
+                TcTotalAmount = tcTotalAmount,
+                IsSystemGenerated = InterestExpenseHelper.IsAutomaticInterest(f)
             };
         }).ToList();
     }
