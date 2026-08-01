@@ -25,6 +25,27 @@ jobs:
             -o ./publish \
             /p:UseAppHost=false
 
+      - name: Create production configuration
+        env:
+          APPSETTINGS_PRODUCTION: ${{ secrets.APPSETTINGS_PRODUCTION }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, pathlib
+
+          content = os.environ.get('APPSETTINGS_PRODUCTION', '')
+          if not content:
+              raise SystemExit('APPSETTINGS_PRODUCTION secret is not configured')
+
+          config = json.loads(content)
+          connection = config.get('ConnectionStrings', {}).get('DefaultConnection')
+          if not connection:
+              raise SystemExit('DefaultConnection is missing from APPSETTINGS_PRODUCTION')
+
+          output = pathlib.Path('publish/appsettings.Production.json')
+          output.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
+          print('Production configuration created successfully')
+          EOF
+
       - name: Take site offline (unlock IIS process)
         continue-on-error: true
         env:
@@ -79,7 +100,6 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
-            **/appsettings.Production.json
 
       - name: Bring site back online
         if: always()
@@ -117,3 +137,11 @@ jobs:
               except ftplib.error_perm:
                   print('app_offline.htm not found — site already online')
           EOF
+
+      - name: Verify deployed application
+        run: |
+          curl --fail --silent --show-error \
+            --retry 12 \
+            --retry-delay 10 \
+            --retry-all-errors \
+            https://sistemagastos.runasp.net/health

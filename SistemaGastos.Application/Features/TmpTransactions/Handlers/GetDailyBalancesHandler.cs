@@ -411,18 +411,21 @@ public class GetDailyBalancesHandler(
 
                 foreach (var cardTx in cardTransactions)
                 {
+                    if (cardTx.Account is null) continue;
+                    var cardAccount = cardTx.Account;
+
                     // Excluir el mes cubierto por Section C para esta cuenta
-                    var acctDueMonth = startDate.AddMonths(cardTx.Account.DueMonthOffset ?? 1);
+                    var acctDueMonth = startDate.AddMonths(cardAccount.DueMonthOffset ?? 1);
                     if (SameMonth(m, acctDueMonth)) continue;
 
                     var compraMes = new DateTime(cardTx.TransactionDate.Year, cardTx.TransactionDate.Month, 1);
 
-                    var closingDay = cardTx.Account.ClosingDay;
+                    var closingDay = cardAccount.ClosingDay;
                     var mesesAlCierre = (closingDay.HasValue && cardTx.TransactionDate.Day > closingDay.Value) ? 1 : 0;
                     var mesResumen = compraMes.AddMonths(mesesAlCierre);
-                    var vencimiento = mesResumen.AddMonths(cardTx.Account.DueMonthOffset ?? 1);
+                    var vencimiento = mesResumen.AddMonths(cardAccount.DueMonthOffset ?? 1);
 
-                    decimal montoArs = cardTx.Account.Currency == "USD" ? cardTx.Amount * cotizacionDolar : cardTx.Amount;
+                    decimal montoArs = cardAccount.Currency == "USD" ? cardTx.Amount * cotizacionDolar : cardTx.Amount;
 
                     bool esFijo = cardTx.Fixed;
                     bool esCuotas = cardTx.Installments > 1;

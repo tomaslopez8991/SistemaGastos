@@ -155,6 +155,7 @@ public class SyncCreditCardFixedExpensesHandler(IApplicationDbContext context, I
             .Include(t => t.Category)
             .Where(t => t.PersonID.HasValue
                      && personIDs.Contains(t.PersonID.Value)
+                     && t.Account != null
                      && t.Account.UserID == userID
                      && t.Date < monthEnd)
             .ToListAsync(cancellationToken);

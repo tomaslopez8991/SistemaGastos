@@ -23,6 +23,11 @@ using System.Net.Mail;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Shared hosting accounts cannot write to the Windows Event Log.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // 1. CONFIGURACI�N DE BASE DE DATOS
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -31,15 +36,19 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // 2. PERSISTENCIA DE LLAVES (DATA PROTECTION) - CR�TICO EN SOMEE
 // Use ContentRootPath directly (not nested wwwroot) so the keys folder is writable on shared hosting
 var keysFolder = Path.Combine(builder.Environment.ContentRootPath, "keys");
+var dataProtection = builder.Services.AddDataProtection()
+    .SetApplicationName("SistemaGastosApp");
+
 try
 {
-    if (!Directory.Exists(keysFolder)) Directory.CreateDirectory(keysFolder);
+    Directory.CreateDirectory(keysFolder);
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysFolder));
 }
-catch { /* If the folder can't be created, Data Protection will use in-memory keys */ }
-
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
-    .SetApplicationName("SistemaGastosApp");
+catch (Exception ex)
+{
+    // Shared hosting may deny writes; ephemeral keys keep authentication available.
+    Console.Error.WriteLine($"Data Protection keys could not be persisted: {ex.Message}");
+}
 
 // 3. CONFIGURACI�N DE COOKIES (POL�TICA LAXA PARA QUE FUNCIONE SIEMPRE)
 builder.Services.Configure<CookiePolicyOptions>(options =>
@@ -212,5 +221,33 @@ app.UseAuthorization();    // <--- 3. Verificar Permisos
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
+
+app.MapGet("/health", async (ApplicationDbContext db, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        if (!await db.Database.CanConnectAsync(cancellationToken))
+        {
+            return Results.Json(new { status = "unhealthy", database = "unavailable" }, statusCode: 503);
+        }
+
+        var pendingMigrations = await db.Database.GetPendingMigrationsAsync(cancellationToken);
+        if (pendingMigrations.Any())
+        {
+            return Results.Json(new
+            {
+                status = "unhealthy",
+                database = "connected",
+                pendingMigrations = pendingMigrations.Count()
+            }, statusCode: 503);
+        }
+
+        return Results.Ok(new { status = "healthy", database = "connected" });
+    }
+    catch
+    {
+        return Results.Json(new { status = "unhealthy", database = "error" }, statusCode: 503);
+    }
+}).AllowAnonymous();
 
 app.Run();
