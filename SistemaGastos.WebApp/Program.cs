@@ -42,12 +42,17 @@ var dataProtection = builder.Services.AddDataProtection()
 try
 {
     Directory.CreateDirectory(keysFolder);
+
+    var probePath = Path.Combine(keysFolder, $".write-test-{Guid.NewGuid():N}");
+    File.WriteAllText(probePath, string.Empty);
+    File.Delete(probePath);
+
     dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysFolder));
 }
 catch (Exception ex)
 {
-    // Shared hosting may deny writes; ephemeral keys keep authentication available.
     Console.Error.WriteLine($"Data Protection keys could not be persisted: {ex.Message}");
+    dataProtection.UseEphemeralDataProtectionProvider();
 }
 
 // 3. CONFIGURACI�N DE COOKIES (POL�TICA LAXA PARA QUE FUNCIONE SIEMPRE)
