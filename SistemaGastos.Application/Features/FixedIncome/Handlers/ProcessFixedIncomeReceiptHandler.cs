@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.FixedIncome.Commands;
 using SistemaGastos.Application.Interfaces;
+using SistemaGastos.Application.Helpers;
 using SistemaGastos.Domain.Enums;
 using SistemaGastos.Domain.Models;
 
@@ -37,7 +38,7 @@ public class ProcessFixedIncomeReceiptHandler(IApplicationDbContext context, IDo
             income.AccountID = selectedAccount.ID;
         }
 
-        var receiptDate = ResolveReceiptDate(income);
+        var receiptDate = ResolveReceiptDate(income, request.ReceiptDay);
 
         decimal amountArs;
         if (request.AmountOverride.HasValue)
@@ -69,7 +70,31 @@ public class ProcessFixedIncomeReceiptHandler(IApplicationDbContext context, IDo
         };
 
         income.Account.Balance += amountArs;
-        income.LastGeneratedDate = receiptDate;
+        if (income.DistributionEndDay.HasValue)
+        {
+            var progressMonth = $"{receiptDate.Year}-{receiptDate.Month:D2}";
+            if (income.ReceiptProgressYearMonth != progressMonth)
+            {
+                income.ReceivedAmount = 0;
+                income.ReceivedDays = null;
+                income.ReceiptProgressYearMonth = progressMonth;
+            }
+            income.ReceivedAmount += amountArs;
+            var receivedDays = DistributionHelper.ParseExcludedDays(income.ReceivedDays);
+            if (request.ReceiptDay.HasValue && !receivedDays.Contains(request.ReceiptDay.Value))
+                receivedDays.Add(request.ReceiptDay.Value);
+            income.ReceivedDays = DistributionHelper.SerializeExcludedDays(receivedDays);
+
+            var totalArs = income.Currency == "USD"
+                ? income.Amount * await dolarService.GetDolarBolsaAsync()
+                : income.Amount;
+            if (income.ReceivedAmount >= totalArs)
+                income.LastGeneratedDate = receiptDate;
+        }
+        else
+        {
+            income.LastGeneratedDate = receiptDate;
+        }
 
         if (income.PersonID.HasValue && income.Person != null)
         {
@@ -98,7 +123,7 @@ public class ProcessFixedIncomeReceiptHandler(IApplicationDbContext context, IDo
         };
     }
 
-    private static DateTime ResolveReceiptDate(SistemaGastos.Domain.Models.FixedIncome income)
+    private static DateTime ResolveReceiptDate(SistemaGastos.Domain.Models.FixedIncome income, int? requestedDay)
     {
         if (income.PersonID.HasValue
             && !string.IsNullOrWhiteSpace(income.CollectionYearMonth)
@@ -110,13 +135,19 @@ public class ProcessFixedIncomeReceiptHandler(IApplicationDbContext context, IDo
                 out var collectionMonth))
         {
             var day = Math.Clamp(
-                income.ReceiptDay,
+                requestedDay ?? income.ReceiptDay,
                 1,
                 DateTime.DaysInMonth(collectionMonth.Year, collectionMonth.Month));
             return new DateTime(collectionMonth.Year, collectionMonth.Month, day)
                 .Add(DateTime.Now.TimeOfDay);
         }
 
+        if (requestedDay.HasValue)
+        {
+            var now = DateTime.Now;
+            return new DateTime(now.Year, now.Month, Math.Clamp(requestedDay.Value, 1, DateTime.DaysInMonth(now.Year, now.Month)))
+                .Add(now.TimeOfDay);
+        }
         return DateTime.Now;
     }
 }

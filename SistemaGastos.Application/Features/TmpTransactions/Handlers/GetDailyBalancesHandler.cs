@@ -56,6 +56,11 @@ public class GetDailyBalancesHandler(
             .Where(a => a.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
+        var tcScenarios = await context.CreditCardProjectionScenario
+            .AsNoTracking()
+            .Where(x => x.UserID == request.UserID)
+            .ToListAsync(cancellationToken);
+
         var manualProjections = await context.TmpTransaction
             .Include(t => t.Category)
             .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
@@ -67,6 +72,13 @@ public class GetDailyBalancesHandler(
             .Include(t => t.SharedWith).ThenInclude(s => s.Person)
             .Where(t => t.Account.UserID == request.UserID)
             .ToListAsync(cancellationToken);
+
+        var currentCardTotals = cardTransactions
+            .GroupBy(t => t.AccountID)
+            .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount));
+        var currentCardTotalsByCurrency = cardTransactions
+            .GroupBy(t => t.Account.Currency)
+            .ToDictionary(g => g.Key, g => g.Sum(t => t.Amount));
 
         var allFixedExpenses = await context.FixedExpense
             .AsNoTracking()
@@ -209,9 +221,10 @@ public class GetDailyBalancesHandler(
         {
             var m = startDate.AddMonths(i);
             var daysInMonth = DateTime.DaysInMonth(m.Year, m.Month);
+            var monthKey = $"{m.Year}-{m.Month:D2}";
             var itemsByDay = new Dictionary<int, List<DailyBalanceItemDto>>();
 
-            void AddItem(int day, string description, decimal amount, bool isIncome, string sourceType, long? sourceId = null, bool isDistributed = false, int? tcAccountId = null, decimal? tcMinimumAmount = null, decimal? tcTotalAmount = null, bool isAutomaticPersonCollection = false)
+            void AddItem(int day, string description, decimal amount, bool isIncome, string sourceType, long? sourceId = null, bool isDistributed = false, int? tcAccountId = null, decimal? tcMinimumAmount = null, decimal? tcTotalAmount = null, bool isAutomaticPersonCollection = false, TcProjectionMode? tcProjectionMode = null, decimal? tcCustomAmount = null)
             {
                 if (amount <= 0) return;
 
@@ -235,8 +248,85 @@ public class GetDailyBalancesHandler(
                     TcAccountId = tcAccountId,
                     TcTotalAmount = tcTotalAmount,
                     IsAutomaticPersonCollection = isAutomaticPersonCollection,
-                    TcMinimumAmount = tcMinimumAmount
+                    TcMinimumAmount = tcMinimumAmount,
+                    TcProjectionMode = tcProjectionMode?.ToString(),
+                    TcCustomAmount = tcCustomAmount
                 });
+            }
+
+            void AddCreditCardScenario(
+                Domain.Models.Account cc,
+                decimal totalArs,
+                long? fixedExpenseId = null,
+                int? frozenDueDay = null,
+                bool hasPriorPartialPayment = false)
+            {
+                if (totalArs <= 0) return;
+
+                var scenario = tcScenarios.FirstOrDefault(x => x.AccountID == cc.ID && x.YearMonth == monthKey);
+                var mode = scenario?.Mode ?? TcProjectionMode.Total;
+                var minimumArs = cc.EffectiveMinimumPayment.HasValue
+                    ? (cc.Currency == "USD" ? cc.EffectiveMinimumPayment.Value * cotizacionDolar : cc.EffectiveMinimumPayment.Value)
+                    : totalArs;
+                minimumArs = Math.Min(minimumArs, totalArs);
+                var customArs = scenario?.CustomAmount;
+                // Generated statements keep the due date captured at closing.
+                var dueDay = Math.Clamp(frozenDueDay ?? cc.DueDay ?? FallbackDueDay, 1, daysInMonth);
+                var isCurrentMonth = m.Year == fechaActual.Year && m.Month == fechaActual.Month;
+                var overdueWithoutPayment = isCurrentMonth && fechaActual.Day > dueDay;
+                var closingDay = Math.Clamp(cc.ClosingDay ?? daysInMonth, 1, daysInMonth);
+
+                if (hasPriorPartialPayment || overdueWithoutPayment)
+                {
+                    var redistributionStart = isCurrentMonth
+                        ? Math.Max(dueDay, fechaActual.Day)
+                        : dueDay;
+                    if (redistributionStart > closingDay) return;
+
+                    var redistributionWeekendDays = Enumerable.Range(
+                            redistributionStart,
+                            closingDay - redistributionStart + 1)
+                        .Where(day => new DateTime(m.Year, m.Month, day).DayOfWeek
+                            is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                        .ToList();
+                    var redistributed = DistributionHelper.Distribute(
+                        totalArs, redistributionStart, closingDay, redistributionWeekendDays, daysInMonth);
+                    foreach (var (day, amount) in redistributed)
+                        AddItem(day, $"Completar TC - {cc.Name} ({cc.Currency})", amount, false,
+                            "TarjetaCredito", tcAccountId: cc.ID, tcMinimumAmount: minimumArs,
+                            tcTotalAmount: totalArs, tcProjectionMode: mode, tcCustomAmount: customArs);
+                    return;
+                }
+
+                var initialPayment = mode == TcProjectionMode.Minimo
+                    ? minimumArs
+                    : mode == TcProjectionMode.Personalizado
+                    ? Math.Min(customArs ?? totalArs, totalArs)
+                    : totalArs;
+                var label = mode == TcProjectionMode.Minimo
+                    ? "Mínimo TC"
+                    : mode == TcProjectionMode.Personalizado ? "Pago personalizado TC" : "Total TC";
+                AddItem(dueDay, $"{label} - {cc.Name} ({cc.Currency})", initialPayment, false,
+                    fixedExpenseId.HasValue ? "GastoFijo" : "TarjetaCredito", fixedExpenseId,
+                    tcAccountId: cc.ID, tcMinimumAmount: minimumArs, tcTotalAmount: totalArs,
+                    tcProjectionMode: mode, tcCustomAmount: customArs);
+
+                if (mode == TcProjectionMode.Total) return;
+
+                var remaining = totalArs - initialPayment;
+                if (remaining <= 0) return;
+                if (closingDay <= dueDay) return;
+
+                var weekendDays = Enumerable.Range(dueDay + 1, closingDay - dueDay)
+                    .Where(day => new DateTime(m.Year, m.Month, day).DayOfWeek
+                        is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                    .ToList();
+                var distributed = DistributionHelper.Distribute(
+                    remaining, dueDay + 1, closingDay, weekendDays, daysInMonth);
+                foreach (var (day, amount) in distributed)
+                    AddItem(day, $"Completar TC - {cc.Name} ({cc.Currency})", amount, false,
+                        "TarjetaCredito", tcAccountId: cc.ID, tcMinimumAmount: minimumArs,
+                        tcTotalAmount: totalArs, tcProjectionMode: mode, tcCustomAmount: customArs);
             }
 
             static Dictionary<string, decimal> ParseDayOverrides(string? json)
@@ -286,7 +376,6 @@ public class GetDailyBalancesHandler(
                 .Select(p => p.ExpenseID)
                 .ToList();
 
-            var monthKey = $"{m.Year}-{m.Month:D2}";
             var fixedExpensesOfMonth = allFixedExpenses
                 .Where(f => f.PaymentDay > 0
                          && f.PaymentDay <= daysInMonth
@@ -310,12 +399,37 @@ public class GetDailyBalancesHandler(
                     var ccForFe = ccAccounts.FirstOrDefault(a => a.ID == fe.CreditCardAccountID.Value);
                     if (ccForFe != null)
                     {
+                        // El próximo resumen siempre refleja el acumulado vigente del módulo de TC.
+                        // El gasto fijo conserva la fecha de vencimiento, pero no congela el importe.
+                        if (SameMonth(m, startDate.AddMonths(1)))
+                        {
+                            var primaryAccountId = ccAccounts
+                                .Where(a => a.Currency == ccForFe.Currency)
+                                .OrderByDescending(a => currentCardTotals.GetValueOrDefault(a.ID))
+                                .Select(a => a.ID)
+                                .FirstOrDefault();
+                            if (ccForFe.ID != primaryAccountId)
+                                continue;
+
+                            var nativeTotal = currentCardTotalsByCurrency.GetValueOrDefault(ccForFe.Currency);
+                            amountArs = ccForFe.Currency == "USD"
+                                ? nativeTotal * cotizacionDolar
+                                : nativeTotal;
+                        }
+
                         feTcAccountId  = ccForFe.ID;
                         feTcCurrency   = ccForFe.Currency;
                         feTcMinimumAmount = ccForFe.EffectiveMinimumPayment.HasValue
                             ? (ccForFe.Currency == "USD" ? ccForFe.EffectiveMinimumPayment.Value * cotizacionDolar : ccForFe.EffectiveMinimumPayment.Value)
                             : null;
                         feTcTotalAmount = amountArs;
+                        AddCreditCardScenario(
+                            ccForFe,
+                            amountArs,
+                            fe.ID,
+                            fe.PaymentDay,
+                            fe.Name.StartsWith("Saldo restante", StringComparison.OrdinalIgnoreCase));
+                        continue;
                     }
                 }
 
@@ -347,17 +461,23 @@ public class GetDailyBalancesHandler(
                 .Where(f => f.ReceiptDay > 0
                          && f.ReceiptDay <= daysInMonth
                          && (f.PersonID == null || f.CollectionYearMonth == monthKey)
-                         && !receivedThisMonthIds.Contains(f.ID)
-                         && !(f.PersonID.HasValue && f.LastGeneratedDate.HasValue)
+                         && (!receivedThisMonthIds.Contains(f.ID) || f.DistributionEndDay.HasValue)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m)
                          && (string.IsNullOrEmpty(f.PausedMonths) || !f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(monthKey)))
                 .ToList();
 
             foreach (var fi in fixedIncomesOfMonth)
             {
-                decimal amountArs = fi.Currency == "USD" ? fi.Amount * cotizacionDolar : fi.Amount;
+                decimal totalAmountArs = fi.Currency == "USD" ? fi.Amount * cotizacionDolar : fi.Amount;
+                var receivedAmount = fi.ReceiptProgressYearMonth == monthKey ? fi.ReceivedAmount : 0m;
+                decimal amountArs = Math.Max(0, totalAmountArs - receivedAmount);
+                if (amountArs <= 0) continue;
 
-                var excludedDays = DistributionHelper.ParseExcludedDays(fi.ExcludedDays);
+                var receivedDays = fi.ReceiptProgressYearMonth == monthKey ? fi.ReceivedDays : null;
+                var excludedDays = DistributionHelper.ParseExcludedDays(fi.ExcludedDays)
+                    .Concat(DistributionHelper.ParseExcludedDays(receivedDays))
+                    .Distinct()
+                    .ToList();
                 var dist = DistributionHelper.Distribute(amountArs, fi.ReceiptDay, fi.DistributionEndDay, excludedDays, daysInMonth)
                     .OrderBy(kv => kv.Key).ToList();
 
@@ -374,7 +494,7 @@ public class GetDailyBalancesHandler(
             // Usa el balance actual de la cuenta TC (saldo real acumulado),
             // que es exactamente lo que el usuario deberá pagar el próximo vencimiento.
             // ────────────────────────────────────────────────────────────
-            if (!hasCreditCardPayment)
+            if (!hasCreditCardPayment && m == startDate)
             {
                 foreach (var cc in ccAccounts)
                 {
@@ -383,8 +503,8 @@ public class GetDailyBalancesHandler(
                     if (closedTcKeys.Contains($"{cc.ID}_{m.Year}-{m.Month:D2}")) continue;
 
                     decimal balanceArs = cc.Currency == "USD"
-                        ? cc.EffectiveTcProjection * cotizacionDolar
-                        : cc.EffectiveTcProjection;
+                        ? Math.Abs(cc.Balance) * cotizacionDolar
+                        : Math.Abs(cc.Balance);
 
                     if (balanceArs <= 0) continue;
                     var tcLabel = cc.TcProjectionMode == Domain.Enums.TcProjectionMode.Total
@@ -396,8 +516,7 @@ public class GetDailyBalancesHandler(
                         ? (cc.Currency == "USD" ? cc.EffectiveMinimumPayment.Value * cotizacionDolar : cc.EffectiveMinimumPayment.Value)
                         : null;
                     decimal totalArs = cc.Currency == "USD" ? Math.Abs(cc.Balance) * cotizacionDolar : Math.Abs(cc.Balance);
-                    AddItem(cc.DueDay ?? FallbackDueDay, tcLabel, balanceArs, false, "TarjetaCredito",
-                        tcAccountId: cc.ID, tcMinimumAmount: minArs, tcTotalAmount: totalArs);
+                    AddCreditCardScenario(cc, totalArs);
                 }
             }
 
@@ -415,50 +534,13 @@ public class GetDailyBalancesHandler(
                     var cardAccount = cardTx.Account;
 
                     // Excluir el mes cubierto por Section C para esta cuenta
-                    var acctDueMonth = startDate.AddMonths(cardAccount.DueMonthOffset ?? 1);
-                    if (SameMonth(m, acctDueMonth)) continue;
+                    if (closedTcKeys.Contains($"{cardAccount.ID}_{m.Year}-{m.Month:D2}")) continue;
 
-                    var compraMes = new DateTime(cardTx.TransactionDate.Year, cardTx.TransactionDate.Month, 1);
-
-                    var closingDay = cardAccount.ClosingDay;
-                    var mesesAlCierre = (closingDay.HasValue && cardTx.TransactionDate.Day > closingDay.Value) ? 1 : 0;
-                    var mesResumen = compraMes.AddMonths(mesesAlCierre);
-                    var vencimiento = mesResumen.AddMonths(cardAccount.DueMonthOffset ?? 1);
-
-                    decimal montoArs = cardAccount.Currency == "USD" ? cardTx.Amount * cotizacionDolar : cardTx.Amount;
-
-                    bool esFijo = cardTx.Fixed;
-                    bool esCuotas = cardTx.Installments > 1;
-                    bool esVariable = !esFijo && !esCuotas;
-
-                    decimal? montoDelMes = null;
-                    string descripcion = cardTx.Description;
-
-                    if (esVariable)
-                    {
-                        if (SameMonth(m, vencimiento)) montoDelMes = montoArs;
-                    }
-                    else if (esFijo && !esCuotas)
-                    {
-                        montoDelMes = montoArs;
-                    }
-                    else if (esCuotas)
-                    {
-                        int totalCuotas = (int)cardTx.Installments!;
-                        int cuotaBase = (int)(cardTx.ActualInstallment ?? 0);
-                        int offset = MonthDiff(vencimiento, m);
-                        if (offset >= 0)
-                        {
-                            int cuotaEnMes = cuotaBase + offset;
-                            if (cuotaEnMes <= totalCuotas)
-                            {
-                                montoDelMes = montoArs / totalCuotas;
-                                descripcion = $"{cardTx.Description} (cuota {cuotaEnMes}/{totalCuotas})";
-                            }
-                        }
-                    }
-
-                    if (montoDelMes is not decimal monto || monto <= 0) continue;
+                    var projectedAmount = SameMonth(m, startDate.AddMonths(1))
+                        ? (cardAccount.Currency == "USD" ? cardTx.Amount * cotizacionDolar : cardTx.Amount)
+                        : CreditCardProjectionHelper.GetAmountDueArs(cardTx, m, startDate, cotizacionDolar);
+                    if (projectedAmount <= 0) continue;
+                    var monto = projectedAmount;
 
                     totalesPorCuenta.TryGetValue(cardTx.AccountID, out var acumuladoCuenta);
                     totalesPorCuenta[cardTx.AccountID] = acumuladoCuenta + monto;
@@ -469,11 +551,7 @@ public class GetDailyBalancesHandler(
                     var cc = ccAccounts.FirstOrDefault(a => a.ID == accountId);
                     if (cc == null) continue;
 
-                    decimal? minArsD = cc.EffectiveMinimumPayment.HasValue
-                        ? (cc.Currency == "USD" ? cc.EffectiveMinimumPayment.Value * cotizacionDolar : cc.EffectiveMinimumPayment.Value)
-                        : null;
-                    AddItem(cc.DueDay ?? FallbackDueDay, $"Total TC - {cc.Name} ({cc.Currency})", total, false, "TarjetaCredito",
-                        tcAccountId: cc.ID, tcMinimumAmount: minArsD, tcTotalAmount: total);
+                    AddCreditCardScenario(cc, total);
                 }
             }
 

@@ -17,8 +17,8 @@ public class DeleteFixedExpenseHandler(IApplicationDbContext context)
         if (expense == null)
             throw new Exception("Gasto fijo no encontrado");
 
-        if (InterestExpenseHelper.IsAutomaticInterest(expense))
-            throw new InvalidOperationException("Los intereses se calculan automáticamente y no pueden eliminarse.");
+        if (InterestExpenseHelper.IsLiveAccrual(expense, DateTime.Today))
+            throw new InvalidOperationException("El interés del mes en curso todavía se calcula diariamente y no puede eliminarse.");
 
         context.FixedExpense.Remove(expense);
 

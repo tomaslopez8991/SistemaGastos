@@ -38,6 +38,16 @@
         return currency === 'USD' ? fmtUSD.format(amount) : fmtARS.format(amount);
     }
 
+    const filterState = { categoryID: '', categoryName: '', personID: '', installments: '', fixedType: '', dateFrom: '', dateTo: '' };
+
+    function appendActiveFilters(url) {
+        const result = new URL(url, window.location.origin);
+        Object.entries(filterState).forEach(([key, value]) => {
+            if (value !== '' && value !== null) result.searchParams.set(key, value);
+        });
+        return result.pathname + result.search;
+    }
+
     // =========================================================
     // 1. GRID.JS
     // =========================================================
@@ -165,13 +175,13 @@
             limit: 15,
             server: {
                 url: (prev, page, limit) =>
-                    `${prev}${prev.includes('?') ? '&' : '?'}limit=${limit}&offset=${page * limit}`
+                    appendActiveFilters(`${prev}${prev.includes('?') ? '&' : '?'}limit=${limit}&offset=${page * limit}`)
             }
         },
         search: {
             server: {
                 url: (prev, keyword) =>
-                    `${prev}${prev.includes('?') ? '&' : '?'}keyword=${encodeURIComponent(keyword)}`
+                    appendActiveFilters(`${prev}${prev.includes('?') ? '&' : '?'}keyword=${encodeURIComponent(keyword)}`)
             },
             enabled: true,
             placeholder: 'Buscar...'
@@ -182,6 +192,7 @@
             then: data => {
                 // Actualizar contador de consumos en stat card
                 $('#statCount').text(data.total ?? data.results?.length ?? '—');
+                actualizarTotalesHeader(data.totals);
 
                 return (data.results || []).map(t => {
                     const accountName = t.accountName || t.account?.name || '';
@@ -191,9 +202,6 @@
 
                     const sharedList = t.sharedWith || [];
                     const isShared = sharedList.length > 0;
-                    const totalPct = isShared ? sharedList.reduce((sum, s) => sum + s.percentage, 0) : 0;
-                    const myPct = isShared ? Math.max(0, 100 - totalPct) : 100;
-                    const myAmount = isShared ? t.amount * (myPct / 100) : t.amount;
                     const sharedMeta = isShared ? { persons: sharedList, full: t.amount } : null;
 
                     return [
@@ -204,7 +212,7 @@
                         t.description || '',                    // [2] descripcion
                         t.categoryName || '—',                  // [3] categoria
                         cuotas,                                 // [4] cuotas
-                        { amount: myAmount, currency: t.currency || 'ARS', shared: sharedMeta }, // [5] monto
+                        { amount: t.amount, currency: t.currency || 'ARS', shared: sharedMeta }, // [5] monto total
                         t.fixed ?? false,                       // [6] tipo
                         t.id,                                   // [7] id oculto (acciones)
                         t.currency || 'ARS',                    // [8] currency oculta
@@ -244,18 +252,22 @@
         } catch { return 0; }
     }
 
-    async function actualizarTotalesHeader() {
+    async function actualizarTotalesHeader(filteredTotals = null) {
         try {
             const [resBackend, dolarBolsa] = await Promise.all([
-                $.get(config.urls.totals),
+                filteredTotals ? Promise.resolve(filteredTotals) : $.get(config.urls.totals),
                 fetchDolarBolsa()
             ]);
 
             const totalArs = resBackend.totalArs || 0;
             const totalUsd = resBackend.totalUsd || 0;
             const totalGlobal = totalArs + (totalUsd * dolarBolsa);
-            const totalFijo = (resBackend.fijoArs || 0) + ((resBackend.fijoUsd || 0) * dolarBolsa);
-            const totalVar = (resBackend.varArs || 0) + ((resBackend.varUsd || 0) * dolarBolsa);
+            const fijoArs = resBackend.fixedArs ?? resBackend.fijoArs ?? 0;
+            const fijoUsd = resBackend.fixedUsd ?? resBackend.fijoUsd ?? 0;
+            const variableArs = resBackend.variableArs ?? resBackend.varArs ?? 0;
+            const variableUsd = resBackend.variableUsd ?? resBackend.varUsd ?? 0;
+            const totalFijo = fijoArs + (fijoUsd * dolarBolsa);
+            const totalVar = variableArs + (variableUsd * dolarBolsa);
 
             // Stat cards
             $('#statTotalArs').text(fmtARS.format(totalArs));
@@ -289,7 +301,6 @@
 
     function recargarTablaYTotales() {
         window.cardGrid.forceRender();
-        actualizarTotalesHeader();
         $('#deleteSelectedBtn').prop('disabled', true);
     }
 
@@ -691,6 +702,41 @@
         if (ids.length > 0) CreditCardManager.eliminar(ids);
     });
 
+    const filterBindings = {
+        '#ccFilterCategory': 'categoryID',
+        '#ccFilterPerson': 'personID',
+        '#ccFilterInstallments': 'installments',
+        '#ccFilterType': 'fixedType',
+        '#ccFilterDateFrom': 'dateFrom',
+        '#ccFilterDateTo': 'dateTo'
+    };
+
+    Object.entries(filterBindings).forEach(([selector, key]) => {
+        $(document).off('change', selector).on('change', selector, function () {
+            filterState[key] = $(this).val();
+            if (key === 'categoryID') {
+                activeCategoryFilter = null;
+                filterState.categoryName = '';
+                $('#breakdownHint').hide();
+            }
+            window.cardGrid.forceRender();
+        });
+    });
+
+    $(document).off('click', '#ccClearFilters').on('click', '#ccClearFilters', function () {
+        Object.keys(filterState).forEach(key => { filterState[key] = ''; });
+        activeCategoryFilter = null;
+        $('.cc-filter-grid select, .cc-filter-grid input').val('');
+        $('#breakdownHint').hide();
+        const searchInput = document.querySelector('#card-grid-wrapper input[type="search"]');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+            window.cardGrid.forceRender();
+        }
+    });
+
     // =========================================================
     // 5. BREAKDOWN POR CATEGORÍA
     // =========================================================
@@ -793,15 +839,13 @@
             return;
         }
         activeCategoryFilter = categoryName;
+        filterState.categoryName = categoryName;
+        filterState.categoryID = '';
+        $('#ccFilterCategory').val('');
         $('#breakdownHintLabel').text(categoryName);
         $('#breakdownHint').show();
 
-        // Inyectar keyword en el search de Grid.js via input
-        const searchInput = document.querySelector('#card-grid-wrapper input[type="search"]');
-        if (searchInput) {
-            searchInput.value = categoryName;
-            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
+        window.cardGrid.forceRender();
 
         // Re-renderizar lista para marcar activo
         $.get(config.urls.categoryBreakdown, renderCategoryBreakdown);
@@ -809,12 +853,9 @@
 
     function clearCategoryFilter() {
         activeCategoryFilter = null;
+        filterState.categoryName = '';
         $('#breakdownHint').hide();
-        const searchInput = document.querySelector('#card-grid-wrapper input[type="search"]');
-        if (searchInput) {
-            searchInput.value = '';
-            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
+        window.cardGrid.forceRender();
         $.get(config.urls.categoryBreakdown, renderCategoryBreakdown);
     }
 
@@ -850,7 +891,6 @@
     });
 
     // Carga inicial
-    actualizarTotalesHeader();
     fetchCategoryBreakdown();
 
     // Recarga breakdown al guardar/eliminar

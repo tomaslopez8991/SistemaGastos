@@ -12,6 +12,7 @@ public interface IApplicationDbContext
     DbSet<CreditCardTransaction> CreditCardTransaction { get; }
     DbSet<CreditCardTransactionPerson> CreditCardTransactionPerson { get; set; }
     DbSet<CreditCardTransactionCobro> CreditCardTransactionCobro { get; set; }
+    DbSet<CreditCardProjectionScenario> CreditCardProjectionScenario { get; set; }
     DbSet<Transaction> Transaction { get; }
     DbSet<TmpTransaction> TmpTransaction { get; }
     DbSet<Account> Account { get; }
@@ -22,7 +23,6 @@ public interface IApplicationDbContext
     DbSet<TodoTask> TodoTask { get; set; }
     DbSet<Budget> Budget { get; set; }
     DbSet<Person> Person { get; set; }
-    DbSet<DebtPlanSettings> DebtPlanSettings { get; set; }
     DbSet<AccountInterestSetting> AccountInterestSetting { get; set; }
     DbSet<AccountInterestDailyLog> AccountInterestDailyLog { get; set; }
     DbSet<AccountInterestMonthlyCharge> AccountInterestMonthlyCharge { get; set; }

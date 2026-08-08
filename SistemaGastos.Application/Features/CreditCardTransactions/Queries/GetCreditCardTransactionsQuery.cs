@@ -14,5 +14,17 @@ public record DeleteTransactionsCommand(List<long> Ids) : IRequest<bool>;
 public record GetCreditCardTransactionsQuery(
     string? Keyword,
     int Limit,
-    int Offset
-) : IRequest<PagedResult<CreditCardTransactionDto>>;
+    int Offset,
+    int? CategoryID = null,
+    string? CategoryName = null,
+    int? PersonID = null,
+    int? Installments = null,
+    bool? Fixed = null,
+    DateTime? DateFrom = null,
+    DateTime? DateTo = null
+) : IRequest<CreditCardTransactionSearchResultDto>;
+
+public record CreditCardTransactionSearchResultDto(
+    List<CreditCardTransactionDto> Results,
+    int Total,
+    CreditCardTotalsDto Totals);

@@ -199,7 +199,7 @@
 
     $(document).off('click', '.btn-eliminar').on('click', '.btn-eliminar', function () {
         const id = $(this).data('id');
-        Swal.fire({ title: '¿Eliminar Cuenta?', text: 'Se borrarán todos los gastos asociados.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, eliminar' })
+        Swal.fire({ title: '¿Eliminar cuenta?', text: 'Se eliminarán también todos sus movimientos, consumos y planificaciones asociados. Esta acción no se puede deshacer.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, eliminar' })
             .then((res) => {
                 if (res.isConfirmed) {
                     $.ajax({
@@ -214,7 +214,7 @@
                                 Swal.fire('Error', res.message, 'error');
                             }
                         },
-                        error: () => Swal.fire('Error', 'Error de conexión', 'error')
+                        error: (xhr) => Swal.fire('Error', xhr.responseJSON?.message || 'No se pudo eliminar la cuenta.', 'error')
                     });
                 }
             });
