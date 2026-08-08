@@ -12,10 +12,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfiguration(new FixedIncomeConfiguration());
-        modelBuilder.ApplyConfiguration(new DebtPlanSettingsConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestSettingConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestDailyLogConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestMonthlyChargeConfiguration());
+        modelBuilder.Entity<CreditCardProjectionScenario>(builder =>
+        {
+            builder.Property(x => x.YearMonth).HasMaxLength(7).IsRequired();
+            builder.Property(x => x.CustomAmount).HasPrecision(18, 2);
+            builder.HasIndex(x => new { x.AccountID, x.YearMonth }).IsUnique();
+            builder.HasOne(x => x.Account).WithMany().HasForeignKey(x => x.AccountID).OnDelete(DeleteBehavior.Cascade);
+        });
 
         // FixedExpense tiene dos FKs a Account: AccountID (cuenta de pago) y CreditCardAccountID (TC a saldar).
         // EF necesita configuración explícita para resolver la ambigüedad.
@@ -47,13 +53,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CreditCardTransaction> CreditCardTransaction { get; set; }
     public DbSet<CreditCardTransactionPerson> CreditCardTransactionPerson { get; set; }
     public DbSet<CreditCardTransactionCobro> CreditCardTransactionCobro { get; set; }
+    public DbSet<CreditCardProjectionScenario> CreditCardProjectionScenario { get; set; }
     public DbSet<Login> Login { get; set; }
     public DbSet<Budget> Budget { get; set; }
     public DbSet<FixedExpense> FixedExpense { get; set; }
     public DbSet<FixedExpenseHistory> FixedExpenseHistory { get; set; }
     public DbSet<Person> Person { get; set; }
     public DbSet<FixedIncome> FixedIncome { get; set; }
-    public DbSet<DebtPlanSettings> DebtPlanSettings { get; set; }
     public DbSet<AccountInterestSetting> AccountInterestSetting { get; set; }
     public DbSet<AccountInterestDailyLog> AccountInterestDailyLog { get; set; }
     public DbSet<AccountInterestMonthlyCharge> AccountInterestMonthlyCharge { get; set; }

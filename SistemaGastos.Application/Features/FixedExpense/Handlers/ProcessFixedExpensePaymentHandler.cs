@@ -2,13 +2,16 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.FixedExpense.Commands;
+using SistemaGastos.Application.Helpers;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Enums;
 using SistemaGastos.Domain.Models;
 
 namespace SistemaGastos.Application.Features.FixedExpense.Handlers;
 
-public class ProcessFixedExpensePaymentHandler(IApplicationDbContext context)
+public class ProcessFixedExpensePaymentHandler(
+    IApplicationDbContext context,
+    IAccountInterestService accountInterestService)
     : IRequestHandler<ProcessFixedExpensePaymentCommand, PaymentResultDto>
 {
     public async Task<PaymentResultDto> Handle(ProcessFixedExpensePaymentCommand request, CancellationToken cancellationToken)
@@ -97,6 +100,9 @@ public class ProcessFixedExpensePaymentHandler(IApplicationDbContext context)
         // Actualizar fecha de último pago generado
         expense.LastGeneratedDate = paymentDate;
         await context.SaveChangesAsync(cancellationToken);
+
+        if (InterestExpenseHelper.IsAutomaticInterest(expense))
+            await accountInterestService.RunAccrualAsync(cancellationToken);
 
         return new PaymentResultDto
         {

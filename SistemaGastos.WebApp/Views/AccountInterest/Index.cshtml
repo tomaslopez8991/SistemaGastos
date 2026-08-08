@@ -4,17 +4,15 @@
     var culture = new System.Globalization.CultureInfo("es-AR");
 }
 
-<div class="container-fluid px-4 py-3">
-
-    <!-- Header -->
-    <div class="d-flex align-items-center justify-content-between mb-4">
+<div class="container-fluid px-3 px-lg-4 py-3 interest-page">
+    <div class="interest-toolbar">
         <div>
-            <h4 class="mb-0 fw-semibold">Intereses de cuentas</h4>
-            <small class="text-muted">Configuración y seguimiento de intereses por descubierto</small>
+            <h4 class="mb-1 fw-semibold">Intereses de cuentas</h4>
+            <div class="text-muted small">Descubierto, impuestos y liquidaciones por cuenta</div>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary btn-sm" onclick="recalculate()">
-                <i class="fa-solid fa-rotate me-1"></i>Recalcular
+            <button class="btn btn-outline-secondary btn-sm" onclick="recalculate()" title="Recalcular intereses">
+                <i class="fa-solid fa-rotate me-1"></i><span class="d-none d-sm-inline">Recalcular</span>
             </button>
             @if (Model.AvailableAccounts.Any())
             {
@@ -25,257 +23,167 @@
         </div>
     </div>
 
-    <!-- Stat cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="tx-stat-card">
-                <div class="tx-stat-label">Cuentas configuradas</div>
-                <div class="tx-stat-value">@Model.Settings.Count</div>
-            </div>
+    @if (!Model.Settings.Any())
+    {
+        <div class="interest-empty">
+            <i class="fa-solid fa-building-columns"></i>
+            <h6>No hay cuentas configuradas</h6>
+            <p>Agregá una cuenta para comenzar a calcular intereses.</p>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="tx-stat-card">
-                <div class="tx-stat-label">Activas</div>
-                <div class="tx-stat-value">@Model.Settings.Count(s => s.Enabled)</div>
-            </div>
+    }
+    else
+    {
+        <div class="d-lg-none mb-3">
+            <label class="form-label small text-muted" for="interestAccountSelect">Cuenta</label>
+            <select class="form-select" id="interestAccountSelect" onchange="selectInterestAccount(this.value)">
+                @foreach (var setting in Model.Settings)
+                {
+                    <option value="@setting.AccountID">@setting.AccountName (@setting.AccountCurrency)</option>
+                }
+            </select>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="tx-stat-card">
-                <div class="tx-stat-label">Interés acumulado total</div>
-                <div class="tx-stat-value text-danger">
-                    @Model.Settings.Sum(s => s.CumulativeInterest).ToString("C", culture)
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="tx-stat-card">
-                <div class="tx-stat-label">Último log</div>
-                <div class="tx-stat-value" style="font-size:15px">
-                    @(Model.RecentLogs.FirstOrDefault()?.Date.ToString("dd/MM/yyyy") ?? "—")
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Cuentas configuradas -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-transparent border-0 pt-3 pb-2">
-            <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-sliders me-2 text-primary"></i>Cuentas con interés configurado</h6>
-        </div>
-        <div class="card-body p-0">
-            @if (!Model.Settings.Any())
-            {
-                <div class="text-center text-muted py-4">
-                    <i class="fa-solid fa-circle-info fa-2x mb-2 d-block"></i>
-                    No hay cuentas configuradas. Agregá una para empezar.
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Cuenta</th>
-                                <th>Tasa anual</th>
-                                <th>Interés acumulado</th>
-                                <th>Último log</th>
-                                <th>Estado</th>
-                                <th class="text-end">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var s in Model.Settings)
-                            {
-                                <tr>
-                                    <td>
-                                        <span class="fw-medium">@s.AccountName</span>
-                                        <small class="text-muted ms-1">@s.AccountCurrency</small>
-                                    </td>
-                                    <td>@((s.InterestRate * 100).ToString("N2"))%</td>
-                                    <td class="text-danger fw-medium">@s.CumulativeInterest.ToString("C", culture)</td>
-                                    <td>@(s.LastLogDate?.ToString("dd/MM/yyyy") ?? "—")</td>
-                                    <td>
-                                        @if (s.Enabled)
-                                        {
-                                            <span class="badge bg-success-subtle text-success">Activo</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary-subtle text-secondary">Inactivo</span>
-                                        }
-                                    </td>
-                                    <td class="text-end">
-                                        <div class="d-flex gap-1 justify-content-end">
-                                            <button class="btn btn-sm btn-outline-secondary"
-                                                    onclick="editSetting(@s.ID, @s.AccountID, @s.InterestRate.ToString("F4", System.Globalization.CultureInfo.InvariantCulture), @s.Enabled.ToString().ToLower())"
-                                                    title="Editar">
-                                                <i class="fa-solid fa-pencil"></i>
-                                            </button>
-                                            <button class="btn btn-sm @(s.Enabled ? "btn-outline-warning" : "btn-outline-success")"
-                                                    onclick="toggleSetting(@s.ID)"
-                                                    title="@(s.Enabled ? "Desactivar" : "Activar")">
-                                                <i class="fa-solid @(s.Enabled ? "fa-pause" : "fa-play")"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger"
-                                                    onclick="deleteSetting(@s.ID, '@s.AccountName')"
-                                                    title="Eliminar">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </div>
-    </div>
+        <div class="interest-layout">
+            <aside class="interest-account-nav d-none d-lg-block" aria-label="Cuentas configuradas">
+                <div class="interest-account-nav-title">Cuentas <span>@Model.Settings.Count</span></div>
+                @foreach (var setting in Model.Settings)
+                {
+                    <button type="button" class="interest-account-item" data-interest-account="@setting.AccountID"
+                            onclick="selectInterestAccount(@setting.AccountID)">
+                        <span class="interest-account-icon"><i class="fa-solid fa-building-columns"></i></span>
+                        <span class="interest-account-copy">
+                            <strong>@setting.AccountName</strong>
+                            <small>@setting.AccountCurrency · @((setting.InterestRate * 100).ToString("N2"))% TNA</small>
+                        </span>
+                        <span class="interest-status-dot @(setting.Enabled ? "is-active" : "")" title="@(setting.Enabled ? "Activa" : "Inactiva")"></span>
+                    </button>
+                }
+            </aside>
 
-    <!-- Historial diario y cargos mensuales -->
-    <div class="row g-3">
+            <main class="interest-main">
+                @foreach (var setting in Model.Settings)
+                {
+                    var logs = Model.RecentLogs.Where(l => l.AccountID == setting.AccountID).Take(30).ToList();
+                    var charges = Model.MonthlyCharges.Where(c => c.AccountID == setting.AccountID).Take(12).ToList();
+                    <section class="interest-account-panel d-none" data-interest-panel="@setting.AccountID">
+                        <header class="interest-account-header">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <h5 class="mb-0 fw-semibold">@setting.AccountName</h5>
+                                    <span class="badge @(setting.Enabled ? "text-bg-success" : "text-bg-secondary")">@(setting.Enabled ? "Activa" : "Inactiva")</span>
+                                </div>
+                                <span class="text-muted small">@setting.AccountCurrency · Último cálculo: @(setting.LastLogDate?.ToString("dd/MM/yyyy") ?? "Sin registros")</span>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-secondary" title="Editar configuración"
+                                        onclick="editSetting(@setting.ID, @setting.AccountID, @setting.InterestRate.ToString("F4", System.Globalization.CultureInfo.InvariantCulture), @setting.Enabled.ToString().ToLower(), @setting.ApplyVat.ToString().ToLower(), @setting.VatRate.ToString("F6", System.Globalization.CultureInfo.InvariantCulture), @setting.ApplyStampTax.ToString().ToLower(), @setting.StampTaxAnnualRate.ToString("F6", System.Globalization.CultureInfo.InvariantCulture))">
+                                    <i class="fa-solid fa-gear"></i>
+                                </button>
+                                <button class="btn btn-sm @(setting.Enabled ? "btn-outline-warning" : "btn-outline-success")" onclick="toggleSetting(@setting.ID)" title="@(setting.Enabled ? "Pausar" : "Activar")">
+                                    <i class="fa-solid @(setting.Enabled ? "fa-pause" : "fa-play")"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteSetting(@setting.ID, '@setting.AccountName')" title="Eliminar">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </header>
 
-        <!-- Log diario (últimos 30 días) -->
-        <div class="col-12 col-lg-7">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pt-3 pb-2">
-                    <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-calendar-days me-2 text-info"></i>Log diario (últimos 30 días)</h6>
-                </div>
-                <div class="card-body p-0">
-                    @if (!Model.RecentLogs.Any())
-                    {
-                        <div class="text-center text-muted py-4">Sin registros aún.</div>
-                    }
-                    else
-                    {
-                        <div class="table-responsive" style="max-height:400px;overflow-y:auto">
-                            <table class="table table-sm mb-0 align-middle">
-                                <thead class="table-light sticky-top">
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th class="text-end">Saldo</th>
-                                        <th class="text-end">Días consec.</th>
-                                        <th class="text-end">Interés día</th>
-                                        <th class="text-end">Acumulado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var log in Model.RecentLogs)
-                                    {
-                                        <tr class="@(log.Balance < 0 ? "table-danger" : "")">
-                                            <td>@log.Date.ToString("dd/MM/yyyy")</td>
-                                            <td class="text-end @(log.Balance < 0 ? "text-danger" : "text-success")">
-                                                @log.Balance.ToString("C", culture)
-                                            </td>
-                                            <td class="text-end">@log.DayCounter</td>
-                                            <td class="text-end text-danger">
-                                                @(log.DailyInterest > 0 ? log.DailyInterest.ToString("C", culture) : "—")
-                                            </td>
-                                            <td class="text-end text-danger fw-medium">@log.CumulativeInterest.ToString("C", culture)</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                        <div class="interest-summary" aria-label="Resumen del período">
+                            <div class="interest-summary-item">
+                                <span>Saldo actual</span>
+                                <strong class="@(setting.CurrentBalance < 0 ? "text-danger" : "text-success")">@setting.CurrentBalance.ToString("C", culture)</strong>
+                            </div>
+                            <div class="interest-summary-item">
+                                <span>Interés acumulado</span>
+                                <strong>@setting.CumulativeInterest.ToString("C", culture)</strong>
+                            </div>
+                            <div class="interest-summary-item">
+                                <span>IVA @((setting.VatRate * 100).ToString("N2"))%</span>
+                                <strong>@setting.AccruedVat.ToString("C", culture)</strong>
+                            </div>
+                            <div class="interest-summary-item">
+                                <span>Impuesto de sellos</span>
+                                <strong>@setting.AccruedStampTax.ToString("C", culture)</strong>
+                            </div>
+                            <div class="interest-summary-item is-total">
+                                <span>Próximo cargo estimado</span>
+                                <strong>@setting.EstimatedTotal.ToString("C", culture)</strong>
+                            </div>
                         </div>
-                    }
-                </div>
-            </div>
-        </div>
 
-        <!-- Cargos mensuales -->
-        <div class="col-12 col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pt-3 pb-2">
-                    <h6 class="mb-0 fw-semibold"><i class="fa-solid fa-file-invoice-dollar me-2 text-warning"></i>Cargos mensuales</h6>
-                </div>
-                <div class="card-body p-0">
-                    @if (!Model.MonthlyCharges.Any())
-                    {
-                        <div class="text-center text-muted py-4">Sin cargos generados aún.</div>
-                    }
-                    else
-                    {
-                        <div class="table-responsive" style="max-height:400px;overflow-y:auto">
-                            <table class="table table-sm mb-0 align-middle">
-                                <thead class="table-light sticky-top">
-                                    <tr>
-                                        <th>Período</th>
-                                        <th class="text-end">Total interés</th>
-                                        <th class="text-center">Transacción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var charge in Model.MonthlyCharges)
-                                    {
-                                        var periodo = new DateTime(charge.Year, charge.Month, 1).ToString("MMMM yyyy", culture);
-                                        <tr>
-                                            <td class="text-capitalize">@periodo</td>
-                                            <td class="text-end text-danger fw-medium">@charge.TotalInterest.ToString("C", culture)</td>
-                                            <td class="text-center">
-                                                @if (charge.TransactionID.HasValue)
-                                                {
-                                                    <span class="badge bg-success-subtle text-success">Cobrado</span>
-                                                }
-                                                else
-                                                {
-                                                    <span class="badge bg-secondary-subtle text-secondary">$0</span>
-                                                }
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                        <div class="interest-rate-strip">
+                            <span><i class="fa-solid fa-percent"></i> TNA @((setting.InterestRate * 100).ToString("N2"))%</span>
+                            <span class="@(setting.ApplyVat ? "" : "text-muted")"><i class="fa-solid fa-receipt"></i> IVA @(setting.ApplyVat ? "activo" : "inactivo")</span>
+                            <span class="@(setting.ApplyStampTax ? "" : "text-muted")"><i class="fa-solid fa-stamp"></i> Sellos @(setting.ApplyStampTax ? $"{(setting.StampTaxAnnualRate * 100):N2}% anual" : "inactivo")</span>
                         </div>
-                    }
-                </div>
-            </div>
+
+                        <ul class="nav nav-tabs interest-tabs" role="tablist">
+                            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#daily-@setting.AccountID" type="button">Detalle diario <span>@logs.Count</span></button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#charges-@setting.AccountID" type="button">Liquidaciones <span>@charges.Count</span></button></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="daily-@setting.AccountID">
+                                @if (!logs.Any())
+                                {
+                                    <div class="interest-table-empty">Sin registros diarios para esta cuenta.</div>
+                                }
+                                else
+                                {
+                                    <div class="table-responsive interest-table-wrap">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead><tr><th>Fecha</th><th class="text-end">Saldo de cierre</th><th class="text-end">Días</th><th class="text-end">Interés del día</th><th class="text-end">Acumulado</th></tr></thead>
+                                            <tbody>
+                                            @foreach (var log in logs)
+                                            {
+                                                <tr><td>@log.Date.ToString("dd/MM/yyyy")</td><td class="text-end @(log.Balance < 0 ? "text-danger" : "text-success")">@log.Balance.ToString("C", culture)</td><td class="text-end">@log.DayCounter</td><td class="text-end">@(log.DailyInterest > 0 ? log.DailyInterest.ToString("C", culture) : "-")</td><td class="text-end fw-semibold">@log.CumulativeInterest.ToString("C", culture)</td></tr>
+                                            }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
+                            <div class="tab-pane fade" id="charges-@setting.AccountID">
+                                @if (!charges.Any())
+                                {
+                                    <div class="interest-table-empty">Sin liquidaciones para esta cuenta.</div>
+                                }
+                                else
+                                {
+                                    <div class="table-responsive interest-table-wrap">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead><tr><th>Período</th><th class="text-end">Interés</th><th class="text-end">Estado</th></tr></thead>
+                                            <tbody>
+                                            @foreach (var charge in charges)
+                                            {
+                                                <tr><td class="text-capitalize">@(new DateTime(charge.Year, charge.Month, 1).ToString("MMMM yyyy", culture))</td><td class="text-end fw-semibold">@charge.TotalInterest.ToString("C", culture)</td><td class="text-end"><span class="badge @(charge.TransactionID.HasValue ? "text-bg-success" : "text-bg-secondary")">@(charge.TransactionID.HasValue ? "Pagada" : "Pendiente")</span></td></tr>
+                                            }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </section>
+                }
+            </main>
         </div>
-    </div>
+    }
 </div>
 
-<!-- Modal agregar/editar -->
-<div class="modal fade" id="modalAddSetting" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h6 class="modal-title fw-semibold" id="modalSettingTitle">Agregar cuenta con interés</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="settingID" value="">
-                <div class="mb-3" id="accountSelectWrapper">
-                    <label class="form-label fw-medium">Cuenta</label>
-                    <select class="form-select" id="accountID">
-                        @foreach (var a in Model.AvailableAccounts)
-                        {
-                            <option value="@a.ID">@a.Name (@a.Currency)</option>
-                        }
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-medium">Tasa anual (ej: 1.55 = 155%)</label>
-                    <div class="input-group">
-                        <input type="number" class="form-control" id="interestRate" step="0.01" min="0" max="99" value="1.55">
-                        <span class="input-group-text">× 100%</span>
-                    </div>
-                    <div class="form-text">Ingresá 1.55 para una TNA del 155%</div>
-                </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="settingEnabled" checked>
-                    <label class="form-check-label" for="settingEnabled">Habilitado</label>
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="saveSetting()">Guardar</button>
-            </div>
+<div class="modal fade" id="modalAddSetting" tabindex="-1" aria-labelledby="modalSettingTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="modalSettingTitle">Agregar cuenta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <input type="hidden" id="settingID">
+            <div class="mb-3" id="accountSelectWrapper"><label class="form-label" for="accountID">Cuenta</label><select class="form-select" id="accountID">@foreach (var account in Model.AvailableAccounts) { <option value="@account.ID">@account.Name (@account.Currency)</option> }</select></div>
+            <div class="mb-4"><label class="form-label" for="interestRate">Tasa nominal anual</label><div class="input-group"><input type="number" class="form-control" id="interestRate" step="0.01" min="0" max="99" value="1.55"><span class="input-group-text">× 100%</span></div><div class="form-text">Ejemplo: 1,55 equivale a una TNA del 155%.</div></div>
+            <div class="interest-setting-row"><div><label class="form-check-label fw-semibold" for="applyVat">IVA sobre intereses</label><small>Alícuota aplicada al interés acumulado</small></div><div class="d-flex align-items-center gap-2"><div class="input-group input-group-sm interest-rate-input"><input type="number" class="form-control" id="vatRate" step="0.01" min="0" max="100" value="21.00"><span class="input-group-text">%</span></div><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="applyVat" checked></div></div></div>
+            <div class="interest-setting-row"><div><label class="form-check-label fw-semibold" for="applyStampTax">Impuesto de sellos</label><small>Tasa anual sobre saldos negativos diarios</small></div><div class="d-flex align-items-center gap-2"><div class="input-group input-group-sm interest-rate-input"><input type="number" class="form-control" id="stampTaxAnnualRate" step="0.01" min="0" max="100" value="1.20"><span class="input-group-text">%</span></div><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="applyStampTax" checked></div></div></div>
+            <div class="interest-setting-row border-bottom-0"><div><label class="form-check-label fw-semibold" for="settingEnabled">Cálculo automático</label><small>Genera el seguimiento diario de la cuenta</small></div><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="settingEnabled" checked></div></div>
         </div>
-    </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="saveSetting()">Guardar</button></div>
+    </div></div>
 </div>
 
 @Html.AntiForgeryToken()
-
-@section Scripts {
-<script src="~/js/AccountInterest.js" asp-append-version="true"></script>
-}
+@section Scripts { <script src="~/js/AccountInterest.js" asp-append-version="true"></script> }

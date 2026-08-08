@@ -122,6 +122,12 @@
 
         @* Panel de días — se muestra al activar el toggle *@
         <div id="panel-distribucion" class="tmp-distribution-panel" style="display:none;">
+            <div class="tmp-day-presets" role="group" aria-label="Calendario de distribución">
+                <button type="button" class="tmp-day-preset active" data-mode="all"><i class="fa-solid fa-calendar-days"></i><span>Todos</span></button>
+                <button type="button" class="tmp-day-preset" data-mode="weekdays"><i class="fa-solid fa-briefcase"></i><span>Lun–vie</span></button>
+                <button type="button" class="tmp-day-preset" data-mode="business"><i class="fa-solid fa-building-circle-check"></i><span>Días hábiles</span></button>
+            </div>
+            <div class="tmp-holiday-status" id="distribucion-feriados-status" aria-live="polite"></div>
             <div class="tmp-days-grid" id="distribucion-dias-grid"></div>
             <div class="tmp-days-grid-hint mt-2">Hacé clic en un día para incluirlo o excluirlo del reparto.</div>
         </div>

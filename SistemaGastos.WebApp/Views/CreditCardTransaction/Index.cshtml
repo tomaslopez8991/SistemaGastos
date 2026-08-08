@@ -3,6 +3,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+@model SistemaGastos.Application.ViewModels.CreditCardTransactionIndexVM
 @Html.AntiForgeryToken()
 
 <div id="credit-card-container"
@@ -87,6 +88,18 @@
                 <span class="cc-legend-val" id="hero-total-var">—</span>
                 <span class="cc-legend-pct" id="pct-var"></span>
             </div>
+        </div>
+    </div>
+
+    <div class="cc-filter-bar" aria-label="Filtros de consumos">
+        <div class="cc-filter-heading"><span><i class="fa-solid fa-filter me-2"></i>Filtros</span><button type="button" class="btn btn-link btn-sm" id="ccClearFilters">Limpiar</button></div>
+        <div class="cc-filter-grid">
+            <div><label for="ccFilterCategory">Categoría</label><select class="form-select form-select-sm" id="ccFilterCategory"><option value="">Todas</option>@foreach (var category in Model.Categories) { <option value="@category.ID">@category.Name</option> }</select></div>
+            <div><label for="ccFilterPerson">Persona</label><select class="form-select form-select-sm" id="ccFilterPerson"><option value="">Todas</option>@foreach (var person in Model.Persons) { <option value="@person.ID">@person.Name</option> }</select></div>
+            <div><label for="ccFilterInstallments">Cuotas</label><select class="form-select form-select-sm" id="ccFilterInstallments"><option value="">Todas</option><option value="1">Sin cuotas</option>@for (var i = 2; i <= 24; i++) { <option value="@i">@i cuotas</option> }</select></div>
+            <div><label for="ccFilterType">Tipo</label><select class="form-select form-select-sm" id="ccFilterType"><option value="">Todos</option><option value="true">Fijo</option><option value="false">Variable</option></select></div>
+            <div><label for="ccFilterDateFrom">Desde</label><input type="date" class="form-control form-control-sm" id="ccFilterDateFrom"></div>
+            <div><label for="ccFilterDateTo">Hasta</label><input type="date" class="form-control form-control-sm" id="ccFilterDateTo"></div>
         </div>
     </div>
 

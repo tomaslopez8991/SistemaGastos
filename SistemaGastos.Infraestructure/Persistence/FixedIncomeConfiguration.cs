@@ -20,6 +20,9 @@ public class FixedIncomeConfiguration : IEntityTypeConfiguration<FixedIncome>
         builder.Property(f => f.Active).IsRequired();
         builder.Property(f => f.StartDate).IsRequired(false);
         builder.Property(f => f.LastGeneratedDate).IsRequired(false);
+        builder.Property(f => f.ReceivedAmount).HasPrecision(18, 2);
+        builder.Property(f => f.ReceivedDays).HasMaxLength(100).IsRequired(false);
+        builder.Property(f => f.ReceiptProgressYearMonth).HasMaxLength(7).IsRequired(false);
         builder.Property(f => f.CollectionYearMonth).HasMaxLength(7).IsRequired(false);
 
         builder.HasOne(f => f.Category).WithMany().HasForeignKey(f => f.CategoryID).OnDelete(DeleteBehavior.Restrict);

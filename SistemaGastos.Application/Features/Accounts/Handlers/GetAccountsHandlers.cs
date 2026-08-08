@@ -18,11 +18,21 @@ public class GetAccountsHandlers(IApplicationDbContext context, IMapper mapper, 
     {
         if (user.UserId == null) return [];
 
-        return await context.Account
+        var accounts = await context.Account
             .Where(a => a.Login.ID == user.UserId) // Filtro de seguridad
             .OrderBy(a => a.Name)
             .ProjectTo<AccountDto>(mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
+
+        var cardTotals = await context.CreditCardTransaction
+            .Where(t => t.Account.UserID == user.UserId)
+            .GroupBy(t => t.AccountID)
+            .Select(g => new { AccountID = g.Key, Total = g.Sum(t => t.Amount) })
+            .ToDictionaryAsync(x => x.AccountID, x => x.Total, cancellationToken);
+
+        return accounts.Select(a => a.Type == Domain.Enums.AccountType.TarjetaCredito
+            ? a with { Balance = -(cardTotals.GetValueOrDefault(a.ID)) }
+            : a).ToList();
     }
 
     // 2. Obtener UNA cuenta por ID (para editar)
@@ -43,11 +53,23 @@ public class GetAccountsHandlers(IApplicationDbContext context, IMapper mapper, 
         {
             if (user.UserId == null) return [];
 
-            return await context.Account
+            var accountTotals = await context.Account
                 .Where(a => a.Login.ID == user.UserId)
-                .GroupBy(a => a.Currency)
-                .Select(g => new AccountTotalDto(g.Key, g.Sum(x => x.Balance)))
                 .ToListAsync(cancellationToken);
+
+            var cardTotals = await context.CreditCardTransaction
+                .Where(t => t.Account.UserID == user.UserId)
+                .GroupBy(t => t.AccountID)
+                .Select(g => new { AccountID = g.Key, Total = g.Sum(t => t.Amount) })
+                .ToDictionaryAsync(x => x.AccountID, x => x.Total, cancellationToken);
+
+            return accountTotals
+                .GroupBy(a => a.Currency)
+                .Select(g => new AccountTotalDto(g.Key, g.Sum(a =>
+                    a.Type == Domain.Enums.AccountType.TarjetaCredito
+                        ? -cardTotals.GetValueOrDefault(a.ID)
+                        : a.Balance)))
+                .ToList();
         }
     }
 }

@@ -2,21 +2,61 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaGastos.Application.DTOs;
+using SistemaGastos.Application.Features.FixedExpense.Commands;
 using SistemaGastos.Application.Features.TmpTransactions.Commands;
 using SistemaGastos.Application.Features.TmpTransactions.Queries;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Application.Wrappers;
+using SistemaGastos.Domain.Enums;
+using System.Collections.Concurrent;
+using System.Net.Http.Json;
 
 namespace SistemaGastos.Controllers;
 
 [Authorize]
-public class TmpTransactionController(IMediator mediator, ICurrentUserService currentUserService) : Controller
+public class TmpTransactionController(IMediator mediator, ICurrentUserService currentUserService, IHttpClientFactory httpClientFactory) : Controller
 {
+    private static readonly ConcurrentDictionary<int, IReadOnlyList<HolidayDto>> HolidayCache = new();
+
+    [HttpGet]
+    public async Task<IActionResult> GetHolidays(int year)
+    {
+        if (year < 2016 || year > DateTime.Today.Year + 2)
+            return Json(Array.Empty<HolidayDto>());
+
+        if (HolidayCache.TryGetValue(year, out var cached))
+            return Json(cached);
+
+        try
+        {
+            var client = httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(4);
+            var holidays = await client.GetFromJsonAsync<List<ArgentinaHolidayDto>>(
+                $"https://api.argentinadatos.com/v1/feriados/{year}") ?? [];
+            var acceptedTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "inamovible", "trasladable", "puente" };
+            var result = holidays
+                .Where(h => acceptedTypes.Contains(h.Tipo) && DateTime.TryParse(h.Fecha, out _))
+                .Select(h => new HolidayDto(DateTime.Parse(h.Fecha).ToString("yyyy-MM-dd"), h.Nombre))
+                .ToList();
+            HolidayCache[year] = result;
+            return Json(result);
+        }
+        catch
+        {
+            return Json(Array.Empty<HolidayDto>());
+        }
+    }
+
+    private sealed record ArgentinaHolidayDto(string Fecha, string Tipo, string Nombre);
+    private sealed record HolidayDto(string Date, string Name);
     // GET: /TmpTransaction
     [HttpGet]
     public async Task<IActionResult> Index()
     {
         var userID = currentUserService.UserId ?? 0;
+        var now = DateTime.Today;
+        await mediator.Send(new SyncCreditCardFixedExpensesCommand(userID, now.Year, now.Month));
         var stats = await mediator.Send(new GetDashboardStatsQuery(userID));
 
         ViewBag.TotalARSValue = stats.TotalARSValue;
@@ -139,33 +179,6 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
         return Ok(Response<List<MonthlyBalanceDto>>.Ok(balances));
     }
 
-    // GET: /TmpTransaction/GetDebtSnapshot
-    [HttpGet]
-    [Route("GetDebtSnapshot")]
-    public async Task<ActionResult<Response<DebtSnapshotDto>>> GetDebtSnapshot()
-    {
-        var userID = currentUserService.UserId ?? 0;
-        var snapshot = await mediator.Send(new GetDebtSnapshotQuery(userID));
-        return Ok(Response<DebtSnapshotDto>.Ok(snapshot));
-    }
-
-    // GET: /TmpTransaction/GetDebtAdvice
-    [HttpGet]
-    [Route("GetDebtAdvice")]
-    public async Task<ActionResult<Response<DebtAdviceDto>>> GetDebtAdvice(string? question = null)
-    {
-        var userID = currentUserService.UserId ?? 0;
-        try
-        {
-            var advice = await mediator.Send(new GetDebtFlatteningAdviceQuery(userID, question));
-            return Ok(Response<DebtAdviceDto>.Ok(advice));
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Ok(Response<DebtAdviceDto>.Fail(ex.Message));
-        }
-    }
-
     // GET: /TmpTransaction/GetEarliestPendingMonth
     [HttpGet]
     [Route("GetEarliestPendingMonth")]
@@ -212,6 +225,18 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
             : Response<bool>.Fail("No se pudo actualizar el monto"));
     }
 
+    [HttpPost]
+    [Route("SetCreditCardScenario")]
+    public async Task<ActionResult<Response<bool>>> SetCreditCardScenario([FromBody] SetCreditCardScenarioRequest request)
+    {
+        var userID = currentUserService.UserId ?? 0;
+        var success = await mediator.Send(new SetCreditCardProjectionScenarioCommand(
+            userID, request.AccountID, request.Year, request.Month, request.Mode, request.CustomAmount));
+        return Ok(success
+            ? Response<bool>.Ok(true, "Escenario de tarjeta actualizado")
+            : Response<bool>.Fail("No se pudo actualizar el escenario"));
+    }
+
 }
 
 // DTO para recibir el request del frontend
@@ -241,4 +266,13 @@ public class SetDayOverrideRequest
     public int TmpTransactionID { get; set; }
     public int Day { get; set; }
     public decimal? Amount { get; set; }
+}
+
+public class SetCreditCardScenarioRequest
+{
+    public int AccountID { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public TcProjectionMode Mode { get; set; }
+    public decimal? CustomAmount { get; set; }
 }

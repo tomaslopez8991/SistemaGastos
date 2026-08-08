@@ -33,9 +33,9 @@ public class GetAllFixedIncomesHandler(IApplicationDbContext context, IDolarServ
             .Select(t => new { IncomeID = t.FixedIncomeID!.Value, t.Amount, Currency = "ARS" })
             .ToListAsync(cancellationToken);
 
-        var receivedSet = receivedTransactions.Select(t => t.IncomeID).ToHashSet();
         var receivedAmounts = receivedTransactions
-            .ToDictionary(t => t.IncomeID, t => (Amount: t.Amount, Currency: t.Currency));
+            .GroupBy(t => t.IncomeID)
+            .ToDictionary(g => g.Key, g => (Amount: g.Sum(x => x.Amount), Currency: "ARS"));
 
         var monthName = new DateTimeFormatInfo { MonthNames = CultureInfo.GetCultureInfo("es-AR").DateTimeFormat.MonthNames }
             .GetMonthName(request.Month);
@@ -51,11 +51,12 @@ public class GetAllFixedIncomesHandler(IApplicationDbContext context, IDolarServ
             bool isPaused = !string.IsNullOrEmpty(f.PausedMonths) &&
                 f.PausedMonths.Split(',').Select(s => s.Trim()).Contains(currentMonthKey);
 
-            bool isReceived = receivedSet.Contains(f.ID);
+            bool isReceived = receivedAmounts.TryGetValue(f.ID, out var receivedTotal)
+                && (!f.DistributionEndDay.HasValue || receivedTotal.Amount >= amountArs);
             decimal? receivedAmount = null;
             string? receivedAmountFmt = null;
 
-            if (isReceived && receivedAmounts.TryGetValue(f.ID, out var received))
+            if (receivedAmounts.TryGetValue(f.ID, out var received))
             {
                 receivedAmount = received.Amount;
                 decimal receivedArs = received.Currency == "USD" ? received.Amount * dolarRate : received.Amount;
@@ -89,7 +90,9 @@ public class GetAllFixedIncomesHandler(IApplicationDbContext context, IDolarServ
                 IsPausedThisMonth = isPaused,
                 PausedMonths = f.PausedMonths,
                 PersonID = f.PersonID,
-                CollectionYearMonth = f.CollectionYearMonth
+                CollectionYearMonth = f.CollectionYearMonth,
+                DistributionEndDay = f.DistributionEndDay,
+                ExcludedDays = f.ExcludedDays
             };
         }).ToList();
     }

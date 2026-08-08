@@ -6,6 +6,10 @@ public record UpsertAccountInterestSettingCommand(
     int? SettingID,
     int AccountID,
     decimal InterestRate,
+    bool ApplyVat,
+    decimal VatRate,
+    bool ApplyStampTax,
+    decimal StampTaxAnnualRate,
     bool Enabled,
     int UserID
 ) : IRequest<bool>;

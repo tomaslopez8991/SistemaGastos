@@ -4039,6 +4039,13 @@ input.gridjs-input {
     color: var(--bs-secondary-color);
 }
 
+.tmp-day-presets { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.tmp-day-preset { min-height:38px; display:flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--bs-border-color); border-radius:6px; background:var(--bs-body-bg); color:var(--bs-secondary-color); font-size:12px; font-weight:600; }
+.tmp-day-preset:hover { border-color:var(--bs-primary); color:var(--bs-primary); }
+.tmp-day-preset.active { border-color:var(--bs-primary); background:rgba(var(--bs-primary-rgb),.12); color:var(--bs-primary); }
+.tmp-holiday-status { min-height:18px; margin-top:6px; color:var(--bs-secondary-color); font-size:11px; }
+.day-chip.holiday { border-style:dashed; }
+
 .day-chip {
     width: 34px;
     height: 34px;
@@ -4890,3 +4897,53 @@ input.gridjs-input {
 /* ============================================
    FIN DEL STYLESHEET
    ============================================ */
+
+/* Account interest workspace */
+.interest-page { --interest-surface: var(--bs-tertiary-bg); --interest-border: var(--bs-border-color); }
+.interest-toolbar, .interest-account-header { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.interest-toolbar { margin-bottom:1.25rem; }
+.interest-layout { display:grid; grid-template-columns:minmax(220px,260px) minmax(0,1fr); min-height:570px; border:1px solid var(--interest-border); background:var(--bs-body-bg); }
+.interest-account-nav { border-right:1px solid var(--interest-border); background:var(--interest-surface); padding:.75rem; }
+.interest-account-nav-title { display:flex; justify-content:space-between; padding:.4rem .5rem .75rem; color:var(--bs-secondary-color); font-size:.75rem; font-weight:700; text-transform:uppercase; }
+.interest-account-item { width:100%; display:grid; grid-template-columns:34px minmax(0,1fr) 8px; align-items:center; gap:.65rem; padding:.7rem .6rem; border:1px solid transparent; border-radius:6px; background:transparent; color:var(--bs-body-color); text-align:left; }
+.interest-account-item:hover, .interest-account-item.active { background:var(--bs-body-bg); border-color:var(--interest-border); }
+.interest-account-item.active { box-shadow:inset 3px 0 0 var(--bs-primary); }
+.interest-account-icon { display:grid; place-items:center; width:34px; height:34px; border-radius:6px; background:rgba(var(--bs-primary-rgb),.12); color:var(--bs-primary); }
+.interest-account-copy { min-width:0; display:flex; flex-direction:column; }
+.interest-account-copy strong, .interest-account-copy small { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.interest-account-copy small { color:var(--bs-secondary-color); }
+.interest-status-dot { width:8px; height:8px; border-radius:50%; background:var(--bs-secondary); }
+.interest-status-dot.is-active { background:var(--bs-success); }
+.interest-main { min-width:0; padding:1.25rem; }
+.interest-account-header { margin-bottom:1.25rem; }
+.interest-summary { display:grid; grid-template-columns:repeat(5,minmax(140px,1fr)); border-block:1px solid var(--interest-border); overflow-x:auto; }
+.interest-summary-item { min-width:140px; padding:1rem; border-right:1px solid var(--interest-border); }
+.interest-summary-item:last-child { border-right:0; }
+.interest-summary-item span { display:block; color:var(--bs-secondary-color); font-size:.75rem; margin-bottom:.35rem; }
+.interest-summary-item strong { display:block; font-size:1rem; white-space:nowrap; }
+.interest-summary-item.is-total { background:rgba(var(--bs-danger-rgb),.08); }
+.interest-summary-item.is-total strong { color:var(--bs-danger); }
+.interest-rate-strip { display:flex; flex-wrap:wrap; gap:1rem 1.5rem; padding:.8rem 0; color:var(--bs-secondary-color); font-size:.8rem; }
+.interest-rate-strip i { width:16px; color:var(--bs-primary); }
+.interest-tabs { margin-top:.5rem; }
+.interest-tabs .nav-link { color:var(--bs-secondary-color); }
+.interest-tabs .nav-link span { margin-left:.3rem; font-size:.7rem; }
+.interest-table-wrap { max-height:390px; }
+.interest-table-wrap thead { position:sticky; top:0; z-index:1; }
+.interest-table-wrap th { background:var(--interest-surface); color:var(--bs-secondary-color); font-size:.75rem; font-weight:600; }
+.interest-table-wrap td { font-size:.85rem; }
+.interest-table-empty { padding:3rem 1rem; text-align:center; color:var(--bs-secondary-color); }
+.interest-setting-row { min-height:66px; display:flex; align-items:center; justify-content:space-between; gap:1rem; border-bottom:1px solid var(--interest-border); }
+.interest-setting-row small { display:block; color:var(--bs-secondary-color); }
+.interest-rate-input { width:110px; }
+.interest-empty { padding:5rem 1rem; text-align:center; border:1px dashed var(--interest-border); }
+.interest-empty i { color:var(--bs-primary); font-size:2rem; margin-bottom:1rem; }
+.interest-empty p { color:var(--bs-secondary-color); margin:0; }
+.cc-filter-bar { margin-bottom:1rem; padding:.85rem 1rem; border:1px solid var(--bs-border-color); background:var(--bs-body-bg); }
+.cc-filter-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:.65rem; font-size:.8rem; font-weight:700; color:var(--bs-secondary-color); }
+.cc-filter-grid { display:grid; grid-template-columns:repeat(6,minmax(120px,1fr)); gap:.75rem; }
+.cc-filter-grid label { display:block; margin-bottom:.3rem; color:var(--bs-secondary-color); font-size:.72rem; font-weight:600; }
+@media (max-width:1199.98px) { .cc-filter-grid{grid-template-columns:repeat(3,minmax(140px,1fr))} }
+@media (max-width:575.98px) { .cc-filter-grid{grid-template-columns:1fr 1fr} }
+@media (max-width:991.98px) { .interest-layout{display:block;min-height:0}.interest-main{padding:1rem}.interest-summary{grid-template-columns:repeat(5,minmax(150px,1fr))} }
+@media (max-width:575.98px) { .interest-toolbar,.interest-account-header{align-items:flex-start}.interest-main{padding:.75rem}.interest-account-header .badge{display:none}.interest-setting-row{align-items:flex-start;padding-block:.75rem} }

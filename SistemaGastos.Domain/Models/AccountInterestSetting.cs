@@ -13,6 +13,11 @@ public class AccountInterestSetting
     /// <summary>Tasa anual aplicada en la fórmula (saldo * Rate * días) / 365.</summary>
     public decimal InterestRate { get; set; } = 1.55m;
 
+    public bool ApplyVat { get; set; } = true;
+    public decimal VatRate { get; set; } = 0.21m;
+    public bool ApplyStampTax { get; set; } = true;
+    public decimal StampTaxAnnualRate { get; set; } = 0.012m;
+
     public bool Enabled { get; set; } = true;
 
     public DateTime CreatedAt { get; set; }
