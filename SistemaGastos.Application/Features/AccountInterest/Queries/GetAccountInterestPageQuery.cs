@@ -10,14 +10,23 @@ public record AccountInterestSettingDto(
     string AccountName,
     string AccountCurrency,
     decimal InterestRate,
+    bool ApplyVat,
+    decimal VatRate,
+    bool ApplyStampTax,
+    decimal StampTaxAnnualRate,
     bool Enabled,
     DateTime CreatedAt,
+    decimal CurrentBalance,
     decimal CumulativeInterest,
+    decimal AccruedVat,
+    decimal AccruedStampTax,
+    decimal EstimatedTotal,
     DateTime? LastLogDate
 );
 
 public record AccountInterestDailyLogDto(
     int ID,
+    int AccountID,
     DateTime Date,
     decimal Balance,
     int DayCounter,
@@ -27,6 +36,7 @@ public record AccountInterestDailyLogDto(
 
 public record AccountInterestMonthlyChargeDto(
     int ID,
+    int AccountID,
     int Year,
     int Month,
     decimal TotalInterest,

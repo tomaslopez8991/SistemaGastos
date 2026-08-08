@@ -17,53 +17,61 @@ public class GetAccountInterestPageHandler(IApplicationDbContext context)
             .OrderBy(s => s.Account.Name)
             .ToListAsync(cancellationToken);
 
-        var settingIds = settings.Select(s => s.AccountID).ToList();
-
-        var lastLogs = await context.AccountInterestDailyLog
-            .Where(l => l.UserID == request.UserID && settingIds.Contains(l.AccountID))
-            .GroupBy(l => l.AccountID)
-            .Select(g => new { AccountID = g.Key, Last = g.OrderByDescending(l => l.Date).First() })
+        var accountIds = settings.Select(s => s.AccountID).ToList();
+        var recentCutoff = DateTime.Today.AddDays(-90);
+        var recentLogs = await context.AccountInterestDailyLog
+            .Where(l => l.UserID == request.UserID && accountIds.Contains(l.AccountID) && l.Date >= recentCutoff)
+            .OrderByDescending(l => l.Date)
+            .Select(l => new AccountInterestDailyLogDto(
+                l.ID, l.AccountID, l.Date, l.Balance, l.DayCounter, l.DailyInterest, l.CumulativeInterest))
             .ToListAsync(cancellationToken);
 
-        var lastLogMap = lastLogs.ToDictionary(x => x.AccountID, x => x.Last);
-
+        var logsByAccount = recentLogs.ToLookup(l => l.AccountID);
         var settingDtos = settings.Select(s =>
         {
-            lastLogMap.TryGetValue(s.AccountID, out var last);
+            var accountLogs = logsByAccount[s.AccountID].ToList();
+            var last = accountLogs.FirstOrDefault();
+            var currentMonthLogs = accountLogs
+                .Where(l => l.Date.Year == DateTime.Today.Year && l.Date.Month == DateTime.Today.Month)
+                .ToList();
+            var cumulativeInterest = currentMonthLogs.FirstOrDefault()?.CumulativeInterest ?? 0m;
+            var accruedVat = s.ApplyVat ? decimal.Round(cumulativeInterest * s.VatRate, 2) : 0m;
+            var accruedStampTax = s.ApplyStampTax
+                ? decimal.Round(currentMonthLogs.Sum(l => Math.Abs(Math.Min(l.Balance, 0m))) * s.StampTaxAnnualRate / 365m, 2)
+                : 0m;
+
             return new AccountInterestSettingDto(
                 s.ID,
                 s.AccountID,
                 s.Account.Name,
                 s.Account.Currency,
                 s.InterestRate,
+                s.ApplyVat,
+                s.VatRate,
+                s.ApplyStampTax,
+                s.StampTaxAnnualRate,
                 s.Enabled,
                 s.CreatedAt,
-                last?.CumulativeInterest ?? 0m,
-                last?.Date
-            );
+                s.Account.Balance,
+                cumulativeInterest,
+                accruedVat,
+                accruedStampTax,
+                cumulativeInterest + accruedVat + accruedStampTax,
+                last?.Date);
         }).ToList();
 
-        // Últimos 30 días de log del primer setting activo
-        var primaryAccountId = settings.FirstOrDefault(s => s.Enabled)?.AccountID;
-        var recentLogs = primaryAccountId.HasValue
-            ? await context.AccountInterestDailyLog
-                .Where(l => l.AccountID == primaryAccountId.Value)
-                .OrderByDescending(l => l.Date)
-                .Take(30)
-                .Select(l => new AccountInterestDailyLogDto(l.ID, l.Date, l.Balance, l.DayCounter, l.DailyInterest, l.CumulativeInterest))
-                .ToListAsync(cancellationToken)
-            : new List<AccountInterestDailyLogDto>();
-
         var monthlyCharges = await context.AccountInterestMonthlyCharge
-            .Where(c => c.UserID == request.UserID)
+            .Where(c => c.UserID == request.UserID && accountIds.Contains(c.AccountID))
             .OrderByDescending(c => c.Year).ThenByDescending(c => c.Month)
-            .Take(24)
-            .Select(c => new AccountInterestMonthlyChargeDto(c.ID, c.Year, c.Month, c.TotalInterest, c.TransactionID))
+            .Take(60)
+            .Select(c => new AccountInterestMonthlyChargeDto(
+                c.ID, c.AccountID, c.Year, c.Month, c.TotalInterest, c.TransactionID))
             .ToListAsync(cancellationToken);
 
         var usedAccountIds = settings.Select(s => s.AccountID).ToHashSet();
         var availableAccounts = await context.Account
             .Where(a => a.UserID == request.UserID && a.Type != AccountType.TarjetaCredito && !usedAccountIds.Contains(a.ID))
+            .OrderBy(a => a.Name)
             .Select(a => new { a.ID, a.Name, a.Currency })
             .ToListAsync(cancellationToken);
 
@@ -71,7 +79,6 @@ public class GetAccountInterestPageHandler(IApplicationDbContext context)
             settingDtos,
             recentLogs,
             monthlyCharges,
-            availableAccounts.Select(a => (a.ID, a.Name, a.Currency)).ToList()
-        );
+            availableAccounts.Select(a => (a.ID, a.Name, a.Currency)).ToList());
     }
 }

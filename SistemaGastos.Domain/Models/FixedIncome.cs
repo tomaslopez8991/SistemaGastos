@@ -19,6 +19,12 @@ public class FixedIncome
     /// <summary>Mes a partir del cual se incluye en proyecciones. Null = siempre activo.</summary>
     public DateTime? StartDate { get; set; }
     public DateTime? LastGeneratedDate { get; set; }
+    /// <summary>Monto acumulado cobrado cuando el ingreso se distribuye en varios dÃ­as.</summary>
+    public decimal ReceivedAmount { get; set; }
+    /// <summary>DÃ­as ya cobrados de la distribuciÃ³n mensual.</summary>
+    public string? ReceivedDays { get; set; }
+    /// <summary>Mes al que corresponde el progreso distribuido (YYYY-MM).</summary>
+    public string? ReceiptProgressYearMonth { get; set; }
 
     /// <summary>Persona asociada cuando el ingreso fue generado desde el cierre de cuentas.</summary>
     public int? PersonID { get; set; }

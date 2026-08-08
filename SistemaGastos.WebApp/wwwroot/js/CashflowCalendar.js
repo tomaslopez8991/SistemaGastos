@@ -4,6 +4,7 @@
 
     const urlDailyBalances  = $container.data('url-daily-balances');
     const urlSetDayOverride = $container.data('url-set-day-override');
+    const urlSetTcScenario  = $container.data('url-set-tc-scenario');
     const urlFixedPay              = $container.data('url-fixed-pay');
     const urlIncomeReceive         = $container.data('url-income-receive');
     const urlConfirmDay            = $container.data('url-confirm-day');
@@ -77,7 +78,19 @@
         const rows = day.items.map(function (item) {
             const cls  = item.isIncome ? 'text-success' : 'text-danger';
             const sign = item.isIncome ? '+' : '-';
-            const typeLabel = sourceLabels[item.sourceType] || item.sourceType;
+            const typeLabel = item.isAutomaticPersonCollection
+                ? sourceLabels.Personas
+                : (sourceLabels[item.sourceType] || item.sourceType);
+            const scenarioMode = item.tcProjectionMode || 'Total';
+            const scenarioControls = item.tcAccountId ? `
+                <div class="btn-group btn-group-sm mt-2 cf-tc-scenario" role="group" aria-label="Escenario de pago">
+                    <button type="button" class="btn btn-outline-secondary cf-tc-scenario-btn ${scenarioMode === 'Minimo' ? 'active' : ''}"
+                            data-tc-id="${item.tcAccountId}" data-mode="1">Mínimo</button>
+                    <button type="button" class="btn btn-outline-secondary cf-tc-scenario-btn ${scenarioMode === 'Personalizado' ? 'active' : ''}"
+                            data-tc-id="${item.tcAccountId}" data-mode="2" data-current="${item.tcCustomAmount || ''}">Personalizado</button>
+                    <button type="button" class="btn btn-outline-secondary cf-tc-scenario-btn ${scenarioMode === 'Total' ? 'active' : ''}"
+                            data-tc-id="${item.tcAccountId}" data-mode="0">Total</button>
+                </div>` : '';
 
             let actions = '';
             if (item.sourceType === 'Planificado' && item.sourceId) {
@@ -116,6 +129,7 @@
                        </button>`
                     : '';
                 actions = `
+                ${scenarioControls}
                 <div class="cf-panel-item-actions d-flex gap-1 mt-2 flex-wrap">
                     <button class="btn btn-xs btn-outline-danger cf-panel-tc-pay"
                             data-tc-id="${item.tcAccountId}" data-fixed-expense-id="${item.sourceId}"
@@ -149,6 +163,23 @@
                     </button>
                 </div>`;
             } else if (item.sourceType === 'TarjetaCredito' && item.tcAccountId) {
+                const isCompletionPayment = item.description.startsWith('Completar TC');
+                if (isCompletionPayment) {
+                    actions = `
+                    <div class="cf-panel-item-actions d-flex gap-1 mt-2 flex-wrap">
+                        <button class="btn btn-xs btn-outline-success cf-panel-tc-pay"
+                                data-tc-id="${item.tcAccountId}"
+                                data-amount="${item.amount}"
+                                data-label="Pagar cuota sugerida">
+                            <i class="fas fa-check me-1"></i>Pagar
+                        </button>
+                        <button class="btn btn-xs btn-outline-secondary cf-panel-tc-pay-custom"
+                                data-tc-id="${item.tcAccountId}"
+                                data-suggested="${item.amount}">
+                            <i class="fas fa-pen me-1"></i>Pagar otro monto
+                        </button>
+                    </div>`;
+                } else {
                 const minBtn = item.tcMinimumAmount > 0
                     ? `<button class="btn btn-xs btn-outline-warning cf-panel-tc-pay"
                                data-tc-id="${item.tcAccountId}"
@@ -158,6 +189,7 @@
                        </button>`
                     : '';
                 actions = `
+                ${scenarioControls}
                 <div class="cf-panel-item-actions d-flex gap-1 mt-2 flex-wrap">
                     ${minBtn}
                     <button class="btn btn-xs btn-outline-danger cf-panel-tc-pay-custom"
@@ -166,6 +198,7 @@
                         <i class="fas fa-credit-card me-1"></i>Pagar otro monto
                     </button>
                 </div>`;
+                }
             } else if (item.sourceType === 'Personas' && item.sourceId) {
                 const personName = item.description.replace(/^Cobro:\s*/, '');
                 actions = `
@@ -344,6 +377,7 @@
         const rawAmt = $(this).data('amount');
         const amount = rawAmt !== '' && rawAmt != null ? parseFloat(rawAmt) : null;
         const isPersonCollection = String($(this).data('person-collection')).toLowerCase() === 'true';
+        const receiptDay = currentPanelDate?.day || null;
         closePanel();
 
         let accountSelector = '';
@@ -388,7 +422,7 @@
                 url: urlIncomeReceive,
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ id, amount, accountID: result.value }),
+                data: JSON.stringify({ id, amount, accountID: result.value, day: receiptDay }),
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                 success: response => {
                     if (response.success) {
@@ -487,6 +521,46 @@
     });
 
     // Pagar mínimo TC (monto pre-fijado)
+    $(document).on('click', '.cf-tc-scenario-btn', async function () {
+        const tcId = parseInt($(this).data('tc-id'));
+        const mode = parseInt($(this).data('mode'));
+        const date = new Date((currentPanelDate?.date || new Date().toISOString().slice(0, 10)) + 'T00:00:00');
+        let customAmount = null;
+
+        if (mode === 2) {
+            const result = await Swal.fire({
+                title: 'Monto personalizado',
+                input: 'number',
+                inputValue: $(this).data('current') || '',
+                inputAttributes: { min: '0.01', step: '0.01' },
+                showCancelButton: true,
+                confirmButtonText: 'Aplicar escenario',
+                cancelButtonText: 'Cancelar',
+                inputValidator: value => (!value || parseFloat(value) <= 0) ? 'Ingresá un monto mayor a cero.' : null
+            });
+            if (!result.isConfirmed) return;
+            customAmount = parseFloat(result.value);
+        }
+
+        $.ajax({
+            url: urlSetTcScenario,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ accountID: tcId, year: date.getFullYear(), month: date.getMonth() + 1, mode, customAmount }),
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            success: response => {
+                if (!response.success) {
+                    Swal.fire('Error', response.message || 'No se pudo actualizar el escenario.', 'error');
+                    return;
+                }
+                closePanel();
+                if (window.reloadCashflowCalendar) window.reloadCashflowCalendar();
+                if (window.reloadCashflowBalances) window.reloadCashflowBalances();
+            },
+            error: xhr => Swal.fire('Error', xhr.responseJSON?.message || 'No se pudo actualizar el escenario.', 'error')
+        });
+    });
+
     $(document).on('click', '.cf-panel-tc-pay', async function () {
         const tcId  = parseInt($(this).data('tc-id'));
         const amount = parseFloat($(this).data('amount'));
@@ -742,6 +816,7 @@
     }
 
     function eventClassFor(item) {
+        if (item.isAutomaticPersonCollection)      return 'cf-evt-personas';
         if (item.sourceType === 'Transaccion')    return item.isIncome ? 'cf-evt-hist-income' : 'cf-evt-hist-expense';
         if (item.sourceType === 'TarjetaCredito') return 'cf-evt-tc';
         if (item.sourceType === 'Personas')       return 'cf-evt-personas';

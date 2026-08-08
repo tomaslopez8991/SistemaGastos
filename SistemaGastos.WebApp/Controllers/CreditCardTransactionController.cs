@@ -71,12 +71,17 @@ public class CreditCardTransactionController(IMediator mediator, ICurrentUserSer
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetDatosTransaccionesTC(int limit = 10, int offset = 0, string keyword = "")
+    public async Task<IActionResult> GetDatosTransaccionesTC(
+        int limit = 10, int offset = 0, string keyword = "", int? categoryID = null,
+        string? categoryName = null, int? personID = null, int? installments = null,
+        bool? fixedType = null, DateTime? dateFrom = null, DateTime? dateTo = null)
     {
         try
         {
-            var result = await mediator.Send(new GetCreditCardTransactionsQuery(keyword, limit, offset));
-            return Json(new { results = result.Results, total = result.Total });
+            var result = await mediator.Send(new GetCreditCardTransactionsQuery(
+                keyword, limit, offset, categoryID, categoryName, personID, installments,
+                fixedType, dateFrom, dateTo));
+            return Json(new { results = result.Results, total = result.Total, totals = result.Totals });
         }
         catch (Exception ex)
         {

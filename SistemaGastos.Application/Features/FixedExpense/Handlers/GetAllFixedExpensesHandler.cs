@@ -36,7 +36,7 @@ public class GetAllFixedExpensesHandler(
             .ToListAsync(cancellationToken);
 
         fixedExpenses = fixedExpenses
-            .Where(f => f.Active || !InterestExpenseHelper.IsAutomaticInterest(f))
+            .Where(f => f.Active || !InterestExpenseHelper.IsAutomaticOverdraftCharge(f))
             .ToList();
 
         var paidViaTransaction = await context.Transaction
@@ -147,7 +147,7 @@ public class GetAllFixedExpensesHandler(
                 PaymentYearMonth = f.PaymentYearMonth,
                 TcMinimumAmount = tcMinimumAmount,
                 TcTotalAmount = tcTotalAmount,
-                IsSystemGenerated = InterestExpenseHelper.IsAutomaticInterest(f)
+                IsSystemGenerated = InterestExpenseHelper.IsLiveAccrual(f, DateTime.Today)
             };
         }).ToList();
     }

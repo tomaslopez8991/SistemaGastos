@@ -7,4 +7,5 @@ public record ProcessFixedIncomeReceiptCommand(
     int FixedIncomeID,
     int UserID,
     decimal? AmountOverride = null,
-    int? AccountID = null) : IRequest<ReceiptResultDto>;
+    int? AccountID = null,
+    int? ReceiptDay = null) : IRequest<ReceiptResultDto>;

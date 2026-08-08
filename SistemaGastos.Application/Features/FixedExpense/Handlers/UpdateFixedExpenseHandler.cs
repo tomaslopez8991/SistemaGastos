@@ -18,8 +18,8 @@ public class UpdateFixedExpenseHandler(IApplicationDbContext context)
         if (expense == null)
             return false;
 
-        if (InterestExpenseHelper.IsAutomaticInterest(expense))
-            throw new InvalidOperationException("Los intereses se calculan automáticamente y no pueden editarse.");
+        if (InterestExpenseHelper.IsLiveAccrual(expense, DateTime.Today))
+            throw new InvalidOperationException("El interés del mes en curso todavía se calcula diariamente y no puede editarse.");
 
         // ✅ AUDITORÍA: Detectar cambio de precio
         if (expense.Amount != request.Amount)

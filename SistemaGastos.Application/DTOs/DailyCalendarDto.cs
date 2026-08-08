@@ -60,4 +60,6 @@ public class DailyBalanceItemDto
     /// <summary>Pago mínimo en ARS (null si no configurado).</summary>
     public decimal? TcMinimumAmount { get; set; }
     public bool IsAutomaticPersonCollection { get; set; }
+    public string? TcProjectionMode { get; set; }
+    public decimal? TcCustomAmount { get; set; }
 }

@@ -51,7 +51,10 @@ public class AccountController(IMediator mediator, ICurrentUserService currentUs
     [HttpDelete]
     public async Task<IActionResult> Delete(int id)
     {
-        await mediator.Send(new DeleteAccountCommand(id));
+        var deleted = await mediator.Send(new DeleteAccountCommand(id));
+        if (!deleted)
+            return NotFound(Response<bool>.Fail("La cuenta no existe o no te pertenece."));
+
         return Ok(new Response<bool>(true, "Cuenta eliminada correctamente."));
     }
 

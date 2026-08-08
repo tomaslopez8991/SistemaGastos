@@ -107,6 +107,31 @@ public class SyncCreditCardFixedExpensesHandler(IApplicationDbContext context, I
             changes += await SyncPersonCollectionsAsync(
                 request.UserID, dueMonth, defaultAccountID, cancellationToken);
 
+        // Account dates may already have been advanced for the next statement.
+        // Reconcile pending snapshots independently from the card's current
+        // closing day, without creating a new collection cycle.
+        var pendingSnapshotMonths = await context.FixedIncome
+            .Where(f => f.UserID == request.UserID
+                     && f.PersonID.HasValue
+                     && f.CollectionYearMonth != null
+                     && !f.LastGeneratedDate.HasValue
+                     && f.ReceivedAmount <= 0)
+            .Select(f => f.CollectionYearMonth!)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        foreach (var pendingMonthKey in pendingSnapshotMonths)
+        {
+            if (!DateTime.TryParseExact(
+                    $"{pendingMonthKey}-01", "yyyy-MM-dd", null,
+                    System.Globalization.DateTimeStyles.None, out var pendingMonth))
+                continue;
+            if (dueMonthsToSync.Any(month => month == pendingMonth))
+                continue;
+
+            changes += await SyncPersonCollectionsAsync(
+                request.UserID, pendingMonth, defaultAccountID, cancellationToken, createMissing: false);
+        }
+
         if (changes > 0)
             await context.SaveChangesAsync(cancellationToken);
 
@@ -125,7 +150,8 @@ public class SyncCreditCardFixedExpensesHandler(IApplicationDbContext context, I
         int userID,
         DateTime dueMonth,
         int defaultAccountID,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool createMissing = true)
     {
         var monthKey = $"{dueMonth.Year}-{dueMonth.Month:D2}";
         var monthEnd = dueMonth.AddMonths(1);
@@ -135,13 +161,11 @@ public class SyncCreditCardFixedExpensesHandler(IApplicationDbContext context, I
         if (persons.Count == 0) return 0;
 
         var personIDs = persons.Select(p => p.ID).ToList();
-        var existingPersonIDs = await context.FixedIncome
+        var existingSnapshots = await context.FixedIncome
             .Where(f => f.UserID == userID
                      && f.PersonID.HasValue
                      && f.CollectionYearMonth == monthKey)
-            .Select(f => f.PersonID!.Value)
             .ToListAsync(cancellationToken);
-        var existingSet = existingPersonIDs.ToHashSet();
 
         var cardTransactions = await context.CreditCardTransaction
             .Include(t => t.Account)
@@ -176,7 +200,7 @@ public class SyncCreditCardFixedExpensesHandler(IApplicationDbContext context, I
         var dolarRate = await dolarService.GetDolarBolsaAsync();
         int created = 0;
 
-        foreach (var person in persons.Where(p => !existingSet.Contains(p.ID)))
+        foreach (var person in persons)
         {
             if (!string.IsNullOrWhiteSpace(person.CollectionFrom)
                 && string.CompareOrdinal(person.CollectionFrom, monthKey) > 0)
@@ -232,7 +256,23 @@ public class SyncCreditCardFixedExpensesHandler(IApplicationDbContext context, I
                 && t.Description.StartsWith("Cobro:", StringComparison.OrdinalIgnoreCase));
             var discount = hasPriorFullCollection ? 0m : person.DiscountAmount ?? 0m;
             var amount = Math.Round(cardBalance + fixedBalance + monthTransactions - discount, 2);
-            if (amount <= 0) continue;
+            var existingSnapshot = existingSnapshots.FirstOrDefault(f => f.PersonID == person.ID);
+            if (existingSnapshot != null)
+            {
+                // Keep partially or fully collected snapshots immutable. Until
+                // collection starts, reconcile them with the same live rules
+                // used by the Accounts tab so stale closing data can be fixed.
+                if (!existingSnapshot.LastGeneratedDate.HasValue
+                    && existingSnapshot.ReceivedAmount <= 0
+                    && existingSnapshot.Amount != amount)
+                {
+                    existingSnapshot.Amount = Math.Max(0m, amount);
+                    created++;
+                }
+                continue;
+            }
+
+            if (!createMissing || amount <= 0) continue;
 
             await context.FixedIncome.AddAsync(new Domain.Models.FixedIncome
             {

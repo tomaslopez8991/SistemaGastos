@@ -13,6 +13,9 @@ public class UpsertAccountInterestSettingHandler(IApplicationDbContext context)
 {
     public async Task<bool> Handle(UpsertAccountInterestSettingCommand request, CancellationToken cancellationToken)
     {
+        if (request.InterestRate < 0 || request.VatRate < 0 || request.StampTaxAnnualRate < 0)
+            throw new ArgumentException("Las alícuotas no pueden ser negativas.");
+
         if (request.SettingID.HasValue)
         {
             var existing = await context.AccountInterestSetting
@@ -20,6 +23,10 @@ public class UpsertAccountInterestSettingHandler(IApplicationDbContext context)
                 ?? throw new InvalidOperationException("Configuración no encontrada");
 
             existing.InterestRate = request.InterestRate;
+            existing.ApplyVat = request.ApplyVat;
+            existing.VatRate = request.VatRate;
+            existing.ApplyStampTax = request.ApplyStampTax;
+            existing.StampTaxAnnualRate = request.StampTaxAnnualRate;
             existing.Enabled = request.Enabled;
         }
         else
@@ -34,6 +41,10 @@ public class UpsertAccountInterestSettingHandler(IApplicationDbContext context)
                 AccountID = request.AccountID,
                 UserID = request.UserID,
                 InterestRate = request.InterestRate,
+                ApplyVat = request.ApplyVat,
+                VatRate = request.VatRate,
+                ApplyStampTax = request.ApplyStampTax,
+                StampTaxAnnualRate = request.StampTaxAnnualRate,
                 Enabled = request.Enabled,
                 CreatedAt = DateTime.UtcNow
             });

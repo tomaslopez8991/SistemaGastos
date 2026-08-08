@@ -61,18 +61,23 @@ public static class PersonCreditCardBalanceHelper
         if (transaction.Account == null) return false;
 
         var firstDueMonth = GetFirstDueMonth(transaction);
-        var monthOffset = MonthDiff(firstDueMonth, targetMonth);
-        if (monthOffset < 0) return false;
+        var normalizedTargetMonth = new DateTime(targetMonth.Year, targetMonth.Month, 1);
+        if (normalizedTargetMonth < firstDueMonth) return false;
 
         if (transaction.Fixed && (transaction.Installments ?? 1) <= 1)
             return true;
 
         var installments = transaction.Installments ?? 1;
         if (installments <= 1)
-            return monthOffset == 0;
+            return normalizedTargetMonth == firstDueMonth;
 
-        var firstInstallment = transaction.ActualInstallment ?? 1;
-        return firstInstallment + monthOffset <= installments;
+        // ActualInstallment represents the installment currently shown by the
+        // card module, not the installment that existed on the purchase date.
+        var currentMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var installmentInTargetMonth = (transaction.ActualInstallment ?? 1)
+            + MonthDiff(currentMonth, normalizedTargetMonth);
+
+        return installmentInTargetMonth >= 1 && installmentInTargetMonth <= installments;
     }
 
     private static DateTime GetFirstDueMonth(CreditCardTransaction transaction)

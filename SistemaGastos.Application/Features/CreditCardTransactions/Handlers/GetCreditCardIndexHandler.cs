@@ -22,6 +22,12 @@ public class GetCreditCardIndexHandler(IApplicationDbContext context)
             .OrderBy(c => c.Name)
             .ToListAsync(cancellationToken);
 
-        return new CreditCardTransactionIndexVM { Accounts = accounts, Categories = categories };
+        var persons = await context.Person
+            .AsNoTracking()
+            .Where(p => p.UserID == request.UserId && p.Active)
+            .OrderBy(p => p.Name)
+            .ToListAsync(cancellationToken);
+
+        return new CreditCardTransactionIndexVM { Accounts = accounts, Categories = categories, Persons = persons };
     }
 }

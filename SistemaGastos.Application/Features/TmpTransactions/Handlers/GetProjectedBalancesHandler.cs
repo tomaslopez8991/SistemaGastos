@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos.Application.DTOs;
 using SistemaGastos.Application.Features.TmpTransactions.Queries;
+using SistemaGastos.Application.Helpers;
 using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Enums;
 using System.Globalization;
@@ -76,25 +77,9 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
         decimal saldoInicialTotal = saldoLiquidezARS + (saldoLiquidezUSD * cotizacionDolar);
 
         // ====================================================================
-        // 2. DEUDA DE TARJETAS (resumen próximo a pagar)
-        // ====================================================================
-        var deudaTarjetasArs = accounts
-            .Where(a => a.Type == AccountType.TarjetaCredito && a.Currency == "ARS")
-            .Sum(a => a.Balance);
-
-        var deudaTarjetasUsd = accounts
-            .Where(a => a.Type == AccountType.TarjetaCredito && a.Currency == "USD")
-            .Sum(a => a.Balance);
-
-        decimal deudaResumenProximo = Math.Abs(deudaTarjetasArs) + (Math.Abs(deudaTarjetasUsd) * cotizacionDolar);
-
-        // ====================================================================
         // 6. CALCULAR BALANCES MENSUALES (12 MESES)
         // ====================================================================
         var startDate = new DateTime(fechaActual.Year, fechaActual.Month, 1);
-        var mesProximo = startDate.AddMonths(1);
-        var mesDespuesDelPago = startDate.AddMonths(2);
-
         var balances = new List<MonthlyBalanceDto>();
         decimal acumulado = saldoInicialTotal;
 
@@ -137,7 +122,10 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m))
                 .ToList();
 
+            // Los resúmenes de TC se calculan abajo desde sus consumos. El registro fijo
+            // aporta la fecha al calendario, no un segundo importe al balance mensual.
             decimal gastosFixosDelMes = fixedExpensesOfMonth
+                .Where(f => f.CreditCardAccountID == null || m == startDate)
                 .Sum(f => f.Currency == "USD" ? f.Amount * cotizacionDolar : f.Amount);
             gastos += gastosFixosDelMes;
 
@@ -153,12 +141,16 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                 .Where(f => f.ReceiptDay > 0
                          && f.ReceiptDay <= daysInMonth
                          && (f.PersonID == null || f.CollectionYearMonth == key)
-                         && !receivedThisMonthIds.Contains(f.ID)
+                         && (!receivedThisMonthIds.Contains(f.ID) || f.DistributionEndDay.HasValue)
                          && (f.StartDate == null || new DateTime(f.StartDate.Value.Year, f.StartDate.Value.Month, 1) <= m))
                 .ToList();
 
-            decimal ingresosRecurrentesDelMes = fixedIncomesOfMonth
-                .Sum(f => f.Currency == "USD" ? f.Amount * cotizacionDolar : f.Amount);
+            decimal ingresosRecurrentesDelMes = fixedIncomesOfMonth.Sum(f =>
+            {
+                var totalArs = f.Currency == "USD" ? f.Amount * cotizacionDolar : f.Amount;
+                var received = f.ReceiptProgressYearMonth == key ? f.ReceivedAmount : 0m;
+                return Math.Max(0, totalArs - received);
+            });
             ingresos += ingresosRecurrentesDelMes;
 
             // ────────────────────────────────────────────────────────────
@@ -170,49 +162,13 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
                           && !string.IsNullOrEmpty(t.Description)
                           && t.Description.Contains("Total TC", StringComparison.OrdinalIgnoreCase));
 
-            if (!hasCreditCardPayment)
+            if (!hasCreditCardPayment && m > startDate)
             {
-                if (SameMonth(m, mesProximo) && deudaResumenProximo > 0)
-                    pendingInstallments += deudaResumenProximo;
-
-                if (m >= mesDespuesDelPago)
+                foreach (var cardTx in cardTransactions)
                 {
-                    foreach (var cardTx in cardTransactions)
-                    {
-                        if (cardTx.TransactionDate == null) continue;
-
-                        var compraMes = new DateTime(cardTx.TransactionDate.Year, cardTx.TransactionDate.Month, 1);
-                        var vencimiento = compraMes.AddMonths(1);
-
-                        decimal montoArs = (decimal)cardTx.Amount;
-                        if (cardTx.Account.Currency == "USD")
-                            montoArs *= cotizacionDolar;
-
-                        bool esFijo = cardTx.Fixed;
-                        bool esCuotas = cardTx.Installments > 1;
-                        bool esVariable = !esFijo && !esCuotas;
-
-                        if (esVariable)
-                        {
-                            if (SameMonth(m, vencimiento)) pendingInstallments += montoArs;
-                            continue;
-                        }
-                        if (esFijo && !esCuotas)
-                        {
-                            pendingInstallments += montoArs;
-                            continue;
-                        }
-                        if (esCuotas)
-                        {
-                            int totalCuotas = (int)cardTx.Installments;
-                            int cuotaBase = (int)cardTx.ActualInstallment;
-                            int offset = MonthDiff(vencimiento, m);
-                            if (offset < 0) continue;
-                            int cuotaEnMes = cuotaBase + offset;
-                            if (cuotaEnMes > totalCuotas) continue;
-                            pendingInstallments += montoArs / totalCuotas;
-                        }
-                    }
+                    pendingInstallments += SameMonth(m, startDate.AddMonths(1))
+                        ? (cardTx.Account.Currency == "USD" ? cardTx.Amount * cotizacionDolar : cardTx.Amount)
+                        : CreditCardProjectionHelper.GetAmountDueArs(cardTx, m, startDate, cotizacionDolar);
                 }
             }
 
@@ -234,47 +190,15 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
             }
 
             // E2. Transacciones TC con persona atribuida (solo meses futuros, mirror del loop C/D)
-            if (!hasCreditCardPayment && m >= mesDespuesDelPago)
+            if (!hasCreditCardPayment && m > startDate)
             {
                 foreach (var cardTx in cardTransactions.Where(t => t.SharedWith.Any()))
                 {
-                    if (cardTx.TransactionDate == null) continue;
-
-                    var compraMesP = new DateTime(cardTx.TransactionDate.Year, cardTx.TransactionDate.Month, 1);
-                    var vencimientoP = compraMesP.AddMonths(1);
-
-                    decimal montoArsP = cardTx.Amount;
-                    if (cardTx.Account.Currency == "USD")
-                        montoArsP *= cotizacionDolar;
-
+                    var montoArsP = CreditCardProjectionHelper.GetAmountDueArs(
+                        cardTx, m, startDate, cotizacionDolar);
+                    if (montoArsP <= 0) continue;
                     decimal pctP = cardTx.SharedWith.Sum(s => s.Percentage);
-                    bool esFijoP = cardTx.Fixed;
-                    bool esCuotasP = cardTx.Installments > 1;
-                    bool esVariableP = !esFijoP && !esCuotasP;
-
-                    if (esVariableP)
-                    {
-                        if (SameMonth(m, vencimientoP))
-                            personsReceivable += montoArsP * pctP / 100m;
-                        continue;
-                    }
-
-                    if (esFijoP && !esCuotasP)
-                    {
-                        personsReceivable += montoArsP * pctP / 100m;
-                        continue;
-                    }
-
-                    if (esCuotasP)
-                    {
-                        int totalCuotasP = (int)cardTx.Installments!;
-                        int cuotaBaseP = (int)cardTx.ActualInstallment!;
-                        int offsetP = MonthDiff(vencimientoP, m);
-                        if (offsetP < 0) continue;
-                        int cuotaEnMesP = cuotaBaseP + offsetP;
-                        if (cuotaEnMesP > totalCuotasP) continue;
-                        personsReceivable += (montoArsP / totalCuotasP) * pctP / 100m;
-                    }
+                    personsReceivable += montoArsP * pctP / 100m;
                 }
             }
 
@@ -287,7 +211,7 @@ public class GetProjectedBalancesHandler(IApplicationDbContext context, IDolarSe
             // E. BALANCE ACUMULADO
             // gastos = manuales + fijos (sin TC); TC separado en pendingInstallments
             // ────────────────────────────────────────────────────────────
-            decimal neto = ingresos - gastos - pendingInstallments;
+            decimal neto = ingresos - gastos;
             acumulado += neto;
 
             // ────────────────────────────────────────────────────────────
