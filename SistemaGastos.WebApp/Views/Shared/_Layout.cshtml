@@ -61,6 +61,10 @@
                         <small class="text-muted">v1.0</small>
                     </div>
                 </div>
+                <button type="button" class="btn btn-icon sidebar-close" id="sidebar-close"
+                        aria-label="Cerrar menú de navegación">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
             </div>
 
             <!-- Menu de navegación -->
@@ -230,7 +234,8 @@
         <div id="page-content-wrapper">
 
             <nav class="topbar">
-                <button class="btn btn-icon" id="menu-toggle" aria-label="Toggle menu">
+                <button type="button" class="btn btn-icon" id="menu-toggle"
+                        aria-label="Abrir menú de navegación" aria-controls="sidebar-wrapper" aria-expanded="false">
                     <i class="fa-solid fa-bars"></i>
                 </button>
 
