@@ -23,6 +23,15 @@ namespace SistemaGastos.Domain.Models
         [DefaultValue(false)]
         public bool Active { get; set; }
 
+        public bool EmailConfirmed { get; set; }
+        [MaxLength(64)]
+        public string? EmailConfirmationTokenHash { get; set; }
+        public DateTime? EmailConfirmationTokenExpiry { get; set; }
+        public DateTime? ConfirmationEmailSentAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
+
         public string? ResetToken { get; set; }
         public DateTime? ResetTokenExpiry { get; set; }
     }

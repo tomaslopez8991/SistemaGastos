@@ -189,6 +189,14 @@
                         @if (CurrentUser.IsAdmin)
                         {
                             <li>
+                                <a asp-controller="Users" asp-action="Index" class="nav-item">
+                                    <div class="nav-icon">
+                                        <i class="fa-solid fa-users-gear"></i>
+                                    </div>
+                                    <span class="nav-text">Usuarios</span>
+                                </a>
+                            </li>
+                            <li>
                                 <a asp-controller="SystemAlerts" asp-action="Index" class="nav-item">
                                     <div class="nav-icon">
                                         <i class="fa-solid fa-triangle-exclamation text-warning"></i>
