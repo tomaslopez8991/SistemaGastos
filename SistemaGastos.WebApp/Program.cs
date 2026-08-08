@@ -2,9 +2,11 @@ using FluentValidation;
 using MediatR;
 using StackExchange.Profiling;
 using Microsoft.AspNetCore.Authentication.Cookies; // NECESARIO PARA AUTH
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides; // NECESARIO PARA SOMEE
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SistemaGastos;
@@ -20,6 +22,7 @@ using System;
 using System.Globalization;
 using System.Net;
 using System.Net.Mail;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +76,30 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             context.Response.Redirect("/Auth/Login");
             return Task.CompletedTask;
         };
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            var idValue = context.Principal?.FindFirst("Id")?.Value;
+            if (!int.TryParse(idValue, out var userId))
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+
+            var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+            var user = await db.Login
+                .AsNoTracking()
+                .Where(x => x.ID == userId)
+                .Select(x => new { x.Active, x.IsDeleted, x.Role })
+                .FirstOrDefaultAsync(context.HttpContext.RequestAborted);
+            var currentRole = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+            if (user == null || !user.Active || user.IsDeleted || user.Role != currentRole)
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            }
+        };
     });
 
 // 5. CONFIGURACI�N DE SESI�N
@@ -90,7 +117,31 @@ builder.Services.AddControllersWithViews(options => options.Filters.Add(new Auto
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.AddSignalR();
 builder.Services.AddHttpClient<IDolarService, DolarService>();
+builder.Services.AddHttpClient<ITurnstileService, TurnstileService>();
 builder.Services.AddScoped<DolarService>();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("registration", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 3,
+                Window = TimeSpan.FromMinutes(30),
+                QueueLimit = 0
+            }));
+    options.AddPolicy("confirmation-email", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromHours(1),
+                QueueLimit = 0
+            }));
+});
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateTransactionValidator>();
 
@@ -212,6 +263,7 @@ app.UseCookiePolicy();
 app.UseMiddleware<SistemaGastos.WebApp.Middleware.GlobalExceptionHandlerMiddleware>();
 
 app.UseRouting();
+app.UseRateLimiter();
 
 if (!string.IsNullOrEmpty(builder.Configuration["MiniProfiler:AdminUsername"]))
     app.UseMiniProfiler();

@@ -45,45 +45,55 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
         return Json(new { success = resultado });
     }
 
-    // GET: Listado Admin
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Index() // Vista: Views/Users/Index.cshtml
+    public async Task<IActionResult> Index()
     {
         var users = await mediator.Send(new GetAllUsersQuery(currentUser.Username));
         return View(users);
     }
 
-    // POST: Activar Usuario
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> SetActive(int idUser)
+    public async Task<IActionResult> SetStatus(int id, bool active)
     {
-        var result = await mediator.Send(new ToggleUserStatusCommand(idUser, true));
-        if (!result) return NotFound();
-        return Json(new { success = true });
+        if (id == currentUser.UserId) return BadRequest(new { success = false, message = "No podés modificar tu propia cuenta." });
+        var result = await mediator.Send(new ToggleUserStatusCommand(id, active));
+        return result
+            ? Json(new { success = true })
+            : BadRequest(new { success = false, message = active ? "El usuario debe confirmar su correo antes de activarse." : "No se pudo actualizar el usuario." });
     }
 
-    // POST: Desactivar Usuario
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> SetInactive(int idUser)
+    public async Task<IActionResult> SetRole(int id, string role)
     {
-        var result = await mediator.Send(new ToggleUserStatusCommand(idUser, false));
-        if (!result) return NotFound();
-        return Json(new { success = true });
+        if (id == currentUser.UserId) return BadRequest(new { success = false, message = "No podés modificar tu propio rol." });
+        var result = await mediator.Send(new SetUserRoleCommand(id, role));
+        return result
+            ? Json(new { success = true })
+            : BadRequest(new { success = false, message = "No se pudo actualizar el rol." });
     }
 
-    // POST: Eliminar Usuario
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Delete(int? ID)
+    public async Task<IActionResult> SetDeleted(int id, bool deleted)
     {
-        if (ID == null || ID == 0) return NotFound();
+        if (id == currentUser.UserId) return BadRequest(new { success = false, message = "No podés dar de baja tu propia cuenta." });
+        var result = await mediator.Send(new SetUserDeletedCommand(id, deleted));
+        return result
+            ? Json(new { success = true })
+            : BadRequest(new { success = false, message = "No se pudo actualizar el usuario." });
+    }
 
-        var result = await mediator.Send(new DeleteUserCommand(ID.Value));
-        if (!result) return NotFound();
-
-        return Json(new { success = true });
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ResendConfirmation(int id)
+    {
+        var originUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+        var result = await mediator.Send(new ResendUserConfirmationCommand(id, originUrl));
+        return result
+            ? Json(new { success = true })
+            : BadRequest(new { success = false, message = "El usuario ya está confirmado o no está disponible." });
     }
 
     [AllowAnonymous]

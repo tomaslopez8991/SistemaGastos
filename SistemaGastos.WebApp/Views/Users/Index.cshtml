@@ -1,200 +1,193 @@
-﻿@model IEnumerable<SistemaGastos.Domain.Models.Login>
+@model IReadOnlyCollection<SistemaGastos.Application.DTOs.AdminUserDto>
 @Html.AntiForgeryToken()
-
 @{
-    ViewData["Title"] = "Usuarios registrados";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Administración de usuarios";
+    var activeCount = Model.Count(x => x.Active && !x.IsDeleted);
+    var pendingCount = Model.Count(x => !x.EmailConfirmed && !x.IsDeleted);
+    var blockedCount = Model.Count(x => !x.Active && x.EmailConfirmed && !x.IsDeleted);
 }
 
-<h1>@ViewData["Title"]</h1>
+<div class="container-fluid py-3 px-lg-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1"><i class="fa-solid fa-users-gear text-primary me-2"></i>Usuarios</h1>
+            <p class="text-muted mb-0">Control de accesos, confirmaciones y roles.</p>
+        </div>
+        <span class="badge text-bg-secondary fs-6">@Model.Count registro(s)</span>
+    </div>
 
-<br />
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-3"><div class="admin-stat h-100"><span>Registrados</span><strong>@Model.Count</strong><i class="fa-solid fa-users"></i></div></div>
+        <div class="col-6 col-xl-3"><div class="admin-stat h-100"><span>Activos</span><strong class="text-success">@activeCount</strong><i class="fa-solid fa-user-check"></i></div></div>
+        <div class="col-6 col-xl-3"><div class="admin-stat h-100"><span>Pendientes</span><strong class="text-warning">@pendingCount</strong><i class="fa-solid fa-envelope-circle-check"></i></div></div>
+        <div class="col-6 col-xl-3"><div class="admin-stat h-100"><span>Bloqueados</span><strong class="text-danger">@blockedCount</strong><i class="fa-solid fa-user-lock"></i></div></div>
+    </div>
 
-<table class="dTable table">
-    <thead>
-        <tr>
-            <th>
-                Usuario
-            </th>
-            <th>
-                Contraseña
-            </th>
-            <th>
-                Correo electrónico
-            </th>
-            <th>
-                Estado
-            </th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Username)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Password)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @if (!item.Active)
-                {
-                    <span class="text-danger fw-bold">Deshabilitado</span>
-                }
-                else
-                {
-                    <span class="text-success fw-bold">Habilitado</span>
-                }
-            </td>
-            <td>
-                @if (!item.Active)
-                {
-                    <button onclick="return habilitarUsuario(@item.ID)" class="btn btn-success"><i class="fa-regular fa-circle-check"></i></button>
-                }
-                else
-                {
-                    <button onclick="return deshabilitarUsuario(@item.ID)" class="btn btn-danger"><i class="fa-solid fa-user-slash"></i></button>
-                }
-                <button onclick="return eliminarUsuario(@item.ID)" class="btn btn-danger"><i class="fa-solid fa-trash"></i></button>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+    <div class="row g-2 mb-3 align-items-end">
+        <div class="col-lg-6">
+            <label for="userSearch" class="form-label small text-muted">Buscar</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <input id="userSearch" class="form-control" placeholder="Usuario o correo electrónico" />
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <label for="statusFilter" class="form-label small text-muted">Estado</label>
+            <select id="statusFilter" class="form-select">
+                <option value="">Todos</option>
+                <option value="active">Activo</option>
+                <option value="pending">Pendiente</option>
+                <option value="blocked">Bloqueado</option>
+                <option value="deleted">Baja</option>
+            </select>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <label for="roleFilter" class="form-label small text-muted">Rol</label>
+            <select id="roleFilter" class="form-select">
+                <option value="">Todos</option>
+                <option value="User">Usuario</option>
+                <option value="Admin">Administrador</option>
+            </select>
+        </div>
+    </div>
 
-<div class="text-center">
-    <span class="text-danger fw-bold">@ViewBag.errorMessage</span>
+    <div class="table-responsive border rounded-2">
+        <table class="table table-hover align-middle mb-0" id="usersTable">
+            <thead class="table-light">
+                <tr>
+                    <th>Usuario</th>
+                    <th>Estado</th>
+                    <th>Rol</th>
+                    <th>Registro</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var user in Model)
+            {
+                var status = user.IsDeleted ? "deleted" : !user.EmailConfirmed ? "pending" : user.Active ? "active" : "blocked";
+                <tr data-search="@(user.Username.ToLowerInvariant()) @(user.Email.ToLowerInvariant())" data-status="@status" data-role="@user.Role">
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="user-avatar">@user.Username[..1].ToUpperInvariant()</div>
+                            <div class="min-w-0"><div class="fw-semibold text-truncate">@user.Username</div><small class="text-muted text-truncate d-block">@user.Email</small></div>
+                        </div>
+                    </td>
+                    <td>
+                        @switch (status)
+                        {
+                            case "active": <span class="badge text-bg-success">Activo</span> break;
+                            case "pending": <span class="badge text-bg-warning">Pendiente</span> break;
+                            case "blocked": <span class="badge text-bg-danger">Bloqueado</span> break;
+                            default: <span class="badge text-bg-secondary">Baja</span> break;
+                        }
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm role-select" data-id="@user.Id" @Html.Raw(user.IsDeleted ? "disabled" : "")>
+                            @if (user.Role == "Admin")
+                            {
+                                <option value="User">Usuario</option>
+                                <option value="Admin" selected>Administrador</option>
+                            }
+                            else
+                            {
+                                <option value="User" selected>Usuario</option>
+                                <option value="Admin">Administrador</option>
+                            }
+                        </select>
+                    </td>
+                    <td><span class="text-nowrap">@user.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span></td>
+                    <td class="text-end text-nowrap">
+                        @if (user.IsDeleted)
+                        {
+                            <button class="btn btn-sm btn-outline-success action-button" data-action="restore" data-id="@user.Id" title="Restaurar"><i class="fa-solid fa-rotate-left"></i></button>
+                        }
+                        else
+                        {
+                            @if (!user.EmailConfirmed)
+                            {
+                                <button class="btn btn-sm btn-outline-warning action-button" data-action="resend" data-id="@user.Id" title="Reenviar confirmación"><i class="fa-solid fa-paper-plane"></i></button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm @(user.Active ? "btn-outline-danger" : "btn-outline-success") action-button" data-action="@(user.Active ? "block" : "activate")" data-id="@user.Id" title="@(user.Active ? "Bloquear" : "Activar")"><i class="fa-solid @(user.Active ? "fa-user-lock" : "fa-user-check")"></i></button>
+                            }
+                            <button class="btn btn-sm btn-outline-secondary action-button" data-action="delete" data-id="@user.Id" title="Dar de baja"><i class="fa-solid fa-user-minus"></i></button>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+        <div id="emptyUsers" class="text-center text-muted py-5 d-none">No hay usuarios que coincidan con los filtros.</div>
+    </div>
 </div>
 
+<style>
+    .admin-stat { position: relative; min-height: 104px; padding: 18px; border: 1px solid var(--bs-border-color); border-radius: 8px; background: var(--bs-tertiary-bg); overflow: hidden; }
+    .admin-stat span { display: block; color: var(--bs-secondary-color); font-size: .82rem; }
+    .admin-stat strong { display: block; margin-top: 6px; font-size: 1.65rem; }
+    .admin-stat i { position: absolute; right: 16px; top: 20px; font-size: 1.25rem; opacity: .35; }
+    .user-avatar { flex: 0 0 36px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: rgba(13,110,253,.15); color: var(--bs-primary); font-weight: 700; }
+    .min-w-0 { min-width: 0; }
+    .role-select { min-width: 132px; }
+    .action-button { width: 34px; height: 32px; }
+</style>
+
 @section Scripts {
-    @{
-        <partial name="_ValidationScriptsPartial" />
+<script>
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    const rows = [...document.querySelectorAll('#usersTable tbody tr')];
+
+    function filterUsers() {
+        const search = document.getElementById('userSearch').value.trim().toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const role = document.getElementById('roleFilter').value;
+        let visible = 0;
+        rows.forEach(row => {
+            const show = (!search || row.dataset.search.includes(search)) && (!status || row.dataset.status === status) && (!role || row.dataset.role === role);
+            row.classList.toggle('d-none', !show);
+            if (show) visible++;
+        });
+        document.getElementById('emptyUsers').classList.toggle('d-none', visible !== 0);
     }
 
-    <script>
+    document.getElementById('userSearch').addEventListener('input', filterUsers);
+    document.getElementById('statusFilter').addEventListener('change', filterUsers);
+    document.getElementById('roleFilter').addEventListener('change', filterUsers);
 
-        function habilitarUsuario(id) {
+    async function postAction(url, data) {
+        const body = new URLSearchParams(data);
+        const response = await fetch(url, { method: 'POST', headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || 'No se pudo completar la operación.');
+    }
 
-            Swal.fire({
-                title: "Desea habilitar el usuario?",
-                icon: "warning",
-                confirmButtonText: "Confirmar",
-                cancelButtonText: "Cancelar",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Llamada AJAX para eliminar el registro
-                    $.ajax({
-                        url: '@Url.Action("SetActive", "Login")',
-                        type: 'POST',
-                        data: { idUser: id },
-                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-                        success: function (data) {
-                            if (data.success) {
-                                Swal.fire({
-                                    title: 'Usuario habilitado con éxito!',
-                                    icon: 'success',
-                                    didClose: () => {
-                                        // Recargar la página actual después de cerrar la alerta
-                                        location.reload();
-                                    }
-                                });
-                            } else {
-                                Swal.fire('Error', 'Hubo un problema al intentar habilitar el usuario', 'error');
-                            }
-                        },
-                        error: function () {
-                            Swal.fire('Error', 'Hubo un problema al intentar habilitar el usuario', 'error');
-                        }
-                    });
-                }
-            });
-        }
+    document.querySelectorAll('.role-select').forEach(select => select.addEventListener('change', async event => {
+        try {
+            await postAction('@Url.Action("SetRole", "Users")', { id: event.target.dataset.id, role: event.target.value });
+            await Swal.fire('Rol actualizado', '', 'success'); location.reload();
+        } catch (error) { await Swal.fire('Error', error.message, 'error'); location.reload(); }
+    }));
 
-        function deshabilitarUsuario(id) {
-
-            Swal.fire({
-                title: "Desea deshabilitar el usuario?",
-                icon: "warning",
-                confirmButtonText: "Confirmar",
-                cancelButtonText: "Cancelar",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Llamada AJAX para eliminar el registro
-                    $.ajax({
-                        url: '@Url.Action("SetInactive", "Login")',
-                        type: 'POST',
-                        data: { idUser: id },
-                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-                        success: function (data) {
-                            if (data.success) {
-                                Swal.fire({
-                                    title: 'Usuario deshabilitado con éxito!',
-                                    icon: 'success',
-                                    didClose: () => {
-                                        // Recargar la página actual después de cerrar la alerta
-                                        location.reload();
-                                    }
-                                });
-                            } else {
-                                Swal.fire('Error', 'Hubo un problema al intentar deshabilitar el usuario', 'error');
-                            }
-                        },
-                        error: function () {
-                            Swal.fire('Error', 'Hubo un problema al intentar deshabilitar el usuario', 'error');
-                        }
-                    });
-                }
-            });
-        }
-
-        function eliminarUsuario(id) {
-            Swal.fire({
-                title: "Desea eliminar el registro?",
-                text: "Una vez eliminado, no podrá recuperarlo.",
-                icon: "warning",
-                confirmButtonText: "Confirmar",
-                cancelButtonText: "Cancelar",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Llamada AJAX para eliminar el registro
-                    $.ajax({
-                        url: '@Url.Action("Delete", "Login")',
-                        type: 'POST',
-                        data: { ID: id },
-                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-                        success: function (data) {
-                            if (data.success) {
-                                Swal.fire({
-                                    title: 'Eliminado',
-                                    text: 'El registro ha sido eliminado correctamente',
-                                    icon: 'success',
-                                    didClose: () => {
-                                        // Recargar la página actual después de cerrar la alerta
-                                        location.reload();
-                                    }
-                                });
-                            } else {
-                                Swal.fire('Error', 'Hubo un problema al intentar eliminar el registro', 'error');
-                            }
-                        },
-                        error: function () {
-                            Swal.fire('Error', 'Hubo un problema al intentar eliminar el registro', 'error');
-                        }
-                    });
-                }
-            });
-        }
-
-    </script>
-
+    document.querySelectorAll('.action-button').forEach(button => button.addEventListener('click', async () => {
+        const action = button.dataset.action;
+        const id = button.dataset.id;
+        const config = {
+            activate: ['Activar usuario', 'El usuario podrá volver a iniciar sesión.'],
+            block: ['Bloquear usuario', 'El acceso quedará suspendido hasta que lo reactives.'],
+            delete: ['Dar de baja', 'La cuenta se desactivará sin eliminar sus datos financieros.'],
+            restore: ['Restaurar usuario', 'La cuenta volverá a estar disponible.'],
+            resend: ['Reenviar confirmación', 'Se enviará un nuevo enlace al correo del usuario.']
+        }[action];
+        const confirmation = await Swal.fire({ title: config[0], text: config[1], icon: 'question', showCancelButton: true, confirmButtonText: 'Confirmar', cancelButtonText: 'Cancelar' });
+        if (!confirmation.isConfirmed) return;
+        try {
+            if (action === 'activate' || action === 'block') await postAction('@Url.Action("SetStatus", "Users")', { id, active: action === 'activate' });
+            if (action === 'delete' || action === 'restore') await postAction('@Url.Action("SetDeleted", "Users")', { id, deleted: action === 'delete' });
+            if (action === 'resend') await postAction('@Url.Action("ResendConfirmation", "Users")', { id });
+            await Swal.fire('Operación completada', '', 'success'); location.reload();
+        } catch (error) { await Swal.fire('Error', error.message, 'error'); }
+    }));
+</script>
 }

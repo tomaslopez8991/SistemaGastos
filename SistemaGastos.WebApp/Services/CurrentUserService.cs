@@ -28,6 +28,9 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor, IConfi
     {
         get
         {
+            if (httpContextAccessor.HttpContext?.User?.IsInRole("Admin") == true)
+                return true;
+
             var adminUsername = configuration["MiniProfiler:AdminUsername"];
             return !string.IsNullOrEmpty(adminUsername) &&
                    string.Equals(Username, adminUsername, StringComparison.OrdinalIgnoreCase);

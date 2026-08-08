@@ -1,0 +1,49 @@
+@{
+    ViewData["Title"] = "Reenviar confirmación";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Sistema Gastos</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/fontawesome/css/all.css" />
+    <link rel="stylesheet" href="~/css/Login.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="container d-flex justify-content-center">
+        <div class="card-glass" style="max-width: 480px;">
+            <div class="text-center mb-4">
+                <i class="fa-solid fa-envelope-circle-check fa-3x text-primary mb-3"></i>
+                <h3 class="fw-bold text-white">Confirmá tu correo</h3>
+                <p class="text-white-50 small">Ingresá el correo utilizado al crear tu cuenta.</p>
+            </div>
+            @if (ViewBag.SuccessMessage != null)
+            {
+                <div class="alert alert-success" role="status">@ViewBag.SuccessMessage</div>
+            }
+            <form asp-action="ResendConfirmation" asp-controller="Auth" method="post">
+                <div class="mb-4">
+                    <label for="email" class="form-label text-white-50 small fw-bold">EMAIL</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+                        <input id="email" name="email" type="email" class="form-control" placeholder="tu@email.com" required />
+                    </div>
+                </div>
+                <div class="d-grid gap-2 mb-4">
+                    <button type="submit" class="btn btn-primary-glow shadow-sm">
+                        REENVIAR ENLACE <i class="fa-solid fa-paper-plane ms-2"></i>
+                    </button>
+                </div>
+                <div class="text-center">
+                    <a asp-controller="Auth" asp-action="Login" class="link-secondary small">Volver a iniciar sesión</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

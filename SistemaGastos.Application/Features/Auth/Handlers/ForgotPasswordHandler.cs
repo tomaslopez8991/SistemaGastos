@@ -14,7 +14,7 @@ public class ForgotPasswordHandler(
     public async Task<bool> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
         var usuario = await context.Login
-            .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
+            .FirstOrDefaultAsync(u => u.Email == request.Email && !u.IsDeleted, cancellationToken);
 
         if (usuario == null)
         {
