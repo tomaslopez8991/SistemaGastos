@@ -66,9 +66,9 @@
             <!-- Menu de navegación -->
             <nav class="sidebar-nav">
 
-                <!-- Principal -->
+                <!-- Inicio -->
                 <div class="nav-section">
-                    <div class="nav-section-title">Principal</div>
+                    <div class="nav-section-title">Inicio</div>
                     <ul class="nav-list">
                         <li>
                             <a asp-controller="Home" asp-action="Index" class="nav-item">
@@ -81,16 +81,16 @@
                     </ul>
                 </div>
 
-                <!-- Gestión Diaria -->
+                <!-- Finanzas -->
                 <div class="nav-section">
-                    <div class="nav-section-title">Gestión Diaria</div>
+                    <div class="nav-section-title">Finanzas</div>
                     <ul class="nav-list">
                         <li>
                             <a asp-controller="Transaction" asp-action="Index" class="nav-item">
                                 <div class="nav-icon">
                                     <i class="fa-solid fa-money-bill-transfer"></i>
                                 </div>
-                                <span class="nav-text">Transacciones</span>
+                                <span class="nav-text">Movimientos</span>
                             </a>
                         </li>
                         <li>
@@ -98,7 +98,38 @@
                                 <div class="nav-icon">
                                     <i class="fa-solid fa-building-columns"></i>
                                 </div>
-                                <span class="nav-text">Mis Cuentas</span>
+                                <span class="nav-text">Cuentas</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="CreditCardTransaction" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-regular fa-credit-card"></i>
+                                </div>
+                                <span class="nav-text">Tarjetas de crédito</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a asp-controller="Person" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                                </div>
+                                <span class="nav-text">Cuentas por cobrar</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Planificación -->
+                <div class="nav-section">
+                    <div class="nav-section-title">Planificación</div>
+                    <ul class="nav-list">
+                        <li>
+                            <a asp-controller="TmpTransaction" asp-action="Index" class="nav-item">
+                                <div class="nav-icon">
+                                    <i class="fa-solid fa-timeline"></i>
+                                </div>
+                                <span class="nav-text">Planificación financiera</span>
                             </a>
                         </li>
                         <li>
@@ -117,25 +148,9 @@
                     <div class="nav-section-title">Análisis</div>
                     <ul class="nav-list">
                         <li>
-                            <a asp-controller="CreditCardTransaction" asp-action="Index" class="nav-item">
-                                <div class="nav-icon">
-                                    <i class="fa-regular fa-credit-card"></i>
-                                </div>
-                                <span class="nav-text">Tarjetas de crédito</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a asp-controller="TmpTransaction" asp-action="Index" class="nav-item">
-                                <div class="nav-icon">
-                                    <i class="fa-solid fa-timeline"></i>
-                                </div>
-                                <span class="nav-text">Proyección</span>
-                            </a>
-                        </li>
-                        <li>
                             <a asp-controller="Transaction" asp-action="Statistics" class="nav-item">
                                 <div class="nav-icon">
-                                    <i class="fas fa-chart-line"></i>
+                                    <i class="fa-solid fa-chart-line"></i>
                                 </div>
                                 <span class="nav-text">Estadísticas</span>
                             </a>
@@ -143,24 +158,9 @@
                     </ul>
                 </div>
 
-                <!-- Personas -->
+                <!-- Configuración -->
                 <div class="nav-section">
-                    <div class="nav-section-title">Personas</div>
-                    <ul class="nav-list">
-                        <li>
-                            <a asp-controller="Person" asp-action="Index" class="nav-item">
-                                <div class="nav-icon">
-                                    <i class="fa-solid fa-people-group"></i>
-                                </div>
-                                <span class="nav-text">Cuentas</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- Admin -->
-                <div class="nav-section">
-                    <div class="nav-section-title">Administración</div>
+                    <div class="nav-section-title">Configuración</div>
                     <ul class="nav-list">
                         <li>
                             <a asp-controller="AccountInterest" asp-action="Index" class="nav-item">
@@ -186,8 +186,15 @@
                                 <span class="nav-text">Mi Perfil</span>
                             </a>
                         </li>
-                        @if (CurrentUser.IsAdmin)
-                        {
+                    </ul>
+                </div>
+
+                @if (CurrentUser.IsAdmin)
+                {
+                    <!-- Sistema -->
+                    <div class="nav-section">
+                        <div class="nav-section-title">Sistema</div>
+                        <ul class="nav-list">
                             <li>
                                 <a asp-controller="Users" asp-action="Index" class="nav-item">
                                     <div class="nav-icon">
@@ -204,9 +211,9 @@
                                     <span class="nav-text">Alertas del sistema</span>
                                 </a>
                             </li>
-                        }
-                    </ul>
-                </div>
+                        </ul>
+                    </div>
+                }
             </nav>
 
             <!-- Footer del sidebar -->
