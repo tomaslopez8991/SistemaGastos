@@ -120,6 +120,11 @@ button {
 .sidebar-header {
     padding: 1.5rem 1.25rem;
     border-bottom: 1px solid var(--bs-border-color);
+    position: relative;
+}
+
+.sidebar-close {
+    display: none;
 }
 
 .logo-wrapper {
@@ -1311,22 +1316,35 @@ input.gridjs-input {
 /* Tablet y menores (≤ 992px) */
 @media (max-width: 992px) {
     :root {
-        --sidebar-width: 260px;
+        --sidebar-width: min(280px, calc(100vw - 56px));
     }
 
     #sidebar-wrapper {
-        position: fixed; /* Lo despegamos del diseño principal para que flote */
-        transform: translateX(-100%); /* Lo escondemos hacia la izquierda por defecto */
-        box-shadow: 4px 0 15px rgba(0,0,0,0.5); /* Le damos una sombra para que resalte sobre el fondo */
-    }
-
-    /* Esta clase la vamos a activar con JavaScript para que aparezca */
-    #sidebar-wrapper.abierto {
-        transform: translateX(0); /* Lo deslizamos hacia adentro de la pantalla */
+        width: var(--sidebar-width);
+        max-width: calc(100vw - 56px);
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.45);
     }
 
     #wrapper.toggled #sidebar-wrapper {
-        transform: translateX(0);
+        transform: translateX(-100%);
+        box-shadow: none;
+    }
+
+    .sidebar-close {
+        display: inline-flex;
+        position: absolute;
+        top: 1.25rem;
+        right: 0.75rem;
+        width: 44px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    body.sidebar-open {
+        overflow: hidden;
     }
 
     #page-content-wrapper {
@@ -2389,22 +2407,11 @@ input.gridjs-input {
    ============================================ */
 @media (max-width: 991.98px) {
     #sidebar-wrapper {
-        position: fixed; /* Lo despegamos de la estructura */
-        height: 100vh; /* Que ocupe todo el alto */
-        /* Estado por defecto (SIN la clase .toggled): VISIBLE */
-        transform: translateX(0);
-        box-shadow: 4px 0 15px rgba(0,0,0,0.5); /* Sombra para que flote sobre el overlay */
+        height: 100dvh;
     }
 
-    /* Tu JS le agrega .toggled al inicio para OCULTARLO */
-    #wrapper.toggled #sidebar-wrapper {
-        transform: translateX(-100%); /* Lo esconde fuera de la pantalla hacia la izquierda */
-        box-shadow: none; /* Le sacamos la sombra al estar escondido */
-    }
-
-    /* Evitamos que el contenido principal se rompa al tener el sidebar flotando */
     #page-content-wrapper {
-        width: 100vw;
+        width: 100%;
     }
 }
 

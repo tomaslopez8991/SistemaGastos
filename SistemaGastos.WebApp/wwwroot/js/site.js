@@ -4,6 +4,15 @@
 
 window.sidebarResizeTimer = window.sidebarResizeTimer || null;
 
+function closeMobileSidebar() {
+    if (window.innerWidth > 992) return;
+
+    $('#wrapper').addClass('toggled');
+    $('#overlay-mobile').hide();
+    $('body').removeClass('sidebar-open');
+    $('#menu-toggle').attr('aria-expanded', 'false').trigger('focus');
+}
+
 // =========================================================
 // 1. GESTIÓN DE EVENTOS (BLINDADO CONTRA DUPLICADOS)
 // =========================================================
@@ -24,16 +33,24 @@ $(document).off('click.sidebar', '#menu-toggle').on('click.sidebar', '#menu-togg
     if (window.innerWidth <= 992) {
         if ($wrapper.hasClass('toggled')) {
             $('#overlay-mobile').hide();
+            $('body').removeClass('sidebar-open');
+            $(this).attr('aria-expanded', 'false');
         } else {
             $('#overlay-mobile').show();
+            $('body').addClass('sidebar-open');
+            $(this).attr('aria-expanded', 'true');
+            $('#sidebar-close').trigger('focus');
         }
     }
 });
 
+$(document).off('click.sidebarClose', '#sidebar-close').on('click.sidebarClose', '#sidebar-close', function () {
+    closeMobileSidebar();
+});
+
 // Cerrar al hacer clic en overlay (Móvil)
 $(document).off('click.sidebarOverlay', '#overlay-mobile').on('click.sidebarOverlay', '#overlay-mobile', function () {
-    $('#wrapper').addClass('toggled');
-    $(this).hide();
+    closeMobileSidebar();
 });
 
 // Cerrar sidebar al hacer clic en el contenido (solo móvil)
@@ -41,10 +58,19 @@ $(document).off('click.contentClose', '#page-content-wrapper').on('click.content
     if (window.innerWidth <= 992) {
         const $wrapper = $('#wrapper');
         if (!$wrapper.hasClass('toggled')) {
-            $wrapper.addClass('toggled');
-            $('#overlay-mobile').hide();
+            closeMobileSidebar();
         }
     }
+});
+
+$(document).off('keydown.sidebar').on('keydown.sidebar', function (e) {
+    if (e.key === 'Escape' && window.innerWidth <= 992 && !$('#wrapper').hasClass('toggled')) {
+        closeMobileSidebar();
+    }
+});
+
+$(document).off('click.sidebarLink', '#sidebar-wrapper .nav-item').on('click.sidebarLink', '#sidebar-wrapper .nav-item', function () {
+    if (window.innerWidth <= 992) closeMobileSidebar();
 });
 
 // =========================================================
@@ -77,6 +103,8 @@ $(document).on('turbo:load', function () {
     } else {
         $wrapper.addClass('toggled');
         $('#overlay-mobile').hide();
+        $('body').removeClass('sidebar-open');
+        $('#menu-toggle').attr('aria-expanded', 'false');
     }
 
     // 3. Marcar Link Activo en Sidebar
