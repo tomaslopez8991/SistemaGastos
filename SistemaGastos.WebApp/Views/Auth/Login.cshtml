@@ -99,6 +99,9 @@
                 <div class="text-center">
                     <p class="text-white-50 mb-0 small">¿No tienes cuenta?</p>
                     <a asp-controller="Auth" asp-action="Register" class="text-primary fw-bold text-decoration-none">Crear una cuenta nueva</a>
+                    <div class="mt-2">
+                        <a asp-controller="Auth" asp-action="ResendConfirmation" class="link-secondary small">Reenviar correo de confirmación</a>
+                    </div>
                 </div>
             </form>
         </div>

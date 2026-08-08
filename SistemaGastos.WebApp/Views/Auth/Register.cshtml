@@ -74,8 +74,15 @@
                     <span id="updatePassConfirmError" class="text-danger small d-block mt-1"></span>
                 </div>
 
+                @if (ViewBag.TurnstileEnabled == true)
+                {
+                    <div class="mb-4 d-flex justify-content-center">
+                        <div class="cf-turnstile" data-sitekey="@ViewBag.TurnstileSiteKey" data-action="register" data-theme="auto"></div>
+                    </div>
+                }
+
                 <div class="d-grid gap-2 mb-4">
-                    <button type="button" onclick="submitRegisterForm()" class="btn btn-primary-glow shadow-sm">
+                    <button type="button" id="registerButton" onclick="submitRegisterForm()" class="btn btn-primary-glow shadow-sm">
                         REGISTRARME <i class="fa-solid fa-user-plus ms-2"></i>
                     </button>
                 </div>
@@ -96,6 +103,10 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/color-modes.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @if (ViewBag.TurnstileEnabled == true)
+    {
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    }
 
     <script>
         function submitRegisterForm() {
@@ -118,8 +129,20 @@
                 return;
             }
 
-            // Enviar AJAX
-            var formData = { Username: username, Email: email, Password: password };
+            let turnstileToken = '';
+            @if (ViewBag.TurnstileEnabled == true)
+            {
+                <text>
+                turnstileToken = window.turnstile ? turnstile.getResponse() : '';
+                if (!turnstileToken) {
+                    Swal.fire('Verificación requerida', 'Completá la validación de seguridad.', 'warning');
+                    return;
+                }
+                </text>
+            }
+
+            var formData = { Username: username, Email: email, Password: password, TurnstileToken: turnstileToken };
+            const button = document.getElementById('registerButton');
 
             $.ajax({
                 url: '@Url.Action("Register", "Auth")',
@@ -127,13 +150,14 @@
                 data: formData,
                 headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
                 beforeSend: function() {
-                    // Opcional: Mostrar spinner o deshabilitar botón
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>CREANDO CUENTA';
                 },
                 success: function (data) {
                     if (data.success) {
                         Swal.fire({
                             title: '¡Cuenta Creada!',
-                            text: 'Tu registro fue exitoso. Por favor inicia sesión.',
+                            text: 'Te enviamos un enlace para confirmar tu correo. Revisá también la carpeta de spam.',
                             icon: 'success',
                             confirmButtonColor: '#0d6efd'
                         }).then(() => {
@@ -141,10 +165,16 @@
                         });
                     } else {
                         Swal.fire('Error', data.message, 'error');
+                        if (window.turnstile) turnstile.reset();
                     }
                 },
-                error: function () {
-                    Swal.fire('Error', 'Error de conexión con el servidor', 'error');
+                error: function (xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'No pudimos completar el registro.', 'error');
+                    if (window.turnstile) turnstile.reset();
+                },
+                complete: function () {
+                    button.disabled = false;
+                    button.innerHTML = 'REGISTRARME <i class="fa-solid fa-user-plus ms-2"></i>';
                 }
             });
         }

@@ -16,7 +16,11 @@ public class LoginUserHandler(IApplicationDbContext context)
         string passEncriptado = SecurityHelper.HashPassword(request.Password);
 
         var usuario = await context.Login
-            .FirstOrDefaultAsync(u => u.Username == request.Username && u.Password == passEncriptado, cancellationToken);
+            .FirstOrDefaultAsync(u =>
+                u.Username == request.Username &&
+                u.Password == passEncriptado &&
+                !u.IsDeleted,
+                cancellationToken);
 
         return usuario;
     }

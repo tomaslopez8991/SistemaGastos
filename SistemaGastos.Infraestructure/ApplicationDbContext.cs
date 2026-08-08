@@ -15,6 +15,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.ApplyConfiguration(new AccountInterestSettingConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestDailyLogConfiguration());
         modelBuilder.ApplyConfiguration(new AccountInterestMonthlyChargeConfiguration());
+        modelBuilder.Entity<Login>(builder =>
+        {
+            builder.Property(x => x.EmailConfirmed).HasDefaultValue(true);
+            builder.Property(x => x.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            builder.HasIndex(x => x.EmailConfirmationTokenHash)
+                .IsUnique()
+                .HasFilter("[EmailConfirmationTokenHash] IS NOT NULL");
+        });
         modelBuilder.Entity<CreditCardProjectionScenario>(builder =>
         {
             builder.Property(x => x.YearMonth).HasMaxLength(7).IsRequired();
