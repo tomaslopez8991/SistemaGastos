@@ -445,9 +445,8 @@
                         Currency: form.find('#Transaction_CurrencySelect').val() || 'ARS',
                         CategoryID: parseInt(form.find('#Transaction_CategoryID').val()) || 0,
                         AccountID: parseInt(form.find('#Transaction_AccountID').val()) || null,
-                        DateTransaction: esRecurrente
-                            ? null
-                            : (form.find('#Transaction_DateTransaction').val() || null),
+                        // La fecha funciona como ancla para conservar el dia en cada mes recurrente.
+                        DateTransaction: form.find('#Transaction_DateTransaction').val() || null,
                         EsRecurrente: esRecurrente,
                         MesesSeleccionados: mesesSeleccionados,
                         DistributionEndDay: dist.distributionEndDay,
@@ -472,7 +471,6 @@
             if (!data.MesesSeleccionados || data.MesesSeleccionados.length === 0) {
                 Swal.fire('Error', 'Debe seleccionar al menos un mes futuro', 'error'); return;
             }
-            data.DateTransaction = null;
         } else {
             if (!data.DateTransaction) {
                 Swal.fire('Error', 'Debe indicar el mes de impacto', 'error'); return;
