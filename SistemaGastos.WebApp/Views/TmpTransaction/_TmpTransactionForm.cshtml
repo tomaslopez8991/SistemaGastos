@@ -44,8 +44,9 @@
                 <select asp-for="Transaction.AccountID"
                         id="Transaction_AccountID"
                         class="form-select"
-                        asp-items="Model.Accounts">
-                    <option value="">— Sin asignar —</option>
+                        asp-items="Model.Accounts"
+                        required>
+                    <option value="">Selecciona una...</option>
                 </select>
             </div>
         </div>

@@ -20,13 +20,19 @@ public class CreateTmpTransactionValidator : AbstractValidator<CreateTmpTransact
         RuleFor(x => x.CategoryID)
             .GreaterThan(0).WithMessage("Debe seleccionar una categoría válida");
 
+        RuleFor(x => x.AccountID)
+            .NotNull().WithMessage("Debe seleccionar una cuenta")
+            .GreaterThan(0).WithMessage("Debe seleccionar una cuenta válida");
+
         // Validación condicional para recurrentes
         When(x => x.EsRecurrente, () =>
         {
             RuleFor(x => x.MesesSeleccionados)
                 .NotNull().WithMessage("Debe seleccionar al menos un mes")
                 .Must(meses => meses != null && meses.Any())
-                .WithMessage("Debe seleccionar al menos un mes para la recurrencia");
+                .WithMessage("Debe seleccionar al menos un mes para la recurrencia")
+                .Must(meses => meses != null && meses.All(IsValidMonth))
+                .WithMessage("Uno o más meses seleccionados no son válidos");
         });
 
         // Validación condicional para no recurrentes
@@ -35,5 +41,17 @@ public class CreateTmpTransactionValidator : AbstractValidator<CreateTmpTransact
             RuleFor(x => x.DateTransaction)
                 .NotNull().WithMessage("Debe indicar el mes de impacto");
         });
+    }
+
+    private static bool IsValidMonth(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return false;
+
+        var parts = value.Split('-');
+        return parts.Length == 2
+            && int.TryParse(parts[0], out var year)
+            && int.TryParse(parts[1], out var month)
+            && year is >= 1 and <= 9999
+            && month is >= 1 and <= 12;
     }
 }
