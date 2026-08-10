@@ -1,52 +1,75 @@
-﻿@model SistemaGastos.Domain.Models.Category
+@model SistemaGastos.Domain.Models.Category
 @{
     Layout = null;
 }
 
-<form id="form-category">
+<form id="form-category" class="category-form" novalidate>
     <input type="hidden" asp-for="ID" />
 
-    <div class="row mb-3">
-        <div class="col-md-8">
-            <label asp-for="Name" class="form-label small fw-bold text-uppercase">Nombre</label>
-            <input asp-for="Name" class="form-control" placeholder="Ej: Supermercado" required />
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Type" class="form-label small fw-bold text-uppercase">Tipo</label>
-            <select asp-for="Type" class="form-select">
-                <option value="Gasto">Gasto</option>
-                <option value="Ingreso">Ingreso</option>
-            </select>
+    <div class="category-form-preview" id="category-form-preview">
+        <span class="category-preview-icon" id="category-preview-icon-wrap">
+            <i id="icon-preview" class="@Model.Icon" aria-hidden="true"></i>
+        </span>
+        <div class="text-start overflow-hidden">
+            <strong id="category-name-preview">@(string.IsNullOrWhiteSpace(Model.Name) ? "Vista previa" : Model.Name)</strong>
+            <span id="category-type-preview">@Model.Type</span>
         </div>
     </div>
 
-    <div class="mb-3">
-        <label asp-for="Description" class="form-label small fw-bold text-uppercase">Descripción (Opcional)</label>
-        <input asp-for="Description" class="form-control" placeholder="Breve detalle..." />
+    <div class="mb-3 text-start">
+        <label asp-for="Name" class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+        <input asp-for="Name" class="form-control" maxlength="60" placeholder="Ej. Supermercado" autocomplete="off" />
+        <div class="invalid-feedback">Ingresá un nombre de hasta 60 caracteres.</div>
     </div>
 
-    <div class="row align-items-end mb-3">
-        <div class="col-3">
-            <label asp-for="Color" class="form-label small fw-bold text-uppercase">Color</label>
-            <input asp-for="Color" type="color" class="form-control form-control-color w-100" title="Elige un color" />
+    <fieldset class="mb-3 text-start">
+        <legend class="form-label fw-semibold mb-2">Tipo <span class="text-danger">*</span></legend>
+        <div class="category-type-selector">
+            <label>
+                <input type="radio" asp-for="Type" value="Gasto" />
+                <span><i class="fa-solid fa-arrow-trend-down" aria-hidden="true"></i> Gasto</span>
+            </label>
+            <label>
+                <input type="radio" asp-for="Type" value="Ingreso" />
+                <span><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> Ingreso</span>
+            </label>
         </div>
+    </fieldset>
 
-        <div class="col-9">
-            <label asp-for="Icon" class="form-label small fw-bold text-uppercase">Ícono (Clase FontAwesome)</label>
-            <div class="input-group">
-                <span class="input-group-text bg-body-tertiary"><i id="icon-preview" class="@Model.Icon"></i></span>
-                <input asp-for="Icon" class="form-control" id="icon-input" placeholder="fa-solid fa-tag" />
+    <div class="mb-3 text-start">
+        <label asp-for="Description" class="form-label fw-semibold">Descripción <span class="text-body-secondary fw-normal">(opcional)</span></label>
+        <textarea asp-for="Description" class="form-control" rows="2" maxlength="180"
+                  placeholder="Agregá un detalle para identificarla mejor"></textarea>
+        <div class="form-text text-end"><span id="description-count">0</span>/180</div>
+    </div>
+
+    <div class="row g-3 text-start">
+        <div class="col-sm-4">
+            <label asp-for="Color" class="form-label fw-semibold">Color</label>
+            <div class="category-color-control">
+                <input asp-for="Color" type="color" class="form-control form-control-color" title="Elegir color" />
+                <span id="color-value">@Model.Color</span>
             </div>
-            <small class="text-muted" style="font-size: 0.75rem;">
-                Busca íconos en <a href="https://fontawesome.com/search?m=free" target="_blank" class="text-decoration-none">FontAwesome</a>
-            </small>
+        </div>
+        <div class="col-sm-8">
+            <label asp-for="Icon" class="form-label fw-semibold">Ícono</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-icons" aria-hidden="true"></i></span>
+                <input asp-for="Icon" class="form-control" id="icon-input" maxlength="80"
+                       list="category-icons" placeholder="fa-solid fa-tag" autocomplete="off" />
+            </div>
+            <datalist id="category-icons">
+                <option value="fa-solid fa-tag"></option>
+                <option value="fa-solid fa-cart-shopping"></option>
+                <option value="fa-solid fa-utensils"></option>
+                <option value="fa-solid fa-house"></option>
+                <option value="fa-solid fa-car"></option>
+                <option value="fa-solid fa-heart-pulse"></option>
+                <option value="fa-solid fa-graduation-cap"></option>
+                <option value="fa-solid fa-money-bill-wave"></option>
+                <option value="fa-solid fa-briefcase"></option>
+            </datalist>
+            <div class="invalid-feedback">Usá una clase válida de Font Awesome.</div>
         </div>
     </div>
 </form>
-
-<script>
-    // Script simple para actualizar la previsualización del ícono en tiempo real
-    document.getElementById('icon-input').addEventListener('input', function() {
-        document.getElementById('icon-preview').className = this.value;
-    });
-</script>

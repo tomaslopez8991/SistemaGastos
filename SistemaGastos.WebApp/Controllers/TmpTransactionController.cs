@@ -250,7 +250,7 @@ public class CreateTmpTransactionRequest
     public int? AccountID { get; set; }
     public DateTime? DateTransaction { get; set; }
     public bool EsRecurrente { get; set; }
-    public List<string> MesesSeleccionados { get; set; }
+    public List<string> MesesSeleccionados { get; set; } = [];
     public int? DistributionEndDay { get; set; }
     public string? ExcludedDays { get; set; }
 }

@@ -12,7 +12,7 @@ public record CreateTmpTransactionCommand : IRequest<int>
     public int? AccountID { get; init; }
     public DateTime? DateTransaction { get; init; }
     public bool EsRecurrente { get; init; }
-    public List<string> MesesSeleccionados { get; init; }
+    public List<string> MesesSeleccionados { get; init; } = [];
     public int? DistributionEndDay { get; init; }
     public string? ExcludedDays { get; init; }
 }

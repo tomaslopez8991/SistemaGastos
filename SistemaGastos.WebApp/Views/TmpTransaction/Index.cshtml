@@ -6,7 +6,7 @@
 @Html.AntiForgeryToken()
 
 <div id="planning-container"
-     class="fin-dashboard"
+     class="fin-dashboard projection-workspace"
      data-url-list="@Url.Action("GetTransactionsByMonth", "TmpTransaction")"
      data-url-form="@Url.Action("GetTmpTransactionForm", "TmpTransaction")"
      data-url-create="@Url.Action("Create", "TmpTransaction")"
@@ -48,8 +48,8 @@
      data-step="1">
 
     @* ── Header ───────────────────────────────────────────── *@
-    <div class="d-flex justify-content-between align-items-start mb-4">
-        <div>
+    <div class="projection-header">
+        <div class="projection-heading">
             <h2 class="fw-semibold mb-0" style="font-size:22px;">
                 <i class="fa-solid fa-timeline text-primary me-2"></i>Proyección de gastos
             </h2>
@@ -94,7 +94,7 @@
     <div class="month-carousel-wrapper position-relative mb-3"
          data-intro="Navegá entre meses con las flechas. El mes resaltado es el activo. <span class='tut-action'>→ Hacé clic en otro mes para ver su proyección.</span>"
          data-step="3">
-        <button class="carousel-nav-btn carousel-nav-prev text-body" id="carouselPrev" style="display:none;">
+        <button type="button" class="carousel-nav-btn carousel-nav-prev text-body" id="carouselPrev" style="display:none;" aria-label="Ver meses anteriores">
             <i class="fas fa-chevron-left"></i>
         </button>
         <div class="month-carousel" id="monthCarousel">
@@ -103,7 +103,7 @@
                 <span class="ms-2 small">Cargando proyección...</span>
             </div>
         </div>
-        <button class="carousel-nav-btn carousel-nav-next text-body" id="carouselNext" style="display:none;">
+        <button type="button" class="carousel-nav-btn carousel-nav-next text-body" id="carouselNext" style="display:none;" aria-label="Ver meses siguientes">
             <i class="fas fa-chevron-right"></i>
         </button>
     </div>
@@ -192,14 +192,25 @@
         <div class="tab-content" id="cashflowTabsContent">
 
             @* Tab: Movimientos → calendario inline *@
-            <div class="tab-pane fade show active p-3" id="planificados" role="tabpanel">
-                <div class="cf-calendar-legend d-flex flex-wrap gap-3 mb-3">
+            <div class="tab-pane fade show active" id="planificados" role="tabpanel">
+                <div class="projection-calendar-heading">
+                    <div>
+                        <h3>Calendario financiero</h3>
+                        <span id="projection-calendar-status" class="text-body-secondary">Seleccioná un día para ver o registrar movimientos</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary projection-today-btn" id="projectionTodayBtn">
+                        <i class="fa-regular fa-calendar-check me-1"></i>Ir a hoy
+                    </button>
+                </div>
+                <div class="cf-calendar-legend" aria-label="Tipos de movimientos">
                     <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-income"></span>Ingreso</span>
                     <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-expense"></span>Gasto fijo / planificado</span>
                     <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-tc"></span>Tarjeta de crédito</span>
                     <span class="cf-legend-item"><span class="cf-legend-dot cf-evt-personas"></span>Personas (a cobrar)</span>
                 </div>
-                <div id="financialCalendar"></div>
+                <div class="projection-calendar-shell">
+                    <div id="financialCalendar" aria-label="Calendario de proyección financiera"></div>
+                </div>
             </div>
 
             @* Tab: Gastos fijos *@
@@ -256,7 +267,7 @@
 </div>
 
 @* ── Panel lateral de detalle de día ─────────────────────── *@
-<div id="cf-day-panel" class="cf-day-panel fin-dashboard">
+<div id="cf-day-panel" class="cf-day-panel fin-dashboard" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="cf-panel-date-label">
     <div class="cf-day-panel-header">
         <div>
             <div class="fw-semibold" id="cf-panel-date-label"></div>

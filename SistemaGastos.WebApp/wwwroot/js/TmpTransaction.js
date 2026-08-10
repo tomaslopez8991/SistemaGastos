@@ -95,10 +95,11 @@
             const amountClass = balance.balance >= 0 ? 'positive' : 'negative';
 
             const html = `
-                <div class="month-card-slim ${isActive}" data-key="${balance.key}" data-month="${balance.month}">
+                <button type="button" class="month-card-slim ${isActive}" data-key="${balance.key}" data-month="${balance.month}"
+                        aria-pressed="${balance.key === activeMonthKey}" aria-label="${balance.label || balance.monthName}: saldo ${balance.balanceFmt}">
                     <div class="mcs-label">${balance.label || balance.monthName}</div>
                     <div class="mcs-amount ${amountClass}">${balance.balanceFmt}</div>
-                </div>
+                </button>
             `;
             $carousel.append(html);
         });
@@ -115,8 +116,8 @@
     function selectMonth(key) {
         activeMonthKey = key;
 
-        $('.month-card-slim').removeClass('active');
-        $(`.month-card-slim[data-key="${key}"]`).addClass('active');
+        $('.month-card-slim').removeClass('active').attr('aria-pressed', 'false');
+        $(`.month-card-slim[data-key="${key}"]`).addClass('active').attr('aria-pressed', 'true');
 
         actualizarInfoBar();
         updateCarouselButtons();
@@ -135,8 +136,8 @@
         if (activeMonthKey === key) return;
         activeMonthKey = key;
 
-        $('.month-card-slim').removeClass('active');
-        $(`.month-card-slim[data-key="${key}"]`).addClass('active');
+        $('.month-card-slim').removeClass('active').attr('aria-pressed', 'false');
+        $(`.month-card-slim[data-key="${key}"]`).addClass('active').attr('aria-pressed', 'true');
 
         actualizarInfoBar();
         scrollToActiveMonthSilent();
@@ -445,9 +446,8 @@
                         Currency: form.find('#Transaction_CurrencySelect').val() || 'ARS',
                         CategoryID: parseInt(form.find('#Transaction_CategoryID').val()) || 0,
                         AccountID: parseInt(form.find('#Transaction_AccountID').val()) || null,
-                        DateTransaction: esRecurrente
-                            ? null
-                            : (form.find('#Transaction_DateTransaction').val() || null),
+                        // La fecha funciona como ancla para conservar el dia en cada mes recurrente.
+                        DateTransaction: form.find('#Transaction_DateTransaction').val() || null,
                         EsRecurrente: esRecurrente,
                         MesesSeleccionados: mesesSeleccionados,
                         DistributionEndDay: dist.distributionEndDay,
@@ -472,7 +472,6 @@
             if (!data.MesesSeleccionados || data.MesesSeleccionados.length === 0) {
                 Swal.fire('Error', 'Debe seleccionar al menos un mes futuro', 'error'); return;
             }
-            data.DateTransaction = null;
         } else {
             if (!data.DateTransaction) {
                 Swal.fire('Error', 'Debe indicar el mes de impacto', 'error'); return;

@@ -30,6 +30,10 @@
     let navigatingFromSlider = false;
     let pendingValidRange = null;
 
+    function isCompactViewport() {
+        return window.matchMedia('(max-width: 767.98px)').matches;
+    }
+
     // ── Panel lateral ─────────────────────────────────────────
     const $panel   = $('#cf-day-panel');
     const $overlay = $('#cf-panel-overlay');
@@ -59,11 +63,15 @@
         renderPanelItems(day);
         $panel.addClass('open');
         $overlay.addClass('open');
+        $panel.attr('aria-hidden', 'false');
+        document.body.classList.add('cf-panel-visible');
     }
 
     function closePanel() {
         $panel.removeClass('open');
         $overlay.removeClass('open');
+        $panel.attr('aria-hidden', 'true');
+        document.body.classList.remove('cf-panel-visible');
         currentPanelDate = null;
     }
 
@@ -231,6 +239,9 @@
     // Cerrar panel
     $('#cf-panel-close-btn').on('click', closePanel);
     $overlay.on('click', closePanel);
+    $(document).on('keydown', function (event) {
+        if (event.key === 'Escape' && $panel.hasClass('open')) closePanel();
+    });
 
     // Editar desde panel
     $(document).on('click', '.cf-panel-edit', function () {
@@ -687,6 +698,10 @@
         if (calendar) calendar.updateSize();
     });
 
+    $('#projectionTodayBtn').on('click', function () {
+        if (calendar) calendar.today();
+    });
+
     // Permitir que TmpTransaction.js navegue el calendario al mes activo del slider
     window.cashflowCalendarGotoMonth = function (year, month) {
         if (!calendar) return;
@@ -720,13 +735,17 @@
             locale: 'es',
             firstDay: 1,
             height: 'auto',
-            headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
-            dayMaxEvents: 8,
+            headerToolbar: { left: 'prev,next', center: 'title', right: '' },
+            dayHeaderFormat: isCompactViewport() ? { weekday: 'narrow' } : { weekday: 'short' },
+            dayMaxEvents: isCompactViewport() ? 3 : 8,
+            moreLinkText: count => `+${count} más`,
             eventDisplay: 'block',
             datesSet: function (info) {
                 const mid = new Date(info.view.currentStart.getFullYear(), info.view.currentStart.getMonth(), 15);
                 const year  = mid.getFullYear();
                 const month = mid.getMonth() + 1;
+
+                $('#projection-calendar-status').text(info.view.title);
 
                 loadMonth(year, month);
 
@@ -753,6 +772,17 @@
         });
 
         calendar.render();
+
+        let resizeTimer = null;
+        $(window).on('resize.projectionCalendar', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                if (!calendar) return;
+                calendar.setOption('dayHeaderFormat', isCompactViewport() ? { weekday: 'narrow' } : { weekday: 'short' });
+                calendar.setOption('dayMaxEvents', isCompactViewport() ? 3 : 8);
+                calendar.updateSize();
+            }, 150);
+        });
 
         if (pendingValidRange) {
             calendar.setOption('validRange', pendingValidRange);
