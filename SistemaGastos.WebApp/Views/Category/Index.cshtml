@@ -6,57 +6,53 @@
 @Html.AntiForgeryToken()
 
 <div id="category-container"
+     class="category-page"
      data-url-list="@Url.Action("GetCategoriesJson", "Category")"
      data-url-form="@Url.Action("GetCategoryForm", "Category")"
      data-url-save="@Url.Action("Save", "Category")"
-     data-url-delete="@Url.Action("Delete", "Category")"
-     data-intro="Las categorías clasifican tus ingresos y gastos. Ejemplos: Comida, Transporte, Salario, Freelance."
-     data-step="1">
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
+     data-url-delete="@Url.Action("Delete", "Category")">
+    <header class="category-header">
         <div>
-            <h2 class="fw-bold mb-0">Categorías</h2>
-            <p class="small">Organiza tus movimientos</p>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="category-header-icon" aria-hidden="true"><i class="fa-solid fa-tags"></i></span>
+                <h1 class="h3 fw-bold mb-0">Categorías</h1>
+                <span id="category-total" class="badge text-bg-secondary">0</span>
+            </div>
+            <p class="text-body-secondary mb-0">Organizá ingresos y gastos para entender mejor tus movimientos.</p>
         </div>
-        <button class="btn btn-success btn-lg shadow"
-                onclick="abrirModalCategoria()"
-                data-intro="Creá una nueva categoría desde acá. <span class='tut-action'>→ Tocá <strong>+ Nueva</strong>. Completá: <strong>Nombre</strong> (ej: Supermercado), <strong>Tipo</strong> (Gasto/Ingreso), <strong>Color</strong> y <strong>Ícono</strong> (clase FontAwesome, ej: fa-solid fa-cart-shopping). Luego Guardar.</span>"
-                data-step="2">
-            <i class="fa-solid fa-plus me-2"></i> Nueva
+        <button type="button" class="btn btn-primary category-new-button" id="new-category-button">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+            <span>Nueva categoría</span>
         </button>
-    </div>
+    </header>
 
-    <ul class="nav nav-pills mb-4 gap-2"
-        id="pills-tab"
-        role="tablist"
-        data-intro="Filtrá por tipo. <span class='tut-action'>→ Tocá <strong>Gastos</strong> o <strong>Ingresos</strong> para ver solo las de esa categoría.</span>"
-        data-step="3">
-        <li class="nav-item">
-            <button class="nav-link active rounded-pill px-4"
-                    onclick="filtrarCategorias('all')">
-                Todas
+    <section class="category-toolbar" aria-label="Filtros de categorías">
+        <div class="category-search">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <label for="category-search" class="visually-hidden">Buscar categorías</label>
+            <input id="category-search" type="search" class="form-control"
+                   placeholder="Buscar por nombre o descripción" autocomplete="off" />
+        </div>
+        <div class="category-filter-group" role="group" aria-label="Filtrar por tipo">
+            <button type="button" class="category-filter active" data-category-filter="all" aria-pressed="true">
+                Todas <span id="count-all">0</span>
             </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link rounded-pill px-4"
-                    onclick="filtrarCategorias('Gasto')">
-                Gastos
+            <button type="button" class="category-filter" data-category-filter="Gasto" aria-pressed="false">
+                Gastos <span id="count-expense">0</span>
             </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link rounded-pill px-4"
-                    onclick="filtrarCategorias('Ingreso')">
-                Ingresos
+            <button type="button" class="category-filter" data-category-filter="Ingreso" aria-pressed="false">
+                Ingresos <span id="count-income">0</span>
             </button>
-        </li>
-    </ul>
+        </div>
+    </section>
 
-    <div class="row g-3"
-         id="categories-grid"
-         data-intro="Cada tarjeta muestra ícono, nombre, color y tipo. Usá el menú ⋮ para editar o eliminar."
-         data-step="4">
-    </div>
+    <div id="category-feedback" class="visually-hidden" role="status" aria-live="polite"></div>
+    <div id="categories-grid" class="category-grid" aria-busy="true"></div>
 </div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/category.css" asp-append-version="true" />
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
