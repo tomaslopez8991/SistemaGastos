@@ -15,11 +15,14 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
         if (request.EsRecurrente)
         {
             // Crear múltiples transacciones para los meses seleccionados
-            var mesesDistinct = request.MesesSeleccionados
+            var mesesDistinct = (request.MesesSeleccionados ?? [])
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Select(x => x.Trim())
                 .Distinct()
                 .ToList();
+
+            // Clientes anteriores podían omitir la fecha al seleccionar solo meses.
+            var occurrenceDay = request.DateTransaction?.Day ?? DateTime.Today.Day;
 
             foreach (var mes in mesesDistinct)
             {
@@ -27,7 +30,7 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
                 if (parts.Length != 2) continue;
                 if (!int.TryParse(parts[0], out int y) || !int.TryParse(parts[1], out int m)) continue;
 
-                var day = Math.Min(request.DateTransaction!.Value.Day, DateTime.DaysInMonth(y, m));
+                var day = Math.Min(occurrenceDay, DateTime.DaysInMonth(y, m));
 
                 toInsert.Add(new TmpTransactionEntity
                 {
@@ -35,7 +38,7 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
                     Amount = request.Amount,
                     Currency = request.Currency,
                     CategoryID = request.CategoryID,
-                    AccountID = (int)request.AccountID,
+                    AccountID = request.AccountID!.Value,
                     UserID = request.UserID,
                     DateTransaction = new DateTime(y, m, day),
                     EsRecurrente = false,
@@ -53,7 +56,7 @@ public class CreateTmpTransactionHandler(IApplicationDbContext context)
                 Amount = request.Amount,
                 Currency = request.Currency,
                 CategoryID = request.CategoryID,
-                AccountID = (int)request.AccountID,
+                AccountID = request.AccountID!.Value,
                 UserID = request.UserID,
                 DateTransaction = request.DateTransaction!.Value,
                 EsRecurrente = false,
