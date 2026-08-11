@@ -5132,6 +5132,16 @@ body.cf-panel-visible { overflow: hidden; }
 .cf-day-panel.fin-dashboard {
     width: min(440px, calc(100vw - 56px));
     right: min(-460px, calc(-100vw + 40px));
+    visibility: hidden;
+    pointer-events: none;
+    transition: right .25s ease-out, visibility 0s linear .25s;
+}
+
+.cf-day-panel.fin-dashboard.open {
+    right: 0;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
 }
 
 .cf-day-panel.fin-dashboard .cf-day-panel-header {
@@ -5227,7 +5237,7 @@ body.cf-panel-visible { overflow: hidden; }
         transition: bottom .25s ease-out;
     }
 
-    .cf-day-panel.fin-dashboard.open { bottom: 0; right: 0; }
+    .cf-day-panel.fin-dashboard.open { bottom: 0; right: 0; visibility: visible; }
     .cf-day-panel.fin-dashboard .cf-day-panel-body { max-height: calc(86dvh - 72px); }
 }
 
