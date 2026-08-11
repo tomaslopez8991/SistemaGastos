@@ -38,8 +38,10 @@
     const $panel   = $('#cf-day-panel');
     const $overlay = $('#cf-panel-overlay');
     let currentPanelDate = null;
+    let panelTrigger = null;
 
     function openPanel(day) {
+        panelTrigger = document.activeElement;
         currentPanelDate = day;
 
         const dateObj = new Date(day.date + 'T00:00:00');
@@ -65,6 +67,7 @@
         $overlay.addClass('open');
         $panel.attr('aria-hidden', 'false');
         document.body.classList.add('cf-panel-visible');
+        window.requestAnimationFrame(() => $panel.trigger('focus'));
     }
 
     function closePanel() {
@@ -73,6 +76,10 @@
         $panel.attr('aria-hidden', 'true');
         document.body.classList.remove('cf-panel-visible');
         currentPanelDate = null;
+        if (panelTrigger && typeof panelTrigger.focus === 'function') {
+            panelTrigger.focus();
+        }
+        panelTrigger = null;
     }
 
     function renderPanelItems(day) {
