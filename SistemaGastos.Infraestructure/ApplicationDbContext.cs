@@ -3,6 +3,7 @@ using SistemaGastos.Application.Interfaces;
 using SistemaGastos.Domain.Models;
 using SistemaGastos.Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SistemaGastos.Domain.Enums;
 
 namespace SistemaGastos.Data;
 
@@ -27,8 +28,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             builder.Property(x => x.YearMonth).HasMaxLength(7).IsRequired();
             builder.Property(x => x.CustomAmount).HasPrecision(18, 2);
+            builder.Property(x => x.DistributionStrategy).HasDefaultValue(TcDistributionStrategy.Weekdays);
             builder.HasIndex(x => new { x.AccountID, x.YearMonth }).IsUnique();
             builder.HasOne(x => x.Account).WithMany().HasForeignKey(x => x.AccountID).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<ProjectionScheduleOverride>(builder =>
+        {
+            builder.Property(x => x.SourceType).HasMaxLength(32).IsRequired();
+            builder.Property(x => x.YearMonth).HasMaxLength(7).IsRequired();
+            builder.HasIndex(x => new { x.UserID, x.SourceType, x.SourceID, x.YearMonth, x.OriginalDay }).IsUnique();
         });
 
         // FixedExpense tiene dos FKs a Account: AccountID (cuenta de pago) y CreditCardAccountID (TC a saldar).
@@ -62,6 +70,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CreditCardTransactionPerson> CreditCardTransactionPerson { get; set; }
     public DbSet<CreditCardTransactionCobro> CreditCardTransactionCobro { get; set; }
     public DbSet<CreditCardProjectionScenario> CreditCardProjectionScenario { get; set; }
+    public DbSet<ProjectionScheduleOverride> ProjectionScheduleOverride { get; set; }
     public DbSet<Login> Login { get; set; }
     public DbSet<Budget> Budget { get; set; }
     public DbSet<FixedExpense> FixedExpense { get; set; }

@@ -14,6 +14,7 @@ public class SetCreditCardProjectionScenarioHandler(IApplicationDbContext contex
     {
         if (request.Month is < 1 or > 12) return false;
         if (!Enum.IsDefined(request.Mode)) return false;
+        if (!Enum.IsDefined(request.DistributionStrategy)) return false;
         if (request.Mode == TcProjectionMode.Personalizado && (!request.CustomAmount.HasValue || request.CustomAmount <= 0))
             return false;
 
@@ -23,7 +24,8 @@ public class SetCreditCardProjectionScenarioHandler(IApplicationDbContext contex
 
         var key = $"{request.Year}-{request.Month:D2}";
         var scenario = await context.CreditCardProjectionScenario
-            .FirstOrDefaultAsync(x => x.AccountID == request.AccountID && x.YearMonth == key, cancellationToken);
+            .FirstOrDefaultAsync(x => x.UserID == request.UserID
+                && x.AccountID == request.AccountID && x.YearMonth == key, cancellationToken);
 
         if (scenario is null)
         {
@@ -37,6 +39,7 @@ public class SetCreditCardProjectionScenarioHandler(IApplicationDbContext contex
         }
 
         scenario.Mode = request.Mode;
+        scenario.DistributionStrategy = request.DistributionStrategy;
         scenario.CustomAmount = request.Mode == TcProjectionMode.Personalizado ? request.CustomAmount : null;
         scenario.UpdatedAt = DateTime.UtcNow;
         await context.SaveChangesAsync(cancellationToken);

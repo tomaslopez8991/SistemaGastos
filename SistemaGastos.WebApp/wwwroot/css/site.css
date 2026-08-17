@@ -5137,6 +5137,23 @@ body.cf-panel-visible { overflow: hidden; }
     transition: right .25s ease-out, visibility 0s linear .25s;
 }
 
+.fc .cf-evt-draggable {
+    cursor: grab;
+}
+
+.fc .cf-evt-draggable:active,
+.fc .fc-event-dragging {
+    cursor: grabbing;
+}
+
+.cf-tc-scenario {
+    max-width: 22rem;
+}
+
+.cf-tc-scenario .form-select {
+    min-height: 2rem;
+}
+
 .cf-day-panel.fin-dashboard.open {
     right: 0;
     visibility: visible;

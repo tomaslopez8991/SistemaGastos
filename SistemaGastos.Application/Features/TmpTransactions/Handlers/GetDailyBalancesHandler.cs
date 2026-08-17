@@ -61,6 +61,11 @@ public class GetDailyBalancesHandler(
             .Where(x => x.UserID == request.UserID)
             .ToListAsync(cancellationToken);
 
+        var scheduleOverrides = await context.ProjectionScheduleOverride
+            .AsNoTracking()
+            .Where(x => x.UserID == request.UserID)
+            .ToListAsync(cancellationToken);
+
         var manualProjections = await context.TmpTransaction
             .Include(t => t.Category)
             .Where(t => t.UserID == request.UserID && t.DateTransaction.HasValue)
@@ -224,11 +229,27 @@ public class GetDailyBalancesHandler(
             var monthKey = $"{m.Year}-{m.Month:D2}";
             var itemsByDay = new Dictionary<int, List<DailyBalanceItemDto>>();
 
-            void AddItem(int day, string description, decimal amount, bool isIncome, string sourceType, long? sourceId = null, bool isDistributed = false, int? tcAccountId = null, decimal? tcMinimumAmount = null, decimal? tcTotalAmount = null, bool isAutomaticPersonCollection = false, TcProjectionMode? tcProjectionMode = null, decimal? tcCustomAmount = null)
+            void AddItem(int day, string description, decimal amount, bool isIncome, string sourceType, long? sourceId = null, bool isDistributed = false, int? tcAccountId = null, decimal? tcMinimumAmount = null, decimal? tcTotalAmount = null, bool isAutomaticPersonCollection = false, TcProjectionMode? tcProjectionMode = null, decimal? tcCustomAmount = null, TcDistributionStrategy? tcDistributionStrategy = null)
             {
                 if (amount <= 0) return;
 
                 day = Math.Clamp(day, 1, daysInMonth);
+                var originalDay = day;
+                var scheduleSourceType = tcAccountId.HasValue ? "TarjetaCredito" : sourceType;
+                long? scheduleSourceId = tcAccountId.HasValue ? tcAccountId.Value : sourceId;
+                var canReschedule = !viewingPast && scheduleSourceId.HasValue
+                    && scheduleSourceType is "Planificado" or "GastoFijo" or "IngresoFijo" or "Personas" or "TarjetaCredito";
+                if (canReschedule)
+                {
+                    var dateOverride = scheduleOverrides.FirstOrDefault(x =>
+                        x.YearMonth == monthKey
+                        && x.SourceType == scheduleSourceType
+                        && x.SourceID == scheduleSourceId.Value
+                        && x.OriginalDay == originalDay);
+                    if (dateOverride is not null)
+                        day = Math.Clamp(dateOverride.TargetDay, 1, daysInMonth);
+                }
+
                 if (!itemsByDay.TryGetValue(day, out var list))
                 {
                     list = new List<DailyBalanceItemDto>();
@@ -250,7 +271,12 @@ public class GetDailyBalancesHandler(
                     IsAutomaticPersonCollection = isAutomaticPersonCollection,
                     TcMinimumAmount = tcMinimumAmount,
                     TcProjectionMode = tcProjectionMode?.ToString(),
-                    TcCustomAmount = tcCustomAmount
+                    TcCustomAmount = tcCustomAmount,
+                    TcDistributionStrategy = tcDistributionStrategy?.ToString(),
+                    CanReschedule = canReschedule,
+                    ScheduleSourceType = canReschedule ? scheduleSourceType : null,
+                    ScheduleSourceId = canReschedule ? scheduleSourceId : null,
+                    ScheduleOriginalDay = originalDay
                 });
             }
 
@@ -265,6 +291,7 @@ public class GetDailyBalancesHandler(
 
                 var scenario = tcScenarios.FirstOrDefault(x => x.AccountID == cc.ID && x.YearMonth == monthKey);
                 var mode = scenario?.Mode ?? TcProjectionMode.Total;
+                var distributionStrategy = scenario?.DistributionStrategy ?? TcDistributionStrategy.Weekdays;
                 var minimumArs = cc.EffectiveMinimumPayment.HasValue
                     ? (cc.Currency == "USD" ? cc.EffectiveMinimumPayment.Value * cotizacionDolar : cc.EffectiveMinimumPayment.Value)
                     : totalArs;
@@ -276,6 +303,19 @@ public class GetDailyBalancesHandler(
                 var overdueWithoutPayment = isCurrentMonth && fechaActual.Day > dueDay;
                 var closingDay = Math.Clamp(cc.ClosingDay ?? daysInMonth, 1, daysInMonth);
 
+                if (distributionStrategy == TcDistributionStrategy.LumpSumBeforeDueDate)
+                {
+                    var targetDay = Math.Max(1, dueDay - 1);
+                    if (isCurrentMonth && fechaActual.Day > targetDay)
+                        targetDay = Math.Min(fechaActual.Day, daysInMonth);
+                    AddItem(targetDay, $"Saldo TC antes del vencimiento - {cc.Name} ({cc.Currency})", totalArs, false,
+                        fixedExpenseId.HasValue ? "GastoFijo" : "TarjetaCredito", fixedExpenseId,
+                        tcAccountId: cc.ID, tcMinimumAmount: minimumArs, tcTotalAmount: totalArs,
+                        tcProjectionMode: mode, tcCustomAmount: customArs,
+                        tcDistributionStrategy: distributionStrategy);
+                    return;
+                }
+
                 if (hasPriorPartialPayment || overdueWithoutPayment)
                 {
                     var redistributionStart = isCurrentMonth
@@ -283,18 +323,21 @@ public class GetDailyBalancesHandler(
                         : dueDay;
                     if (redistributionStart > closingDay) return;
 
-                    var redistributionWeekendDays = Enumerable.Range(
+                    var redistributionExcludedDays = distributionStrategy == TcDistributionStrategy.Weekdays
+                        ? Enumerable.Range(
                             redistributionStart,
                             closingDay - redistributionStart + 1)
                         .Where(day => new DateTime(m.Year, m.Month, day).DayOfWeek
                             is DayOfWeek.Saturday or DayOfWeek.Sunday)
-                        .ToList();
+                        .ToList()
+                        : [];
                     var redistributed = DistributionHelper.Distribute(
-                        totalArs, redistributionStart, closingDay, redistributionWeekendDays, daysInMonth);
+                        totalArs, redistributionStart, closingDay, redistributionExcludedDays, daysInMonth);
                     foreach (var (day, amount) in redistributed)
                         AddItem(day, $"Completar TC - {cc.Name} ({cc.Currency})", amount, false,
                             "TarjetaCredito", tcAccountId: cc.ID, tcMinimumAmount: minimumArs,
-                            tcTotalAmount: totalArs, tcProjectionMode: mode, tcCustomAmount: customArs);
+                            tcTotalAmount: totalArs, tcProjectionMode: mode, tcCustomAmount: customArs,
+                            tcDistributionStrategy: distributionStrategy);
                     return;
                 }
 
@@ -309,7 +352,8 @@ public class GetDailyBalancesHandler(
                 AddItem(dueDay, $"{label} - {cc.Name} ({cc.Currency})", initialPayment, false,
                     fixedExpenseId.HasValue ? "GastoFijo" : "TarjetaCredito", fixedExpenseId,
                     tcAccountId: cc.ID, tcMinimumAmount: minimumArs, tcTotalAmount: totalArs,
-                    tcProjectionMode: mode, tcCustomAmount: customArs);
+                    tcProjectionMode: mode, tcCustomAmount: customArs,
+                    tcDistributionStrategy: distributionStrategy);
 
                 if (mode == TcProjectionMode.Total) return;
 
@@ -317,16 +361,19 @@ public class GetDailyBalancesHandler(
                 if (remaining <= 0) return;
                 if (closingDay <= dueDay) return;
 
-                var weekendDays = Enumerable.Range(dueDay + 1, closingDay - dueDay)
-                    .Where(day => new DateTime(m.Year, m.Month, day).DayOfWeek
-                        is DayOfWeek.Saturday or DayOfWeek.Sunday)
-                    .ToList();
+                var excludedDays = distributionStrategy == TcDistributionStrategy.Weekdays
+                    ? Enumerable.Range(dueDay + 1, closingDay - dueDay)
+                        .Where(day => new DateTime(m.Year, m.Month, day).DayOfWeek
+                            is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                        .ToList()
+                    : [];
                 var distributed = DistributionHelper.Distribute(
-                    remaining, dueDay + 1, closingDay, weekendDays, daysInMonth);
+                    remaining, dueDay + 1, closingDay, excludedDays, daysInMonth);
                 foreach (var (day, amount) in distributed)
                     AddItem(day, $"Completar TC - {cc.Name} ({cc.Currency})", amount, false,
                         "TarjetaCredito", tcAccountId: cc.ID, tcMinimumAmount: minimumArs,
-                        tcTotalAmount: totalArs, tcProjectionMode: mode, tcCustomAmount: customArs);
+                        tcTotalAmount: totalArs, tcProjectionMode: mode, tcCustomAmount: customArs,
+                        tcDistributionStrategy: distributionStrategy);
             }
 
             static Dictionary<string, decimal> ParseDayOverrides(string? json)

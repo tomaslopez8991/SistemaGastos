@@ -9,6 +9,7 @@ public class CreditCardProjectionScenario
     public int UserID { get; set; }
     public string YearMonth { get; set; } = string.Empty;
     public TcProjectionMode Mode { get; set; }
+    public TcDistributionStrategy DistributionStrategy { get; set; } = TcDistributionStrategy.Weekdays;
     public decimal? CustomAmount { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

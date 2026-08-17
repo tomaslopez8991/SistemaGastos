@@ -9,4 +9,5 @@ public record SetCreditCardProjectionScenarioCommand(
     int Year,
     int Month,
     TcProjectionMode Mode,
-    decimal? CustomAmount) : IRequest<bool>;
+    decimal? CustomAmount,
+    TcDistributionStrategy DistributionStrategy) : IRequest<bool>;

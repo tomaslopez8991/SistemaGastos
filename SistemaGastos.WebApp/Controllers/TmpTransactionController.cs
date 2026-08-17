@@ -231,10 +231,24 @@ public class TmpTransactionController(IMediator mediator, ICurrentUserService cu
     {
         var userID = currentUserService.UserId ?? 0;
         var success = await mediator.Send(new SetCreditCardProjectionScenarioCommand(
-            userID, request.AccountID, request.Year, request.Month, request.Mode, request.CustomAmount));
+            userID, request.AccountID, request.Year, request.Month, request.Mode, request.CustomAmount,
+            request.DistributionStrategy));
         return Ok(success
             ? Response<bool>.Ok(true, "Escenario de tarjeta actualizado")
             : Response<bool>.Fail("No se pudo actualizar el escenario"));
+    }
+
+    [HttpPost]
+    [Route("RescheduleItem")]
+    public async Task<ActionResult<Response<bool>>> RescheduleItem([FromBody] RescheduleProjectionItemRequest request)
+    {
+        var userID = currentUserService.UserId ?? 0;
+        var success = await mediator.Send(new RescheduleProjectionItemCommand(
+            userID, request.SourceType, request.SourceID, request.Year, request.Month,
+            request.OriginalDay, request.TargetDay, request.IsDistributed));
+        return Ok(success
+            ? Response<bool>.Ok(true, "Movimiento reprogramado para este mes")
+            : Response<bool>.Fail("No se pudo reprogramar el movimiento"));
     }
 
 }
@@ -275,4 +289,16 @@ public class SetCreditCardScenarioRequest
     public int Month { get; set; }
     public TcProjectionMode Mode { get; set; }
     public decimal? CustomAmount { get; set; }
+    public TcDistributionStrategy DistributionStrategy { get; set; } = TcDistributionStrategy.Weekdays;
+}
+
+public class RescheduleProjectionItemRequest
+{
+    public string SourceType { get; set; } = string.Empty;
+    public long SourceID { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public int OriginalDay { get; set; }
+    public int TargetDay { get; set; }
+    public bool IsDistributed { get; set; }
 }

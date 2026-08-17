@@ -5,6 +5,7 @@
     const urlDailyBalances  = $container.data('url-daily-balances');
     const urlSetDayOverride = $container.data('url-set-day-override');
     const urlSetTcScenario  = $container.data('url-set-tc-scenario');
+    const urlRescheduleItem = $container.data('url-reschedule-item');
     const urlFixedPay              = $container.data('url-fixed-pay');
     const urlIncomeReceive         = $container.data('url-income-receive');
     const urlConfirmDay            = $container.data('url-confirm-day');
@@ -97,14 +98,25 @@
                 ? sourceLabels.Personas
                 : (sourceLabels[item.sourceType] || item.sourceType);
             const scenarioMode = item.tcProjectionMode || 'Total';
+            const distributionStrategy = String(item.tcDistributionStrategy || 'Weekdays');
             const scenarioControls = item.tcAccountId ? `
-                <div class="btn-group btn-group-sm mt-2 cf-tc-scenario" role="group" aria-label="Escenario de pago">
+                <div class="cf-tc-scenario mt-2" data-tc-id="${item.tcAccountId}">
+                  <div class="small fw-semibold mb-1">Importe a pagar</div>
+                  <div class="btn-group btn-group-sm" role="group" aria-label="Importe de tarjeta">
                     <button type="button" class="btn btn-outline-secondary cf-tc-scenario-btn ${scenarioMode === 'Minimo' ? 'active' : ''}"
                             data-tc-id="${item.tcAccountId}" data-mode="1">Mínimo</button>
                     <button type="button" class="btn btn-outline-secondary cf-tc-scenario-btn ${scenarioMode === 'Personalizado' ? 'active' : ''}"
                             data-tc-id="${item.tcAccountId}" data-mode="2" data-current="${item.tcCustomAmount || ''}">Personalizado</button>
                     <button type="button" class="btn btn-outline-secondary cf-tc-scenario-btn ${scenarioMode === 'Total' ? 'active' : ''}"
                             data-tc-id="${item.tcAccountId}" data-mode="0">Total</button>
+                  </div>
+                  <label class="small fw-semibold mt-2 mb-1 d-block" for="cf-tc-distribution-${item.tcAccountId}">Distribuir saldo pendiente</label>
+                  <select id="cf-tc-distribution-${item.tcAccountId}" class="form-select form-select-sm cf-tc-distribution-select"
+                          data-tc-id="${item.tcAccountId}" aria-label="Distribución del saldo pendiente">
+                    <option value="0" ${distributionStrategy === 'Daily' ? 'selected' : ''}>Todos los días restantes</option>
+                    <option value="1" ${distributionStrategy === 'Weekdays' ? 'selected' : ''}>Solo lunes a viernes</option>
+                    <option value="2" ${distributionStrategy === 'LumpSumBeforeDueDate' ? 'selected' : ''}>Pago único antes del vencimiento</option>
+                  </select>
                 </div>` : '';
 
             let actions = '';
@@ -538,11 +550,29 @@
         });
     });
 
-    // Pagar mínimo TC (monto pre-fijado)
+    function saveTcScenario(tcId, mode, customAmount, distributionStrategy, date) {
+        return $.ajax({
+            url: urlSetTcScenario,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                accountID: tcId,
+                year: date.getFullYear(),
+                month: date.getMonth() + 1,
+                mode,
+                customAmount,
+                distributionStrategy
+            }),
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+        });
+    }
+
+    // Cambiar el importe base del escenario de tarjeta.
     $(document).on('click', '.cf-tc-scenario-btn', async function () {
         const tcId = parseInt($(this).data('tc-id'));
         const mode = parseInt($(this).data('mode'));
         const date = new Date((currentPanelDate?.date || new Date().toISOString().slice(0, 10)) + 'T00:00:00');
+        const distributionStrategy = parseInt($(this).closest('.cf-tc-scenario').find('.cf-tc-distribution-select').val());
         let customAmount = null;
 
         if (mode === 2) {
@@ -560,23 +590,35 @@
             customAmount = parseFloat(result.value);
         }
 
-        $.ajax({
-            url: urlSetTcScenario,
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ accountID: tcId, year: date.getFullYear(), month: date.getMonth() + 1, mode, customAmount }),
-            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
-            success: response => {
-                if (!response.success) {
-                    Swal.fire('Error', response.message || 'No se pudo actualizar el escenario.', 'error');
-                    return;
-                }
-                closePanel();
-                if (window.reloadCashflowCalendar) window.reloadCashflowCalendar();
-                if (window.reloadCashflowBalances) window.reloadCashflowBalances();
-            },
-            error: xhr => Swal.fire('Error', xhr.responseJSON?.message || 'No se pudo actualizar el escenario.', 'error')
-        });
+        try {
+            const response = await saveTcScenario(tcId, mode, customAmount, distributionStrategy, date);
+            if (!response.success) throw new Error(response.message || 'No se pudo actualizar el escenario.');
+            closePanel();
+            window.reloadCashflowCalendar?.();
+            window.reloadCashflowBalances?.();
+        } catch (error) {
+            Swal.fire('Error', error.responseJSON?.message || error.message || 'No se pudo actualizar el escenario.', 'error');
+        }
+    });
+
+    $(document).on('change', '.cf-tc-distribution-select', async function () {
+        const $scenario = $(this).closest('.cf-tc-scenario');
+        const tcId = parseInt($(this).data('tc-id'));
+        const $activeMode = $scenario.find('.cf-tc-scenario-btn.active');
+        const mode = parseInt($activeMode.data('mode') ?? 0);
+        const customAmount = mode === 2 ? (parseFloat($activeMode.data('current')) || null) : null;
+        const distributionStrategy = parseInt($(this).val());
+        const date = new Date((currentPanelDate?.date || new Date().toISOString().slice(0, 10)) + 'T00:00:00');
+
+        try {
+            const response = await saveTcScenario(tcId, mode, customAmount, distributionStrategy, date);
+            if (!response.success) throw new Error(response.message || 'No se pudo actualizar la distribución.');
+            closePanel();
+            window.reloadCashflowCalendar?.();
+            window.reloadCashflowBalances?.();
+        } catch (error) {
+            Swal.fire('Error', error.responseJSON?.message || error.message || 'No se pudo actualizar la distribución.', 'error');
+        }
     });
 
     $(document).on('click', '.cf-panel-tc-pay', async function () {
@@ -747,6 +789,9 @@
             dayMaxEvents: isCompactViewport() ? 3 : 8,
             moreLinkText: count => `+${count} más`,
             eventDisplay: 'block',
+            editable: true,
+            eventDurationEditable: false,
+            eventStartEditable: true,
             datesSet: function (info) {
                 const mid = new Date(info.view.currentStart.getFullYear(), info.view.currentStart.getMonth(), 15);
                 const year  = mid.getFullYear();
@@ -766,6 +811,61 @@
             eventClick: function (info) {
                 const day = balancesByDate[info.event.startStr];
                 if (day) openPanel(day);
+            },
+            eventAllow: function (dropInfo, draggedEvent) {
+                const item = draggedEvent.extendedProps.item;
+                if (!item?.canReschedule) return false;
+                const original = draggedEvent.start;
+                return original
+                    && original.getFullYear() === dropInfo.start.getFullYear()
+                    && original.getMonth() === dropInfo.start.getMonth();
+            },
+            eventDrop: async function (info) {
+                const item = info.event.extendedProps.item;
+                if (!item?.canReschedule) {
+                    info.revert();
+                    return;
+                }
+
+                const targetDate = info.event.start;
+                const confirmation = await Swal.fire({
+                    title: 'Mover movimiento',
+                    text: `¿Reprogramar para el día ${targetDate.getDate()}? El cambio se aplicará sólo a este mes.`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Mover',
+                    cancelButtonText: 'Cancelar'
+                });
+                if (!confirmation.isConfirmed) {
+                    info.revert();
+                    return;
+                }
+
+                try {
+                    const response = await $.ajax({
+                        url: urlRescheduleItem,
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            sourceType: item.scheduleSourceType,
+                            sourceID: item.scheduleSourceId,
+                            year: targetDate.getFullYear(),
+                            month: targetDate.getMonth() + 1,
+                            originalDay: item.scheduleOriginalDay,
+                            targetDay: targetDate.getDate(),
+                            isDistributed: item.isDistributed
+                        }),
+                        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() }
+                    });
+                    if (!response.success) throw new Error(response.message || 'No se pudo mover el movimiento.');
+                    closePanel();
+                    window.reloadCashflowCalendar?.();
+                    window.reloadCashflowBalances?.();
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Movimiento reprogramado', showConfirmButton: false, timer: 2200 });
+                } catch (error) {
+                    info.revert();
+                    Swal.fire('Error', error.responseJSON?.message || error.message || 'No se pudo mover el movimiento.', 'error');
+                }
             },
             dateClick: function (info) {
                 const day = balancesByDate[info.dateStr];
@@ -839,7 +939,9 @@
                     title: `${item.isIncome ? '+' : '-'}${item.amountFmt} ${item.description}`,
                     start: day.date,
                     allDay: true,
-                    classNames: [eventClassFor(item)]
+                    classNames: [eventClassFor(item), item.canReschedule ? 'cf-evt-draggable' : 'cf-evt-locked'],
+                    editable: item.canReschedule,
+                    extendedProps: { item }
                 });
             });
         });
