@@ -62,4 +62,9 @@ public class DailyBalanceItemDto
     public bool IsAutomaticPersonCollection { get; set; }
     public string? TcProjectionMode { get; set; }
     public decimal? TcCustomAmount { get; set; }
+    public string? TcDistributionStrategy { get; set; }
+    public bool CanReschedule { get; set; }
+    public string? ScheduleSourceType { get; set; }
+    public long? ScheduleSourceId { get; set; }
+    public int ScheduleOriginalDay { get; set; }
 }

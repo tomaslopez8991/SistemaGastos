@@ -302,6 +302,11 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("DistributionStrategy")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
                     b.Property<int>("Mode")
                         .HasColumnType("int");
 
@@ -322,6 +327,47 @@ namespace SistemaGastos.Infraestructure.Migrations
                         .IsUnique();
 
                     b.ToTable("CreditCardProjectionScenario");
+                });
+
+            modelBuilder.Entity("SistemaGastos.Domain.Models.ProjectionScheduleOverride", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<int>("OriginalDay")
+                        .HasColumnType("int");
+
+                    b.Property<long>("SourceID")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("TargetDay")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("YearMonth")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("nvarchar(7)");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("UserID", "SourceType", "SourceID", "YearMonth", "OriginalDay")
+                        .IsUnique();
+
+                    b.ToTable("ProjectionScheduleOverride");
                 });
 
             modelBuilder.Entity("SistemaGastos.Domain.Models.CreditCardTransaction", b =>

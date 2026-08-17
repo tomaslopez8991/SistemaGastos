@@ -13,6 +13,7 @@ public interface IApplicationDbContext
     DbSet<CreditCardTransactionPerson> CreditCardTransactionPerson { get; set; }
     DbSet<CreditCardTransactionCobro> CreditCardTransactionCobro { get; set; }
     DbSet<CreditCardProjectionScenario> CreditCardProjectionScenario { get; set; }
+    DbSet<ProjectionScheduleOverride> ProjectionScheduleOverride { get; set; }
     DbSet<Transaction> Transaction { get; }
     DbSet<TmpTransaction> TmpTransaction { get; }
     DbSet<Account> Account { get; }
